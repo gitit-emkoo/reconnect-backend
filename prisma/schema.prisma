@@ -24,7 +24,7 @@ model User {
 
   // User는 자신이 소속된 Couple을 직접 참조합니다.
   // 이 필드는 Couple이 없을 때는 null이며, 한 User는 하나의 Couple에만 속할 수 있습니다.
-  coupleId                String?   @unique @db.ObjectId // 한 유저는 오직 하나의 커플에 속할 수 있으므로 @unique
+  coupleId                String?   @db.ObjectId // 한 유저는 오직 하나의 커플에 속할 수 있으므로 @unique를 붙였다가 재혼이나 솔로도 있으므로 삭제
   couple                  Couple?   @relation("UserToCouple", fields: [coupleId], references: [id]) // 이 User가 속한 Couple (단방향)
 
   // 이 사용자가 Couple의 member1 또는 member2로 참조될 수 있도록 역참조 필드를 추가합니다.
