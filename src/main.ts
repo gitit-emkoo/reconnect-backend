@@ -1,23 +1,34 @@
+// src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
-import { ValidationPipe } from '@nestjs/common'; // 이 부분이 중요!
+import { ValidationPipe } from '@nestjs/common';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // --- CORS 활성화 설정 ---
+  // 환경 변수에서 허용할 프론트엔드 URL 목록을 가져옴
+  // FRONTEND_URL_PROD (배포 환경)과 FRONTEND_URL_DEV (개발 환경)
+  // 쉼표로 구분된 문자열을 배열로 변환
+  const allowedOrigins = [
+    process.env.FRONTEND_URL_PROD,
+    ...(process.env.FRONTEND_URL_DEV?.split(',') || []), // 개발 URL은 쉼표로 분리하여 배열로 추가
+  ].filter(Boolean); // 빈 문자열 제거
+  console.log('Backend CORS allowedOrigins:', allowedOrigins);
+
   app.enableCors({
-    origin: 'http://localhost:5174',
+    origin: allowedOrigins, // <-- 배열로 변경
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
 
-  // --- 전역 유효성 검사 파이프 추가 ---
   app.useGlobalPipes(new ValidationPipe({
-    whitelist: true, // DTO에 정의되지 않은 속성은 자동으로 제거
-    forbidNonWhitelisted: true, // DTO에 정의되지 않은 속성이 있을 경우 에러 발생
-    transform: true, // DTO 클래스 인스턴스로 자동 변환
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
   }));
 
   const prismaService = app.get(PrismaService);
