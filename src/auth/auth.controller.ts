@@ -60,4 +60,10 @@ export class AuthController {
     console.log('인증 코드:', socialAuthDto.code);
     return this.authService.kakaoLogin(socialAuthDto.code);
   }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(): Promise<{ message: string }> {
+    return this.authService.logout();
+  }
 }

@@ -317,4 +317,11 @@ export class AuthService {
       throw new UnauthorizedException('카카오 로그인에 실패했습니다.');
     }
   }
+
+  async logout(): Promise<{ message: string }> {
+    // 현재 구현에서는 서버 측에서 특별히 처리할 로직이 없습니다.
+    // (예: 토큰 블랙리스트 추가 등)
+    // 따라서 성공 메시지만 반환합니다.
+    return { message: '성공적으로 로그아웃되었습니다.' };
+  }
 }
