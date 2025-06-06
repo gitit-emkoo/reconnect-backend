@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Query, Param } from '@nestjs/common';
 import { CommunityService } from './community.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // 경로에 guards/ 없음
@@ -29,5 +29,10 @@ export class CommunityController {
     return this.prisma.category.findMany({
       select: { id: true, name: true }
     });
+  }
+
+  @Get('posts/:id')
+  async getPostById(@Param('id') id: string) {
+    return this.communityService.getPostById(id);
   }
 }

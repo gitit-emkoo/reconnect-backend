@@ -84,4 +84,17 @@ export class CommunityService {
       },
     });
   }
+
+  async getPostById(id: string) {
+    return this.prisma.communityPost.findUnique({
+      where: { id },
+      include: {
+        author: { select: { nickname: true } },
+        category: true,
+        comments: {
+          include: { author: { select: { nickname: true } } }
+        }
+      }
+    });
+  }
 }
