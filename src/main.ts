@@ -13,10 +13,15 @@ async function bootstrap() {
   // 모든 API 경로에 '/api' 접두사 추가
   app.setGlobalPrefix('api');
   
-  // CORS 활성화
+  // CORS 설정 강화
   app.enableCors({
-    origin: true,
+    origin: [
+      'https://reconnect-frontend.onrender.com', // 나중에 배포될 프론트엔드 주소
+      'http://localhost:5173'                   // 로컬 개발용 프론트엔드 주소
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization', // Authorization 헤더 허용
   });
 
   app.useGlobalPipes(new ValidationPipe({
