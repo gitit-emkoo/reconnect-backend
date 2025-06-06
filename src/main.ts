@@ -10,22 +10,14 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 환경 변수에서 허용할 프론트엔드 URL 목록을 가져옴
-  // FRONTEND_URL_PROD (배포 환경)과 FRONTEND_URL_DEV (개발 환경)
-  // 쉼표로 구분된 문자열을 배열로 변환
-  const allowedOrigins = [
-    process.env.FRONTEND_URL_PROD,
-    ...(process.env.FRONTEND_URL_DEV?.split(',') || []), // 개발 URL은 쉼표로 분리하여 배열로 추가
-  ].filter(Boolean); // 빈 문자열 제거
-  console.log('Backend CORS allowedOrigins:', allowedOrigins);
-
+  // 모든 API 경로에 '/api' 접두사 추가
+  app.setGlobalPrefix('api');
+  
+  // CORS 활성화
   app.enableCors({
-    origin: allowedOrigins, // <-- 배열로 변경
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: true,
     credentials: true,
   });
-
-  app.setGlobalPrefix('api');
 
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,

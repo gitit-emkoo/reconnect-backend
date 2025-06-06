@@ -2,13 +2,32 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { PrismaModule } from './prisma/prisma.module'; // PrismaModule 임포트
+import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users.module';
-import { EmotionCardsModule } from './emotion-cards/emotion-cards.module'; // EmotionCardsModule 임포트 추가
+import { EmotionCardsModule } from './emotion-cards/emotion-cards.module';
+import { CommunityModule } from './community/community.module';
+import { CoupleModule } from './couple/couple.module';
+import { ChallengeModule } from './challenge/challenge.module';
+import { EmotionCardModule } from './emotion-card/emotion-card.module';
+import { ReportModule } from './report/report.module';
+import { ContentModule } from './content/content.module';
+import { EmotionJournalModule } from './emotion-journal/emotion-journal.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, UsersModule, EmotionCardsModule], // EmotionCardsModule을 imports에 추가
+  imports: [
+    AuthModule,
+    PrismaModule,
+    UsersModule,
+    EmotionCardsModule,
+    CommunityModule,
+    CoupleModule,
+    ChallengeModule,
+    EmotionCardModule,
+    ReportModule,
+    ContentModule,
+    EmotionJournalModule,
+  ],
   controllers: [AppController],
-  providers: [AppService], // PrismaService는 이제 PrismaModule에서 제공됩니다.
+  providers: [AppService],
 })
 export class AppModule {}

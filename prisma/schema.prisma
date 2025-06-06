@@ -163,6 +163,12 @@ model Report {
 /// 3. 개인 및 커뮤니티 기능 관련 엔티티 (배우자와 공유하지 않는 기능)
 /// -----------------------------------------------------------
 
+model Category {
+  id    String @id @map("_id") @default(auto()) @db.ObjectId
+  name  String @unique
+  posts CommunityPost[]
+}
+
 model Content {
   id                      String    @id @map("_id") @default(auto()) @db.ObjectId
   title                   String
@@ -200,10 +206,14 @@ model EmotionJournal {
 model CommunityPost {
   id                      String    @id @map("_id") @default(auto()) @db.ObjectId
   title                   String
-  content                 String
-
+  content                 String    // @db.Text 제거
+  imageUrl                String?   // '챌린지인증'용 이미지 URL
+  
   authorId                String    @db.ObjectId
-  author                  User      @relation(fields: [authorId], references: [id])
+  author                  User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  categoryId              String    @db.ObjectId
+  category                Category  @relation(fields: [categoryId], references: [id])
 
   comments                Comment[] @relation("CommunityPostComments")
 
@@ -213,17 +223,17 @@ model CommunityPost {
 
 model Comment {
   id                      String    @id @map("_id") @default(auto()) @db.ObjectId
-  text                    String
+  content                 String    // 'text'에서 'content'로 필드명 변경
 
   authorId                String    @db.ObjectId
-  author                  User      @relation(fields: [authorId], references: [id])
+  author                  User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   // Comment가 속한 엔티티는 둘 중 하나만 존재해야 합니다.
   emotionJournalId        String?   @db.ObjectId
   emotionJournal          EmotionJournal? @relation("EmotionJournalComments", fields: [emotionJournalId], references: [id])
 
   communityPostId         String?   @db.ObjectId
-  communityPost           CommunityPost? @relation("CommunityPostComments", fields: [communityPostId], references: [id])
+  communityPost           CommunityPost? @relation("CommunityPostComments", fields: [communityPostId], references: [id], onDelete: Cascade)
 
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
