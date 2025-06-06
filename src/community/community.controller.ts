@@ -15,8 +15,8 @@ export class CommunityController {
 
   @UseGuards(JwtAuthGuard)
   @Post('posts')
-  createPost(@Body() createPostDto: CreatePostDto, @GetUser() user: User) {
-    return this.communityService.createPost(createPostDto, user.id);
+  createPost(@Body() createPostDto: CreatePostDto, @GetUser() user: any) {
+    return this.communityService.createPost(createPostDto, user.userId);
   }
 
   @Get('posts')
