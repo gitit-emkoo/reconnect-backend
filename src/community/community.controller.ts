@@ -35,4 +35,25 @@ export class CommunityController {
   async getPostById(@Param('id') id: string) {
     return this.communityService.getPostById(id);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('posts/:id/comments')
+  async createComment(
+    @Param('id') postId: string,
+    @Body('content') content: string,
+    @GetUser() user: any
+  ) {
+    return this.communityService.createComment(postId, content, user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('posts/:postId/comments/:parentId/replies')
+  async createReply(
+    @Param('postId') postId: string,
+    @Param('parentId') parentId: string,
+    @Body('content') content: string,
+    @GetUser() user: any
+  ) {
+    return this.communityService.createReply(postId, parentId, content, user.userId);
+  }
 }

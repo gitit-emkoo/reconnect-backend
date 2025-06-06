@@ -8,12 +8,13 @@ export class CommunityService {
   constructor(private prisma: PrismaService) {}
 
   async createPost(createPostDto: CreatePostDto, authorId: string) {
-    const { title, content, categoryId, imageUrl } = createPostDto;
+    const { title, content, categoryId, imageUrl, tags } = createPostDto;
     return this.prisma.communityPost.create({
       data: {
         title,
         content,
         imageUrl,
+        tags,
         author: { connect: { id: authorId } },
         category: { connect: { id: categoryId } },
       },
@@ -86,6 +87,10 @@ export class CommunityService {
   }
 
   async getPostById(id: string) {
+    await this.prisma.communityPost.update({
+      where: { id },
+      data: { viewCount: { increment: 1 } },
+    });
     return this.prisma.communityPost.findUnique({
       where: { id },
       include: {
@@ -95,6 +100,27 @@ export class CommunityService {
           include: { author: { select: { nickname: true } } }
         }
       }
+    });
+  }
+
+  async createComment(postId: string, content: string, authorId: string) {
+    return this.prisma.comment.create({
+      data: {
+        content,
+        author: { connect: { id: authorId } },
+        communityPost: { connect: { id: postId } }
+      }
+    });
+  }
+
+  async createReply(postId: string, parentId: string, content: string, authorId: string) {
+    return this.prisma.comment.create({
+      data: {
+        content,
+        author: { connect: { id: authorId } },
+        communityPost: { connect: { id: postId } },
+        parentId,
+      } as any
     });
   }
 }

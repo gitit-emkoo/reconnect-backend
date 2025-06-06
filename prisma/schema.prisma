@@ -215,6 +215,10 @@ model Comment {
   communityPostId         String?   @db.ObjectId
   communityPost           CommunityPost? @relation("CommunityPostComments", fields: [communityPostId], references: [id], onDelete: Cascade)
 
+  parentId                String?   @db.ObjectId
+  parent                  Comment?  @relation("CommentToParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies                 Comment[] @relation("CommentToParent")
+
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 }
