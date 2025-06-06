@@ -110,7 +110,7 @@ export class AuthService {
         }
       );
 
-      const { email, name, sub: socialId } = data;
+      const { email, name, sub: providerId } = data;
 
       // 2. 이메일로 기존 사용자 조회
       const existingUser = await this.prisma.user.findUnique({
@@ -132,7 +132,7 @@ export class AuthService {
           password: hashedPassword,
           nickname: name || email.split('@')[0],
           provider: 'GOOGLE',
-          socialId,
+          providerId,
         },
       });
 
@@ -162,14 +162,13 @@ export class AuthService {
         }
       );
 
-      const { email, sub: socialId } = data;
+      const { email, name, sub: providerId } = data;
 
       // 2. 이메일로 사용자 조회
       const user = await this.prisma.user.findFirst({
         where: { 
           email,
           provider: 'GOOGLE',
-          socialId,
         } as Prisma.UserWhereInput,
       });
 
@@ -220,9 +219,9 @@ export class AuthService {
         headers: { Authorization: `Bearer ${access_token}` },
       });
 
-      const { id: socialId, kakao_account } = userResponse.data;
+      const { id: providerId, kakao_account } = userResponse.data;
       const { email, profile } = kakao_account;
-      const nickname = profile?.nickname || email?.split('@')[0] || `User${socialId}`;
+      const nickname = profile?.nickname || email?.split('@')[0] || `User${providerId}`;
 
       // 3. 이미 가입된 사용자인지 확인
       const existingUser = await this.prisma.user.findFirst({
@@ -231,7 +230,7 @@ export class AuthService {
             { email },
             { 
               provider: 'KAKAO',
-              socialId: String(socialId)
+              providerId: String(providerId)
             }
           ]
         } as Prisma.UserWhereInput,
@@ -251,7 +250,7 @@ export class AuthService {
           password: hashedPassword,
           nickname,
           provider: 'KAKAO',
-          socialId: String(socialId),
+          providerId: String(providerId),
         },
       });
 
@@ -287,14 +286,14 @@ export class AuthService {
         headers: { Authorization: `Bearer ${access_token}` },
       });
 
-      const { id: socialId, kakao_account } = userResponse.data;
+      const { id: providerId, kakao_account } = userResponse.data;
       const { email } = kakao_account;
 
-      // 3. 사용자 찾기 (socialId로 먼저 찾고, 없으면 이메일로 찾기)
+      // 3. 사용자 찾기 (providerId로 먼저 찾고, 없으면 이메일로 찾기)
       const user = await this.prisma.user.findFirst({
         where: { 
           provider: 'KAKAO',
-          socialId: String(socialId)
+          providerId: String(providerId)
         } as Prisma.UserWhereInput,
       });
 

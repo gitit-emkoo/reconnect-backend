@@ -20,64 +20,46 @@ enum Provider {
 /// -----------------------------------------------------------
 
 model User {
-  id                      String    @id @map("_id") @default(auto()) @db.ObjectId
+  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
   email                   String    @unique
   password                String
-  nickname                String
-  provider                Provider  @default(EMAIL)
-  socialId                String?   // 소셜 로그인(카카오/구글)에서 제공하는 고유 ID (카카오의 id 또는 구글의 sub)
-  partnerId               String?   @db.ObjectId
-  partner                 User?     @relation("Partners", fields: [partnerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  partnerOf               User[]    @relation("Partners")
-  resetToken              String?   // 비밀번호 재설정 토큰
-  resetTokenExpiry        DateTime? // 토큰 만료 시간
-  initialSurveyResult     Int?
-  currentRelationshipScore Int?
-  fcmToken                String?
-
-  // User는 자신이 소속된 Couple을 직접 참조합니다.
-  // 이 필드는 Couple이 없을 때는 null이며, 한 User는 하나의 Couple에만 속할 수 있습니다.
-  coupleId                String?   @db.ObjectId // 한 유저는 오직 하나의 커플에 속할 수 있으므로 @unique를 붙였다가 재혼이나 솔로도 있으므로 삭제
-  couple                  Couple?   @relation("UserToCouple", fields: [coupleId], references: [id]) // 이 User가 속한 Couple (단방향)
-
-  // 이 사용자가 Couple의 member1 또는 member2로 참조될 수 있도록 역참조 필드를 추가합니다.
-  // 이 필드들은 실제 DB 컬럼을 생성하지 않으므로, onDelete/onUpdate를 명시하지 않습니다.
-  member1OfCouples        Couple[]  @relation("CoupleMember1") // 이 User가 member1인 Couple들
-  member2OfCouples        Couple[]  @relation("CoupleMember2") // 이 User가 member2인 Couple들
-
-
-  // 기존 관계 필드 (이 사용자가 보낸/받은 감정 카드 등)
-  sentEmotionCards        EmotionCard[] @relation("Sender")
-  receivedEmotionCards    EmotionCard[] @relation("Receiver")
-  relationshipSurveys     RelationshipSurvey[] @relation("SurveyRespondent")
-  emotionJournals         EmotionJournal[]
-  communityPosts          CommunityPost[]
-  comments                Comment[]
-
+  nickname                String    @unique
+  provider                String?
+  providerId              String?
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
+
+  // 관계 필드
+  coupleId                String?   @db.ObjectId
+  couple                  Couple?   @relation("UserToCouple", fields: [coupleId], references: [id])
+  
+  member1OfCouples        Couple[]  @relation("CoupleMember1")
+  member2OfCouples        Couple[]  @relation("CoupleMember2")
+
+  posts                   CommunityPost[]
+  comments                Comment[]
+  sentReports             Report[]  @relation("sentReports")
+  receivedReports         Report[]  @relation("receivedReports")
+  
+  emotionCardsSent        EmotionCard[] @relation("Sender")
+  emotionCardsReceived    EmotionCard[] @relation("Receiver")
+  
+  relationshipSurveys     RelationshipSurvey[] @relation("SurveyRespondent")
+  emotionJournals         EmotionJournal[]
 }
 
 model Couple {
-  id                      String    @id @map("_id") @default(auto()) @db.ObjectId
-  member1Id               String    @unique @db.ObjectId // 첫 번째 User의 ID (필수)
-  member2Id               String?   @unique @db.ObjectId // 두 번째 User의 ID (선택, 초대 수락 전까지 null)
+  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
+  member1Id               String    @unique @db.ObjectId
+  member2Id               String?   @unique @db.ObjectId
   invitationCode          String    @unique
-
   status                  CoupleStatus @default(PENDING)
-
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 
-  // 관계 필드 (이 Couple에 속한 멤버들)
-  // `fields`와 `references`는 관계를 정의하는 한쪽(외래 키를 가지는 쪽)에만 명시합니다.
-  // 여기서는 Couple 모델이 member1Id, member2Id를 가지고 User를 참조하므로 Couple에 정의합니다.
-  // `onDelete`와 `onUpdate`는 순환 참조 에러를 해결하기 위해 `NoAction`으로 설정합니다.
   member1                 User      @relation("CoupleMember1", fields: [member1Id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   member2                 User?     @relation("CoupleMember2", fields: [member2Id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  // User 모델의 `couple` 필드와의 관계 (단방향)
-  // 이 Couple에 속한 유저가 역참조로 연결됩니다.
+  
   usersInCouple           User[]    @relation("UserToCouple")
 
   challenges              Challenge[]
@@ -86,7 +68,6 @@ model Couple {
   reports                 Report[]
 }
 
-// Couple의 상태를 위한 Enum
 enum CoupleStatus {
   PENDING
   ACTIVE
@@ -98,7 +79,7 @@ enum CoupleStatus {
 /// -----------------------------------------------------------
 
 model Challenge {
-  id                      String    @id @map("_id") @default(auto()) @db.ObjectId
+  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
   title                   String
   description             String
   recommendationDate      DateTime
@@ -113,7 +94,7 @@ model Challenge {
 }
 
 model EmotionCard {
-  id                      String    @id @map("_id") @default(auto()) @db.ObjectId // <--- @db.db.ObjectId -> @db.ObjectId 수정됨!
+  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
   message                 String
   aiSuggestion            String?
   isRead                  Boolean   @default(false)
@@ -131,7 +112,7 @@ model EmotionCard {
 }
 
 model RelationshipSurvey {
-  id                      String    @id @map("_id") @default(auto()) @db.ObjectId
+  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
   score                   Int
   surveyDate              DateTime  @default(now())
 
@@ -145,7 +126,7 @@ model RelationshipSurvey {
 }
 
 model Report {
-  id                      String    @id @map("_id") @default(auto()) @db.ObjectId
+  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
   weekStartDate           DateTime
   overallScore            Int
   cardsSentCount          Int
@@ -157,6 +138,14 @@ model Report {
 
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
+
+  reporterId              String    @db.ObjectId
+  reporter                User      @relation("sentReports", fields: [reporterId], references: [id])
+
+  reportedId              String    @db.ObjectId
+  reported                User      @relation("receivedReports", fields: [reportedId], references: [id])
+
+  reason                  String
 }
 
 /// -----------------------------------------------------------
@@ -164,18 +153,17 @@ model Report {
 /// -----------------------------------------------------------
 
 model Category {
-  id    String @id @map("_id") @default(auto()) @db.ObjectId
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
   name  String @unique
   posts CommunityPost[]
 }
 
 model Content {
-  id                      String    @id @map("_id") @default(auto()) @db.ObjectId
+  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
   title                   String
   body                    String
   type                    ContentType @default(ARTICLE)
   isPremium               Boolean   @default(false)
-
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 }
@@ -187,48 +175,40 @@ enum ContentType {
   PREMIUM
 }
 
-
 model EmotionJournal {
-  id                      String    @id @map("_id") @default(auto()) @db.ObjectId
+  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
   title                   String?
   content                 String
   isAnonymous             Boolean   @default(false)
-
   authorId                String    @db.ObjectId
-  author                  User    @relation(fields: [authorId], references: [id])
-
+  author                  User      @relation(fields: [authorId], references: [id])
   comments                Comment[] @relation("EmotionJournalComments")
-
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 }
 
 model CommunityPost {
-  id                      String    @id @map("_id") @default(auto()) @db.ObjectId
+  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
   title                   String
-  content                 String    // @db.Text 제거
-  imageUrl                String?   // '챌린지인증'용 이미지 URL
-  
+  content                 String
+  imageUrl                String?
   authorId                String    @db.ObjectId
   author                  User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-
   categoryId              String    @db.ObjectId
   category                Category  @relation(fields: [categoryId], references: [id])
-
   comments                Comment[] @relation("CommunityPostComments")
-
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
+  viewCount               Int       @default(0)
+  tags                    String[]
 }
 
 model Comment {
-  id                      String    @id @map("_id") @default(auto()) @db.ObjectId
-  content                 String    // 'text'에서 'content'로 필드명 변경
-
+  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
+  content                 String
   authorId                String    @db.ObjectId
   author                  User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
-  // Comment가 속한 엔티티는 둘 중 하나만 존재해야 합니다.
   emotionJournalId        String?   @db.ObjectId
   emotionJournal          EmotionJournal? @relation("EmotionJournalComments", fields: [emotionJournalId], references: [id])
 

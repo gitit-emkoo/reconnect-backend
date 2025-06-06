@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CommunityService {
@@ -24,6 +25,49 @@ export class CommunityService {
       where: {
         categoryId: categoryId ? categoryId : undefined,
       },
+      include: {
+        author: {
+          select: {
+            nickname: true,
+          },
+        },
+        category: true,
+        _count: {
+          select: { comments: true },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  findAll(categoryId?: string, search?: string) {
+    const where: Prisma.CommunityPostWhereInput = {};
+
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+
+    if (search) {
+      where.OR = [
+        {
+          title: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          content: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+      ];
+    }
+
+    return this.prisma.communityPost.findMany({
+      where,
       include: {
         author: {
           select: {
