@@ -26,7 +26,15 @@ export class CommunityService {
       where: {
         categoryId: categoryId ? categoryId : undefined,
       },
-      include: {
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        tags: true,
+        createdAt: true,
         author: {
           select: {
             nickname: true,
@@ -36,9 +44,6 @@ export class CommunityService {
         _count: {
           select: { comments: true },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
       },
     });
   }
@@ -69,7 +74,15 @@ export class CommunityService {
 
     return this.prisma.communityPost.findMany({
       where,
-      include: {
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        tags: true,
+        createdAt: true,
         author: {
           select: {
             nickname: true,
@@ -79,9 +92,6 @@ export class CommunityService {
         _count: {
           select: { comments: true },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
       },
     });
   }
@@ -119,8 +129,25 @@ export class CommunityService {
         content,
         author: { connect: { id: authorId } },
         communityPost: { connect: { id: postId } },
-        parentId,
-      } as any
+        parent: { connect: { id: parentId } },
+      }
     });
+  }
+
+  async updatePost(postId: string, updateData: any, userId: string) {
+    const post = await this.prisma.communityPost.findUnique({ where: { id: postId } });
+    if (!post) throw new Error('게시글을 찾을 수 없습니다.');
+    if (post.authorId !== userId) throw new Error('본인 글만 수정할 수 있습니다.');
+    return this.prisma.communityPost.update({
+      where: { id: postId },
+      data: updateData,
+    });
+  }
+
+  async deletePost(postId: string, userId: string) {
+    const post = await this.prisma.communityPost.findUnique({ where: { id: postId } });
+    if (!post) throw new Error('게시글을 찾을 수 없습니다.');
+    if (post.authorId !== userId) throw new Error('본인 글만 삭제할 수 있습니다.');
+    return this.prisma.communityPost.delete({ where: { id: postId } });
   }
 }

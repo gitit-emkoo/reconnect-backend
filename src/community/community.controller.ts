@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Query, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Query, Param, Patch, Delete, ForbiddenException } from '@nestjs/common';
 import { CommunityService } from './community.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // 경로에 guards/ 없음
@@ -20,7 +20,10 @@ export class CommunityController {
   }
 
   @Get('posts')
-  getAllPosts(@Query('categoryId') categoryId?: string) {
+  getAllPosts(@Query('categoryId') categoryId?: string, @Query('search') search?: string) {
+    if (search) {
+      return this.communityService.findAll(categoryId, search);
+    }
     return this.communityService.getAllPosts(categoryId);
   }
 
@@ -55,5 +58,17 @@ export class CommunityController {
     @GetUser() user: any
   ) {
     return this.communityService.createReply(postId, parentId, content, user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('posts/:id')
+  async updatePost(@Param('id') id: string, @Body() updateData: any, @GetUser() user: any) {
+    return this.communityService.updatePost(id, updateData, user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('posts/:id')
+  async deletePost(@Param('id') id: string, @GetUser() user: any) {
+    return this.communityService.deletePost(id, user.userId);
   }
 }
