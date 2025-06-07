@@ -69,6 +69,11 @@ export class CommunityService {
             mode: 'insensitive',
           },
         },
+        {
+          tags: {
+            has: search,
+          },
+        },
       ];
     }
 
