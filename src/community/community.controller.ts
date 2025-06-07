@@ -20,11 +20,16 @@ export class CommunityController {
   }
 
   @Get('posts')
-  getAllPosts(@Query('categoryId') categoryId?: string, @Query('search') search?: string) {
+  getAllPosts(
+    @Query('categoryId') categoryId?: string,
+    @Query('search') search?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+  ) {
     if (search) {
-      return this.communityService.findAll(categoryId, search);
+      return this.communityService.findAll(categoryId, search, Number(page), Number(limit));
     }
-    return this.communityService.getAllPosts(categoryId);
+    return this.communityService.getAllPosts(categoryId, Number(page), Number(limit));
   }
 
   @Get('categories')

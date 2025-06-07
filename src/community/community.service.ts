@@ -21,34 +21,46 @@ export class CommunityService {
     });
   }
 
-  async getAllPosts(categoryId?: string) {
-    return this.prisma.communityPost.findMany({
-      where: {
-        categoryId: categoryId ? categoryId : undefined,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      select: {
-        id: true,
-        title: true,
-        content: true,
-        tags: true,
-        createdAt: true,
-        author: {
-          select: {
-            nickname: true,
+  async getAllPosts(categoryId?: string, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+    const [posts, total] = await Promise.all([
+      this.prisma.communityPost.findMany({
+        where: {
+          categoryId: categoryId ? categoryId : undefined,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        select: {
+          id: true,
+          title: true,
+          content: true,
+          tags: true,
+          createdAt: true,
+          author: {
+            select: {
+              nickname: true,
+            },
+          },
+          category: true,
+          _count: {
+            select: { comments: true },
           },
         },
-        category: true,
-        _count: {
-          select: { comments: true },
+        skip,
+        take: limit,
+      }),
+      this.prisma.communityPost.count({
+        where: {
+          categoryId: categoryId ? categoryId : undefined,
         },
-      },
-    });
+      }),
+    ]);
+    return { posts, total };
   }
 
-  findAll(categoryId?: string, search?: string) {
+  async findAll(categoryId?: string, search?: string, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
     const where: Prisma.CommunityPostWhereInput = {};
 
     if (categoryId) {
@@ -77,28 +89,34 @@ export class CommunityService {
       ];
     }
 
-    return this.prisma.communityPost.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      select: {
-        id: true,
-        title: true,
-        content: true,
-        tags: true,
-        createdAt: true,
-        author: {
-          select: {
-            nickname: true,
+    const [posts, total] = await Promise.all([
+      this.prisma.communityPost.findMany({
+        where,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        select: {
+          id: true,
+          title: true,
+          content: true,
+          tags: true,
+          createdAt: true,
+          author: {
+            select: {
+              nickname: true,
+            },
+          },
+          category: true,
+          _count: {
+            select: { comments: true },
           },
         },
-        category: true,
-        _count: {
-          select: { comments: true },
-        },
-      },
-    });
+        skip,
+        take: limit,
+      }),
+      this.prisma.communityPost.count({ where }),
+    ]);
+    return { posts, total };
   }
 
   async getPostById(id: string) {
