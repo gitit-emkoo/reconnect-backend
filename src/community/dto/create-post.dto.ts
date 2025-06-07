@@ -21,4 +21,10 @@ export class CreatePostDto {
   @IsArray()
   @IsString({ each: true })
   tags?: string[];
+
+  @IsOptional()
+  poll?: {
+    question: string;
+    options: string[];
+  };
 } 

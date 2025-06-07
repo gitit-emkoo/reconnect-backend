@@ -8,13 +8,14 @@ export class CommunityService {
   constructor(private prisma: PrismaService) {}
 
   async createPost(createPostDto: CreatePostDto, authorId: string) {
-    const { title, content, categoryId, imageUrl, tags } = createPostDto;
+    const { title, content, categoryId, imageUrl, tags, poll } = createPostDto;
     return this.prisma.communityPost.create({
       data: {
         title,
         content,
         imageUrl,
         tags,
+        poll,
         author: { connect: { id: authorId } },
         category: { connect: { id: categoryId } },
       },
@@ -37,6 +38,7 @@ export class CommunityService {
           content: true,
           tags: true,
           createdAt: true,
+          poll: true,
           author: {
             select: {
               nickname: true,
@@ -101,6 +103,7 @@ export class CommunityService {
           content: true,
           tags: true,
           createdAt: true,
+          poll: true,
           author: {
             select: {
               nickname: true,

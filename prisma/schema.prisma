@@ -201,6 +201,7 @@ model CommunityPost {
   updatedAt               DateTime  @updatedAt
   viewCount               Int       @default(0)
   tags                    String[]
+  poll                    Json?    // 찬반토론(투표) 데이터, question/options 등
 }
 
 model Comment {
