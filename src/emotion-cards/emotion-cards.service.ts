@@ -1,6 +1,7 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import axios from 'axios';
 import * as dotenv from 'dotenv';
+import { PrismaClient } from '@prisma/client';
 
 dotenv.config(); // .env 파일에서 환경 변수를 로드
 
@@ -10,6 +11,7 @@ export class EmotionCardsService {
   // gemini-pro 모델을 기본으로 사용합니다.
   private readonly geminiModelId = process.env.GEMINI_MODEL_ID || 'gemini-pro'; 
   private readonly geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModelId}:generateContent`;
+  private prisma = new PrismaClient();
 
   async refineText(originalText: string): Promise<string> {
     console.log(`[EmotionCardsService] Refining text: "${originalText}" using Gemini model ${this.geminiModelId}`);
@@ -95,5 +97,15 @@ export class EmotionCardsService {
       }
       throw new HttpException(errorMessage, HttpStatus.SERVICE_UNAVAILABLE);
     }
+  }
+
+  // 전체 감정카드 반환 (임시)
+  async getAllCards() {
+    console.log('[EmotionCardsService] getAllCards 호출');
+    const cards = await this.prisma.emotionCard.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    console.log('[EmotionCardsService] 반환 데이터:', cards);
+    return cards;
   }
 } 
