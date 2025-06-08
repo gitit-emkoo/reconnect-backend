@@ -44,4 +44,20 @@ export class EmotionCardsController {
       return res.status(500).json({ message: '감정카드 생성에 실패했습니다.' });
     }
   }
+
+  @Get('received')
+  async getReceivedCards(@Req() req: Request, @Res() res: Response) {
+    // 실제 서비스에서는 req.user.id 등에서 유저 id 추출 필요
+    // 임시로 쿼리 파라미터 userId 사용
+    const userId = req.query.userId as string;
+    if (!userId) {
+      return res.status(400).json({ message: 'userId 쿼리 파라미터가 필요합니다.' });
+    }
+    try {
+      const cards = await this.emotionCardsService.getReceivedCards(userId);
+      return res.status(200).json(cards);
+    } catch (error) {
+      return res.status(500).json({ message: '받은 감정카드 목록을 불러오지 못했습니다.' });
+    }
+  }
 } 

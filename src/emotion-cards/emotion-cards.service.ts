@@ -126,4 +126,11 @@ export class EmotionCardsService {
     console.log('[EmotionCardsService] 생성된 카드:', newCard);
     return newCard;
   }
+
+  async getReceivedCards(userId: string) {
+    return this.prisma.emotionCard.findMany({
+      where: { receiverId: userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 } 
