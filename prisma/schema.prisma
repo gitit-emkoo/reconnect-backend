@@ -224,3 +224,16 @@ model Comment {
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 }
+
+model CommunityPostVote {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId     String   @db.ObjectId
+  userId     String   @db.ObjectId
+  option     String   // 찬성/반대 등
+  createdAt  DateTime @default(now())
+
+  post       CommunityPost @relation(fields: [postId], references: [id])
+  user       User          @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId]) // 한 게시글에 한 번만 투표
+}
