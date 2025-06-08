@@ -31,4 +31,17 @@ export class EmotionCardsController {
       return res.status(500).json({ message: '감정카드 목록을 불러오지 못했습니다.' });
     }
   }
+
+  @Post()
+  async createEmotionCard(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+    console.log('[EmotionCardsController] POST /emotion-cards 요청:', body, req.headers);
+    try {
+      const newCard = await this.emotionCardsService.createCard(body);
+      console.log('[EmotionCardsController] 생성된 카드:', newCard);
+      return res.status(201).json(newCard);
+    } catch (error) {
+      console.error('[EmotionCardsController] 카드 생성 에러:', error);
+      return res.status(500).json({ message: '감정카드 생성에 실패했습니다.' });
+    }
+  }
 } 

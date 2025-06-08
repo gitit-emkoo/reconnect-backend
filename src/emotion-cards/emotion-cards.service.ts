@@ -108,4 +108,21 @@ export class EmotionCardsService {
     console.log('[EmotionCardsService] 반환 데이터:', cards);
     return cards;
   }
+
+  // 감정카드 생성 (임시: text만 저장, sender/receiver/couple 등은 null)
+  async createCard(body: any) {
+    console.log('[EmotionCardsService] createCard 호출:', body);
+    const newCard = await this.prisma.emotionCard.create({
+      data: {
+        message: body.text || '',
+        aiSuggestion: '',
+        isRead: false,
+        senderId: '000000000000000000000000', // 임시 ObjectId
+        receiverId: '000000000000000000000000', // 임시 ObjectId
+        coupleId: '000000000000000000000000', // 임시 ObjectId
+      },
+    });
+    console.log('[EmotionCardsService] 생성된 카드:', newCard);
+    return newCard;
+  }
 } 
