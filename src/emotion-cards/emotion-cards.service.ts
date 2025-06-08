@@ -117,6 +117,7 @@ export class EmotionCardsService {
         message: body.text || '',
         aiSuggestion: '',
         isRead: false,
+        emoji: body.emoji || '❤️',
         senderId: '000000000000000000000000', // 임시 ObjectId
         receiverId: '000000000000000000000000', // 임시 ObjectId
         coupleId: '000000000000000000000000', // 임시 ObjectId
