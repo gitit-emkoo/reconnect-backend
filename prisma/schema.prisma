@@ -46,6 +46,7 @@ model User {
   
   relationshipSurveys     RelationshipSurvey[] @relation("SurveyRespondent")
   emotionJournals         EmotionJournal[]
+  votes CommunityPostVote[]
 }
 
 model Couple {
@@ -203,6 +204,7 @@ model CommunityPost {
   viewCount               Int       @default(0)
   tags                    String[]
   poll                    Json?    // 찬반토론(투표) 데이터, question/options 등
+  votes CommunityPostVote[]
 }
 
 model Comment {
