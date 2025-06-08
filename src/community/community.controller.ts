@@ -76,4 +76,19 @@ export class CommunityController {
   async deletePost(@Param('id') id: string, @GetUser() user: any) {
     return this.communityService.deletePost(id, user.userId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('posts/:id/vote')
+  async voteOnPost(
+    @Param('id') postId: string,
+    @Body('option') option: string,
+    @GetUser() user: any
+  ) {
+    return this.communityService.voteOnPost(postId, user.userId, option);
+  }
+
+  @Get('posts/:id/poll')
+  async getPollResult(@Param('id') postId: string) {
+    return this.communityService.getPollResult(postId);
+  }
 }

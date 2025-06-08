@@ -176,4 +176,31 @@ export class CommunityService {
     if (post.authorId !== userId) throw new Error('본인 글만 삭제할 수 있습니다.');
     return this.prisma.communityPost.delete({ where: { id: postId } });
   }
+
+  async voteOnPost(postId: string, userId: string, option: string) {
+    const existing = await this.prisma.communityPostVote.findUnique({
+      where: { postId_userId: { postId, userId } },
+    });
+    if (existing) {
+      throw new Error('이미 투표하셨습니다.');
+    }
+    return this.prisma.communityPostVote.create({
+      data: {
+        postId,
+        userId,
+        option,
+      },
+    });
+  }
+
+  async getPollResult(postId: string) {
+    const votes = await this.prisma.communityPostVote.findMany({
+      where: { postId },
+    });
+    const result: Record<string, number> = {};
+    for (const vote of votes) {
+      result[vote.option] = (result[vote.option] || 0) + 1;
+    }
+    return result;
+  }
 }
