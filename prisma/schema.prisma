@@ -98,6 +98,7 @@ model EmotionCard {
   message                 String
   aiSuggestion            String?
   isRead                  Boolean   @default(false)
+  emoji                   String?
 
   senderId                String    @db.ObjectId
   sender                  User      @relation("Sender", fields: [senderId], references: [id])
