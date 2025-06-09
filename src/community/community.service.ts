@@ -13,6 +13,7 @@ export class CommunityService {
     // 카테고리 정보 조회
     const category = await this.prisma.category.findUnique({
       where: { id: categoryId },
+      select: { id: true, name: true, isPollCategory: true },
     });
 
     if (!category) {
