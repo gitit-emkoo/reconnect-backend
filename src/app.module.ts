@@ -7,14 +7,22 @@ import { UsersModule } from './users.module'; // <--- 이 경로가 올바른 �
 import { EmotionCardsModule } from './emotion-cards/emotion-cards.module';
 import { CommunityModule } from './community/community.module';
 import { APP_PIPE } from '@nestjs/core';
+import { UploadsModule } from './uploads/uploads.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '..', 'uploads'),
+      serveRoot: '/uploads',
+    }),
     AuthModule,
     PrismaModule,
     UsersModule,
     EmotionCardsModule,
     CommunityModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [
