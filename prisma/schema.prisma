@@ -155,9 +155,10 @@ model Report {
 /// -----------------------------------------------------------
 
 model Category {
-  id    String @id @default(auto()) @map("_id") @db.ObjectId
-  name  String @unique
-  posts CommunityPost[]
+  id            String @id @default(auto()) @map("_id") @db.ObjectId
+  name          String @unique
+  isPollCategory Boolean @default(false)  // 투표 카테고리 여부
+  posts         CommunityPost[]
 }
 
 model Content {

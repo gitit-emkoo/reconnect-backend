@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsUrl, IsArray } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsUrl, IsArray, ValidateIf, IsObject } from 'class-validator';
 
 export class CreatePostDto {
   @IsString()
@@ -22,9 +22,15 @@ export class CreatePostDto {
   @IsString({ each: true })
   tags?: string[];
 
-  @IsOptional()
+  @ValidateIf((o) => o.isPollCategory === true)
+  @IsObject()
+  @IsNotEmpty()
   poll?: {
     question: string;
     options: string[];
   };
+
+  // 프론트엔드에서 카테고리 타입을 전달하기 위한 필드
+  @IsOptional()
+  isPollCategory?: boolean;
 } 

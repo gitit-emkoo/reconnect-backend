@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { Prisma } from '@prisma/client';
@@ -8,7 +8,29 @@ export class CommunityService {
   constructor(private prisma: PrismaService) {}
 
   async createPost(createPostDto: CreatePostDto, authorId: string) {
-    const { title, content, categoryId, imageUrl, tags, poll } = createPostDto;
+    const { title, content, categoryId, imageUrl, tags, poll, isPollCategory } = createPostDto;
+
+    // 카테고리 정보 조회
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+    });
+
+    if (!category) {
+      throw new BadRequestException('존재하지 않는 카테고리입니다.');
+    }
+
+    // 투표 카테고리인 경우 poll 데이터 필수
+    if (category.isPollCategory) {
+      if (!poll || !poll.question || !poll.options || poll.options.length === 0) {
+        throw new BadRequestException('투표 카테고리에는 투표 질문과 옵션이 필요합니다.');
+      }
+    } else {
+      // 일반 카테고리인 경우 poll 데이터가 있으면 안 됨
+      if (poll) {
+        throw new BadRequestException('일반 카테고리에는 투표를 추가할 수 없습니다.');
+      }
+    }
+
     return this.prisma.communityPost.create({
       data: {
         title,
