@@ -46,25 +46,57 @@ model User {
   surveys              RelationshipSurvey[]
   reportsAsReporter    Report[] @relation("ReportsByReporter")
   reportsAsReported    Report[] @relation("ReportsOnReported")
+
+  // 파트너 초대 관련 관계 추가
+  sentInvites     PartnerInvite[] @relation("SentInvites")
+  receivedInvites PartnerInvite[] @relation("ReceivedInvites")
 }
 
 model Couple {
   id             String       @id @default(auto()) @map("_id") @db.ObjectId
-  invitationCode String       @unique
-  status         CoupleStatus @default(PENDING)
+  status         CoupleStatus @default(ACTIVE)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  members      User[]
-  challenges   Challenge[]
-  reports      Report[]
-  emotionCards EmotionCard[]
+  members        User[]
+  challenges     Challenge[]
+  reports        Report[]
+  emotionCards   EmotionCard[]
+  partnerInvite  PartnerInvite? // 파트너 초대 정보와 1:1 관계
+}
+
+model PartnerInvite {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  code        String         @unique // 초대 코드
+  status      InviteStatus   @default(PENDING)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  inviterId   String         @db.ObjectId
+  inviter     User           @relation("SentInvites", fields: [inviterId], references: [id])
+  
+  inviteeId   String?        @db.ObjectId // 초대 코드 입력 시점에 설정
+  invitee     User?          @relation("ReceivedInvites", fields: [inviteeId], references: [id])
+  
+  coupleId    String?        @unique @db.ObjectId // 초대 수락 시점에 생성된 커플 ID
+  couple      Couple?        @relation(fields: [coupleId], references: [id])
+
+  @@index([inviterId])
+  @@index([inviteeId])
 }
 
 enum CoupleStatus {
   PENDING
   ACTIVE
   INACTIVE
+}
+
+enum InviteStatus {
+  PENDING    // 초대 코드 생성됨
+  RESPONDED  // 초대 코드 입력됨
+  CONFIRMED  // 초대 수락됨
+  REJECTED   // 초대 거절됨
+  EXPIRED    // 초대 만료됨
 }
 
 /// -----------------------------------------------------------
