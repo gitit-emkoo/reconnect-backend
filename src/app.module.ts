@@ -10,6 +10,7 @@ import { APP_PIPE } from '@nestjs/core';
 import { UploadsModule } from './uploads/uploads.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { PartnerInvitesModule } from './partner-invites/partner-invites.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { join } from 'path';
     UsersModule,
     EmotionCardsModule,
     CommunityModule,
+    PartnerInvitesModule,
     UploadsModule,
   ],
   controllers: [AppController],
