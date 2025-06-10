@@ -17,7 +17,8 @@ async function bootstrap() {
   app.enableCors({
     origin: [ 
       'https://reconnect-ivory.vercel.app', // 🚨배포된 프론트엔드 주소 이거 절대 수정하면 안됨!!
-      'http://localhost:5173'                   // 🚨 로컬 개발용 프론트엔드 주소 이거 절대 수정하면 안됨!!
+      'http://localhost:5173',              // 🚨 로컬 개발용 프론트엔드 주소 이거 절대 수정하면 안됨!!
+      'http://localhost:5174',              // 🚨 로컬 개발용 프론트엔드 주소(2) 이거 절대 수정하면 안됨!!
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,

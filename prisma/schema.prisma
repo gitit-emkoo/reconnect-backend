@@ -20,53 +20,45 @@ enum Provider {
 /// -----------------------------------------------------------
 
 model User {
-  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
-  email                   String    @unique
-  password                String
-  nickname                String    @unique
-  provider                String?
-  providerId              String?
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  email                String    @unique
+  password             String
+  nickname             String    @unique
+  profileImageUrl      String?
+  provider             String? // 'EMAIL', 'GOOGLE', 'KAKAO'
+  providerId           String? // 소셜 로그인 제공자의 고유 ID
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  // 관계 필드
-  coupleId                String?   @db.ObjectId
-  couple                  Couple?   @relation("UserToCouple", fields: [coupleId], references: [id])
+  // 소속된 커플 정보
+  coupleId             String?   @db.ObjectId
+  couple               Couple?   @relation(fields: [coupleId], references: [id])
   
-  member1OfCouples        Couple[]  @relation("CoupleMember1")
-  member2OfCouples        Couple[]  @relation("CoupleMember2")
-
-  posts                   CommunityPost[]
-  comments                Comment[]
-  sentReports             Report[]  @relation("sentReports")
-  receivedReports         Report[]  @relation("receivedReports")
-  
-  emotionCardsSent        EmotionCard[] @relation("Sender")
-  emotionCardsReceived    EmotionCard[] @relation("Receiver")
-  
-  relationshipSurveys     RelationshipSurvey[] @relation("SurveyRespondent")
-  emotionJournals         EmotionJournal[]
-  votes CommunityPostVote[]
+  // 작성한 데이터
+  sentMessages         Message[] @relation("SentMessages")
+  receivedMessages     Message[] @relation("ReceivedMessages")
+  sentEmotionCards     EmotionCard[] @relation("SentEmotionCards")
+  receivedEmotionCards EmotionCard[] @relation("ReceivedEmotionCards")
+  posts                CommunityPost[]
+  comments             Comment[]
+  emotionJournals      EmotionJournal[]
+  votes                CommunityPostVote[]
+  surveys              RelationshipSurvey[]
+  reportsAsReporter    Report[] @relation("ReportsByReporter")
+  reportsAsReported    Report[] @relation("ReportsOnReported")
 }
 
 model Couple {
-  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
-  member1Id               String    @unique @db.ObjectId
-  member2Id               String?   @unique @db.ObjectId
-  invitationCode          String    @unique
-  status                  CoupleStatus @default(PENDING)
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  invitationCode String       @unique
+  status         CoupleStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  member1                 User      @relation("CoupleMember1", fields: [member1Id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  member2                 User?     @relation("CoupleMember2", fields: [member2Id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  
-  usersInCouple           User[]    @relation("UserToCouple")
-
-  challenges              Challenge[]
-  emotionCards            EmotionCard[]
-  relationshipSurveys     RelationshipSurvey[]
-  reports                 Report[]
+  members      User[]
+  challenges   Challenge[]
+  reports      Report[]
+  emotionCards EmotionCard[]
 }
 
 enum CoupleStatus {
@@ -76,99 +68,103 @@ enum CoupleStatus {
 }
 
 /// -----------------------------------------------------------
-/// 2. 공유 기능 관련 엔티티 (부부가 함께 보는 기능)
+/// 2. 공유 기능 관련 엔티티
 /// -----------------------------------------------------------
 
 model Challenge {
-  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
-  title                   String
-  description             String
-  recommendationDate      DateTime
-  isCompletedByMember1    Boolean   @default(false)
-  isCompletedByMember2    Boolean   @default(false)
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  title                String
+  description          String
+  recommendationDate   DateTime
+  isCompletedByMember1 Boolean  @default(false)
+  isCompletedByMember2 Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  coupleId                String    @db.ObjectId
-  couple                  Couple    @relation(fields: [coupleId], references: [id])
-
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  coupleId             String   @db.ObjectId
+  couple               Couple   @relation(fields: [coupleId], references: [id])
 }
 
 model EmotionCard {
-  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
-  message                 String
-  aiSuggestion            String?
-  isRead                  Boolean   @default(false)
-  emoji                   String?
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  message      String
+  aiSuggestion String?
+  isRead       Boolean  @default(false)
+  emoji        String?
+  createdAt    DateTime @default(now())
 
-  senderId                String    @db.ObjectId
-  sender                  User      @relation("Sender", fields: [senderId], references: [id])
+  senderId     String   @db.ObjectId
+  sender       User     @relation("SentEmotionCards", fields: [senderId], references: [id])
 
-  receiverId              String    @db.ObjectId
-  receiver                User      @relation("Receiver", fields: [receiverId], references: [id])
+  receiverId   String   @db.ObjectId
+  receiver     User     @relation("ReceivedEmotionCards", fields: [receiverId], references: [id])
 
-  coupleId                String    @db.ObjectId
-  couple                  Couple    @relation(fields: [coupleId], references: [id])
-
-  createdAt               DateTime  @default(now())
+  coupleId     String   @db.ObjectId
+  couple       Couple   @relation(fields: [coupleId], references: [id])
 }
 
 model RelationshipSurvey {
-  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
-  score                   Int
-  surveyDate              DateTime  @default(now())
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  score        Int
+  surveyDate   DateTime @default(now())
+  createdAt    DateTime @default(now())
 
-  respondentId            String    @db.ObjectId
-  respondent              User      @relation("SurveyRespondent", fields: [respondentId], references: [id])
-
-  coupleId                String    @db.ObjectId
-  couple                  Couple    @relation(fields: [coupleId], references: [id])
-
-  createdAt               DateTime  @default(now())
+  respondentId String   @db.ObjectId
+  respondent   User     @relation(fields: [respondentId], references: [id])
 }
 
 model Report {
-  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
-  weekStartDate           DateTime
-  overallScore            Int
-  cardsSentCount          Int
-  cardsReceivedCount      Int
+  id                       String   @id @default(auto()) @map("_id") @db.ObjectId
+  weekStartDate            DateTime
+  overallScore             Int
+  cardsSentCount           Int
   challengesCompletedCount Int
+  reason                   String
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 
-  coupleId                String    @db.ObjectId
-  couple                  Couple    @relation(fields: [coupleId], references: [id])
+  coupleId                 String   @db.ObjectId
+  couple                   Couple   @relation(fields: [coupleId], references: [id])
+  
+  reporterId               String   @db.ObjectId
+  reporter                 User     @relation("ReportsByReporter", fields: [reporterId], references: [id])
 
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  reportedId               String   @db.ObjectId
+  reported                 User     @relation("ReportsOnReported", fields: [reportedId], references: [id])
+}
 
-  reporterId              String    @db.ObjectId
-  reporter                User      @relation("sentReports", fields: [reporterId], references: [id])
+model Message {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
 
-  reportedId              String    @db.ObjectId
-  reported                User      @relation("receivedReports", fields: [reportedId], references: [id])
+  senderId   String   @db.ObjectId
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
 
-  reason                  String
+  receiverId String   @db.ObjectId
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
 }
 
 /// -----------------------------------------------------------
-/// 3. 개인 및 커뮤니티 기능 관련 엔티티 (배우자와 공유하지 않는 기능)
+/// 3. 개인 및 커뮤니티 기능 관련 엔티티
 /// -----------------------------------------------------------
 
 model Category {
-  id            String @id @default(auto()) @map("_id") @db.ObjectId
-  name          String @unique
-  isPollCategory Boolean @default(false)  // 투표 카테고리 여부
-  posts         CommunityPost[]
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  name           String          @unique
+  isPollCategory Boolean         @default(false)
+  posts          CommunityPost[]
 }
 
 model Content {
-  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
-  title                   String
-  body                    String
-  type                    ContentType @default(ARTICLE)
-  isPremium               Boolean   @default(false)
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  title     String
+  body      String
+  type      ContentType @default(ARTICLE)
+  isPremium Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 }
 
 enum ContentType {
@@ -179,64 +175,66 @@ enum ContentType {
 }
 
 model EmotionJournal {
-  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
-  title                   String?
-  content                 String
-  isAnonymous             Boolean   @default(false)
-  authorId                String    @db.ObjectId
-  author                  User      @relation(fields: [authorId], references: [id])
-  comments                Comment[] @relation("EmotionJournalComments")
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String?
+  content     String
+  isAnonymous Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  authorId    String    @db.ObjectId
+  author      User      @relation(fields: [authorId], references: [id])
+  comments    Comment[]
 }
 
 model CommunityPost {
-  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
-  title                   String
-  content                 String
-  imageUrl                String?
-  authorId                String    @db.ObjectId
-  author                  User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  categoryId              String    @db.ObjectId
-  category                Category  @relation(fields: [categoryId], references: [id])
-  comments                Comment[] @relation("CommunityPostComments")
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-  viewCount               Int       @default(0)
-  tags                    String[]
-  poll                    Json?    // 찬반토론(투표) 데이터, question/options 등
-  votes CommunityPostVote[]
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  title      String
+  content    String
+  imageUrl   String?
+  viewCount  Int       @default(0)
+  tags       String[]
+  poll       Json?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  authorId   String    @db.ObjectId
+  author     User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  categoryId String    @db.ObjectId
+  category   Category  @relation(fields: [categoryId], references: [id])
+  comments   Comment[]
+  votes      CommunityPostVote[]
 }
 
 model Comment {
-  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
-  content                 String
-  authorId                String    @db.ObjectId
-  author                  User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  emotionJournalId        String?   @db.ObjectId
-  emotionJournal          EmotionJournal? @relation("EmotionJournalComments", fields: [emotionJournalId], references: [id])
+  authorId  String   @db.ObjectId
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
-  communityPostId         String?   @db.ObjectId
-  communityPost           CommunityPost? @relation("CommunityPostComments", fields: [communityPostId], references: [id], onDelete: Cascade)
+  communityPostId    String?  @db.ObjectId
+  communityPost      CommunityPost? @relation(fields: [communityPostId], references: [id], onDelete: Cascade)
+  
+  journalId String?  @db.ObjectId
+  journal   EmotionJournal? @relation(fields: [journalId], references: [id])
 
-  parentId                String?   @db.ObjectId
-  parent                  Comment?  @relation("CommentToParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  replies                 Comment[] @relation("CommentToParent")
-
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  parentId  String?  @db.ObjectId
+  parent    Comment? @relation("CommentToParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies   Comment[] @relation("CommentToParent")
 }
 
 model CommunityPostVote {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  postId     String   @db.ObjectId
-  userId     String   @db.ObjectId
-  option     String   // 찬성/반대 등
-  createdAt  DateTime @default(now())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  option    String
+  createdAt DateTime @default(now())
 
-  post       CommunityPost @relation(fields: [postId], references: [id])
-  user       User          @relation(fields: [userId], references: [id])
+  postId    String   @db.ObjectId
+  post      CommunityPost @relation(fields: [postId], references: [id])
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
 
-  @@unique([postId, userId]) // 한 게시글에 한 번만 투표
+  @@unique([postId, userId])
 }
