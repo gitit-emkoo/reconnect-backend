@@ -83,20 +83,38 @@ export class PartnerInvitesService {
       throw new BadRequestException('이미 파트너와 연결되어 있습니다.');
     }
 
-    // 초대 상태 업데이트
-    const updatedInvite = await this.prisma.partnerInvite.update({
-      where: { id: invite.id },
-      data: {
-        inviteeId,
-        status: 'RESPONDED'
-      },
-      include: {
-        inviter: true,
-        invitee: true
-      }
+    // 트랜잭션으로 커플 생성 및 초대 상태 업데이트
+    const result = await this.prisma.$transaction(async (prisma) => {
+      // 새로운 커플 생성
+      const couple = await prisma.couple.create({
+        data: {
+          members: {
+            connect: [
+              { id: invite.inviterId },
+              { id: inviteeId }
+            ]
+          }
+        }
+      });
+
+      // 초대 상태 업데이트
+      const updatedInvite = await prisma.partnerInvite.update({
+        where: { id: invite.id },
+        data: {
+          inviteeId,
+          status: 'CONFIRMED',
+          coupleId: couple.id
+        },
+        include: {
+          inviter: true,
+          invitee: true
+        }
+      });
+
+      return { couple, invite: updatedInvite };
     });
 
-    return updatedInvite;
+    return result;
   }
 
   // 초대 수락
