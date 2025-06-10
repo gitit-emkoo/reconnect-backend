@@ -42,6 +42,8 @@ export class PartnerInvitesController {
     if (req.user) {
       console.log('[PartnerInvitesController] req.user.id:', req.user.id);
     }
-    return this.partnerInvitesService.getMyInvites(req.user.id);
+    const invites = await this.partnerInvitesService.getMyInvites(req.user.id);
+    console.log('[PartnerInvitesController] invites:', invites);
+    return invites;
   }
 } 
