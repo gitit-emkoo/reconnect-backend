@@ -62,7 +62,7 @@ model Couple {
   challenges     Challenge[]
   reports        Report[]
   emotionCards   EmotionCard[]
-  partnerInvite  PartnerInvite? // 파트너 초대 정보와 1:1 관계
+  partnerInvites PartnerInvite[] // 파트너 초대 정보와 1:N 관계
 }
 
 model PartnerInvite {
@@ -78,7 +78,7 @@ model PartnerInvite {
   inviteeId   String?        @db.ObjectId // 초대 코드 입력 시점에 설정
   invitee     User?          @relation("ReceivedInvites", fields: [inviteeId], references: [id])
   
-  coupleId    String?        @unique @db.ObjectId // 초대 수락 시점에 생성된 커플 ID
+  coupleId    String?        @db.ObjectId // 초대 수락 시점에 생성된 커플 ID
   couple      Couple?        @relation(fields: [coupleId], references: [id])
 
   @@index([inviterId])
