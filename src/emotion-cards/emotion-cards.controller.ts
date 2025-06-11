@@ -3,6 +3,7 @@ import { EmotionCardsService } from './emotion-cards.service';
 import { RefineTextDto } from './dto/refine-text.dto';
 import { RefinedTextResponseDto } from './dto/refined-text.response.dto';
 import { Request, Response } from 'express';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('emotion-cards')
 export class EmotionCardsController {
@@ -18,16 +19,18 @@ export class EmotionCardsController {
   }
 
   @Get()
-  async getEmotionCards(@Req() req: Request, @Res() res: Response) {
-    console.log('[EmotionCardsController] GET /emotion-cards 요청:', req.headers);
-    // TODO: 실제 서비스에서 사용자 인증 후, 해당 유저의 카드만 반환하도록 구현 필요
-    // 임시로 전체 카드 반환 예시 (EmotionCardsService에 getAllCards 메서드 필요)
+  @UseGuards(JwtAuthGuard)
+  async getEmotionCards(@Req() req: any, @Res() res: Response) {
+    // req.user에서 userId, partnerId 추출 (구조에 따라 조정)
+    const userId = req.user.userId;
+    const partnerId = req.user.partnerId || req.user.partner?.id;
+    if (!userId || !partnerId) {
+      return res.status(400).json({ message: 'userId와 partnerId가 필요합니다.' });
+    }
     try {
-      const cards = await this.emotionCardsService.getAllCards();
-      console.log('[EmotionCardsController] 응답 데이터:', cards);
+      const cards = await this.emotionCardsService.getFilteredCards(userId, partnerId);
       return res.status(200).json(cards);
     } catch (error) {
-      console.error('[EmotionCardsController] 에러:', error);
       return res.status(500).json({ message: '감정카드 목록을 불러오지 못했습니다.' });
     }
   }

@@ -133,4 +133,17 @@ export class EmotionCardsService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  // 내 카드 + 파트너가 나에게 보낸 카드만 반환
+  async getFilteredCards(userId: string, partnerId: string) {
+    return this.prisma.emotionCard.findMany({
+      where: {
+        OR: [
+          { senderId: userId },
+          { senderId: partnerId, receiverId: userId }
+        ]
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
 } 
