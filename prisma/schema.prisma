@@ -34,6 +34,11 @@ model User {
   coupleId             String?   @db.ObjectId
   couple               Couple?   @relation(fields: [coupleId], references: [id])
   
+  // 파트너 연결 (수정)
+  partnerId            String?   
+  partner              User?     @relation("UserPartner", fields: [partnerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  partnerOf            User[]    @relation("UserPartner")
+
   // 작성한 데이터
   sentMessages         Message[] @relation("SentMessages")
   receivedMessages     Message[] @relation("ReceivedMessages")
