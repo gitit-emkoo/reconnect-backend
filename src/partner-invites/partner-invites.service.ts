@@ -111,6 +111,16 @@ export class PartnerInvitesService {
         }
       });
 
+      // 서로의 partnerId 업데이트
+      await prisma.user.update({
+        where: { id: invite.inviterId },
+        data: { partnerId: inviteeId }
+      });
+      await prisma.user.update({
+        where: { id: inviteeId },
+        data: { partnerId: invite.inviterId }
+      });
+
       return { couple, invite: updatedInvite };
     });
 
