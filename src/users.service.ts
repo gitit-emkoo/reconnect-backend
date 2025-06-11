@@ -19,6 +19,11 @@ export class UsersService {
   async findUserById(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
+      include: {
+        partner: true,
+        partnerOf: true,
+        couple: true,
+      },
     });
     if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
     const { password, ...userWithoutPassword } = user;
