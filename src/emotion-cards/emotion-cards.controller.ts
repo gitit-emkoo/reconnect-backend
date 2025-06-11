@@ -24,7 +24,10 @@ export class EmotionCardsController {
     // req.user에서 userId, partnerId 추출 (구조에 따라 조정)
     const userId = req.user.userId;
     const partnerId = req.user.partnerId || req.user.partner?.id;
+    console.log('[EmotionCardsController][GET /emotion-cards] req.user:', req.user);
+    console.log('[EmotionCardsController][GET /emotion-cards] userId:', userId, 'partnerId:', partnerId);
     if (!userId || !partnerId) {
+      console.log('[EmotionCardsController][GET /emotion-cards] 400: userId와 partnerId가 필요합니다.');
       return res.status(400).json({ message: 'userId와 partnerId가 필요합니다.' });
     }
     try {
@@ -52,8 +55,10 @@ export class EmotionCardsController {
   async getReceivedCards(@Req() req: Request, @Res() res: Response) {
     // 실제 서비스에서는 req.user.id 등에서 유저 id 추출 필요
     // 임시로 쿼리 파라미터 userId 사용
+    console.log('[EmotionCardsController][GET /emotion-cards/received] req.query:', req.query);
     const userId = req.query.userId as string;
     if (!userId) {
+      console.log('[EmotionCardsController][GET /emotion-cards/received] 400: userId 쿼리 파라미터가 필요합니다.');
       return res.status(400).json({ message: 'userId 쿼리 파라미터가 필요합니다.' });
     }
     try {
