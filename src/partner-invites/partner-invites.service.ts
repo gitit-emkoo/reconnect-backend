@@ -83,7 +83,7 @@ export class PartnerInvitesService {
       throw new BadRequestException('이미 파트너와 연결되어 있습니다.');
     }
 
-    // 트랜잭션으로 커플 생성 및 초대 상태 업데이트
+    // 트랜잭션으로 커플 생성 및 초대 상태 업데이트 (바로 CONFIRMED)
     const result = await this.prisma.$transaction(async (prisma) => {
       // 새로운 커플 생성
       const couple = await prisma.couple.create({
@@ -97,7 +97,7 @@ export class PartnerInvitesService {
         }
       });
 
-      // 초대 상태 업데이트
+      // 초대 상태 업데이트 (바로 CONFIRMED)
       const updatedInvite = await prisma.partnerInvite.update({
         where: { id: invite.id },
         data: {
