@@ -81,10 +81,10 @@ export class CommunityController {
   @Post('posts/:id/vote')
   async voteOnPost(
     @Param('id') postId: string,
-    @Body('option') option: string,
+    @Body('choice') choice: string,
     @GetUser() user: any
   ) {
-    return this.communityService.voteOnPost(postId, user.userId, option);
+    return this.communityService.voteOnPost(postId, user.userId, choice);
   }
 
   @Get('posts/:id/poll')

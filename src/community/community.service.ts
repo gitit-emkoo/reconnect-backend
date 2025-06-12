@@ -200,7 +200,7 @@ export class CommunityService {
     return this.prisma.communityPost.delete({ where: { id: postId } });
   }
 
-  async voteOnPost(postId: string, userId: string, option: string) {
+  async voteOnPost(postId: string, userId: string, choice: number) {
     const existing = await this.prisma.communityPostVote.findUnique({
       where: { postId_userId: { postId, userId } },
     });
@@ -211,7 +211,7 @@ export class CommunityService {
       data: {
         postId,
         userId,
-        option,
+        option: String(choice),
       },
     });
   }
