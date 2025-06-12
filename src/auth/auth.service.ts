@@ -141,19 +141,17 @@ export class AuthService {
 
   /**
    * Google OAuth 토큰으로 로그인을 처리합니다.
-   * @param accessToken Google에서 받은 액세스 토큰
+   * @param googleAccessToken Google에서 받은 액세스 토큰
    */
-  async googleLogin(accessToken: string): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
+  async googleLogin(googleAccessToken: string): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
     try {
-      // 1. 구글 accessToken으로 userinfo 조회
       const { data } = await axios.get(
         'https://www.googleapis.com/oauth2/v2/userinfo',
         {
-          headers: { Authorization: `Bearer ${accessToken}` },
+          headers: { Authorization: `Bearer ${googleAccessToken}` },
         }
       );
       const { email, name, sub: providerId } = data;
-      // 2. DB에서 user 조회
       const user = await this.prisma.user.findFirst({
         where: { 
           email,
@@ -164,7 +162,6 @@ export class AuthService {
       if (!user) {
         throw new UnauthorizedException('가입되지 않은 사용자입니다. 회원가입을 진행해주세요.');
       }
-      // 3. JWT payload, accessToken 생성
       const payload = {
         userId: user.id,
         email: user.email,
@@ -172,11 +169,10 @@ export class AuthService {
         partnerId: user.partnerId ?? (user.partner?.id ?? null),
         couple: user.couple ? { id: user.couple.id } : null,
       };
-      const jwtAccessToken = this.jwtService.sign(payload);
-      // 4. 반환
+      const accessToken = this.jwtService.sign(payload);
       const { password: _, ...userWithoutPassword } = user;
       return {
-        accessToken: jwtAccessToken,
+        accessToken,
         user: userWithoutPassword,
       };
     } catch (error) {
