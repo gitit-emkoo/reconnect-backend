@@ -21,14 +21,16 @@ export class EmotionCardsController {
   @Get()
   @UseGuards(JwtAuthGuard)
   async getEmotionCards(@Req() req: any, @Res() res: Response) {
-    // req.user에서 userId, partnerId 추출 (구조에 따라 조정)
     const userId = req.user.userId;
     const partnerId = req.user.partnerId || req.user.partner?.id;
     console.log('[EmotionCardsController][GET /emotion-cards] req.user:', req.user);
     console.log('[EmotionCardsController][GET /emotion-cards] userId:', userId, 'partnerId:', partnerId);
     if (!userId || !partnerId) {
-      console.log('[EmotionCardsController][GET /emotion-cards] 400: userId와 partnerId가 필요합니다.');
-      return res.status(400).json({ message: 'userId와 partnerId가 필요합니다.' });
+      console.log('[EmotionCardsController][GET /emotion-cards] 403: 파트너 연결이 필요합니다.');
+      return res.status(403).json({ 
+        message: '파트너와 연결이 필요한 메뉴입니다. 파트너와 연결 후 재시도 바랍니다.',
+        code: 'PARTNER_REQUIRED'
+      });
     }
     try {
       const cards = await this.emotionCardsService.getFilteredCards(userId, partnerId);
