@@ -58,41 +58,32 @@ export class AuthService {
    * @returns JWT 액세스 토큰과 사용자 정보
    */
   async login(loginDto: LoginDto): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
-    const { email, password } = loginDto; // DTO에서 값 추출
-
-    // 1. 사용자 이메일로 조회
+    const { email, password } = loginDto;
+    // 1. 사용자 이메일로 조회 (partner, couple 포함)
     const user = await this.prisma.user.findUnique({
       where: { email },
+      include: { partner: true, couple: true },
     });
-
     if (!user) {
-      // 보안을 위해 "이메일 또는 비밀번호가 올바르지 않습니다."와 같은 일반적인 메시지를 사용
-      throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.'); // HTTP 401 Unauthorized
+      throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
     }
-
-    // 2. 비밀번호 일치 여부 확인 (해싱된 비밀번호 비교)
     const isPasswordValid = await bcrypt.compare(password, user.password);
-
     if (!isPasswordValid) {
       throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
     }
-
-    // 3. 로그인 성공 시 JWT 발급
-    // 페이로드(payload)는 JWT에 담을 사용자 정보입니다.
-    // 민감한 정보(예: 비밀번호, coupleId 등)는 담지 않습니다.
-    const payload = { userId: user.id, email: user.email, nickname: user.nickname };
-    const accessToken = await this.jwtService.sign(payload); // JWT 생성 (JwtModule 설정에 따라 서명됨)
-
-    // 로그인 성공 정보 콘솔 출력
-    console.log(`[로그인 성공] 이메일: ${user.email}, 닉네임: ${user.nickname}`);
-
-    // 민감 정보 제외하고 사용자 정보 반환
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // partnerId, couple 정보 포함
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      nickname: user.nickname,
+      partnerId: user.partnerId || (user.partner && user.partner.id),
+      couple: user.couple ? { id: user.couple.id } : null,
+    };
+    const accessToken = await this.jwtService.sign(payload);
     const { password: userPassword, ...result } = user;
-
     return {
-      accessToken, // 발급된 JWT 토큰
-      user: result // 비밀번호 제외된 사용자 정보
+      accessToken,
+      user: result
     };
   }
 
@@ -154,43 +145,39 @@ export class AuthService {
    */
   async googleLogin(accessToken: string): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
     try {
-      // 1. Google API를 통해 사용자 정보 조회
       const { data } = await axios.get(
         'https://www.googleapis.com/oauth2/v2/userinfo',
         {
           headers: { Authorization: `Bearer ${accessToken}` },
         }
       );
-
       const { email, name, sub: providerId } = data;
-
-      // 2. 이메일로 사용자 조회
       const user = await this.prisma.user.findFirst({
         where: { 
           email,
           provider: 'GOOGLE',
         } as Prisma.UserWhereInput,
+        include: { partner: true, couple: true },
       });
-
-      // 3. 가입되지 않은 사용자인 경우
       if (!user) {
         throw new UnauthorizedException('가입되지 않은 사용자입니다. 회원가입을 진행해주세요.');
       }
-
-      // 4. JWT 토큰 생성
-      const payload = { userId: user.id, email: user.email, nickname: user.nickname };
+      const payload = {
+        userId: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        partnerId: user.partnerId || (user.partner && user.partner.id),
+        couple: user.couple ? { id: user.couple.id } : null,
+      };
       const jwtToken = await this.jwtService.sign(payload);
-
-      // 5. 비밀번호 제외하고 사용자 정보 반환
       const { password: _, ...userWithoutPassword } = user;
-
       return {
         accessToken: jwtToken,
         user: userWithoutPassword,
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {
-        throw error; // 원래 메시지 그대로 전달
+        throw error;
       }
       console.error('Google login error:', error);
       throw new UnauthorizedException('구글 로그인에 실패했습니다.');
@@ -268,7 +255,6 @@ export class AuthService {
 
   async kakaoLogin(code: string): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
     try {
-      // 1. 카카오 토큰 받기
       const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
         params: {
           grant_type: 'authorization_code',
@@ -278,35 +264,31 @@ export class AuthService {
           redirect_uri: process.env.KAKAO_REDIRECT_URI,
         },
       });
-
       const { access_token } = tokenResponse.data;
-
-      // 2. 사용자 정보 받기
       const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
         headers: { Authorization: `Bearer ${access_token}` },
       });
-
       const { id: providerId, kakao_account } = userResponse.data;
       const { email } = kakao_account;
-
-      // 3. 사용자 찾기 (providerId로 먼저 찾고, 없으면 이메일로 찾기)
       const user = await this.prisma.user.findFirst({
         where: { 
           provider: 'KAKAO',
           providerId: String(providerId)
         } as Prisma.UserWhereInput,
+        include: { partner: true, couple: true },
       });
-
       if (!user) {
         throw new UnauthorizedException('가입되지 않은 사용자입니다. 회원가입을 진행해주세요.');
       }
-
-      // 4. JWT 토큰 생성
-      const payload = { userId: user.id, email: user.email, nickname: user.nickname };
+      const payload = {
+        userId: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        partnerId: user.partnerId || (user.partner && user.partner.id),
+        couple: user.couple ? { id: user.couple.id } : null,
+      };
       const jwtToken = await this.jwtService.sign(payload);
-
       const { password: _, ...userWithoutPassword } = user;
-
       return {
         accessToken: jwtToken,
         user: userWithoutPassword,

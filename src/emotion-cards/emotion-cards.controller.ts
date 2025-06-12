@@ -39,10 +39,18 @@ export class EmotionCardsController {
   }
 
   @Post()
-  async createEmotionCard(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+  @UseGuards(JwtAuthGuard)
+  async createEmotionCard(@Body() body: any, @Req() req: any, @Res() res: Response) {
     console.log('[EmotionCardsController] POST /emotion-cards 요청:', body, req.headers);
+    const senderId = req.user.userId;
+    const receiverId = req.user.partnerId || req.user.partner?.id;
+    const coupleId = req.user.couple?.id;
+    if (!senderId || !receiverId || !coupleId) {
+      console.log('[EmotionCardsController] 400: senderId, receiverId, coupleId가 필요합니다.');
+      return res.status(400).json({ message: 'senderId, receiverId, coupleId가 필요합니다.' });
+    }
     try {
-      const newCard = await this.emotionCardsService.createCard(body);
+      const newCard = await this.emotionCardsService.createCard({ ...body, senderId, receiverId, coupleId });
       console.log('[EmotionCardsController] 생성된 카드:', newCard);
       return res.status(201).json(newCard);
     } catch (error) {
@@ -52,20 +60,22 @@ export class EmotionCardsController {
   }
 
   @Get('received')
-  async getReceivedCards(@Req() req: Request, @Res() res: Response) {
-    // 실제 서비스에서는 req.user.id 등에서 유저 id 추출 필요
-    // 임시로 쿼리 파라미터 userId 사용
-    console.log('[EmotionCardsController][GET /emotion-cards/received] req.query:', req.query);
-    const userId = req.query.userId as string;
+  @UseGuards(JwtAuthGuard)
+  async getReceivedCards(@Req() req: any, @Res() res: Response) {
+    const userId = req.user.userId;
     if (!userId) {
-      console.log('[EmotionCardsController][GET /emotion-cards/received] 400: userId 쿼리 파라미터가 필요합니다.');
-      return res.status(400).json({ message: 'userId 쿼리 파라미터가 필요합니다.' });
+      console.log('[EmotionCardsController][GET /emotion-cards/received] 400: userId가 필요합니다.');
+      return res.status(400).json({ message: 'userId가 필요합니다.' });
     }
     try {
       const cards = await this.emotionCardsService.getReceivedCards(userId);
       return res.status(200).json(cards);
     } catch (error) {
-      return res.status(500).json({ message: '받은 감정카드 목록을 불러오지 못했습니다.' });
+      console.error('[EmotionCardsController][GET /emotion-cards/received] 에러:', error);
+      return res.status(500).json({ 
+        message: '받은 감정카드 목록을 불러오지 못했습니다.',
+        error: error.message 
+      });
     }
   }
 } 
