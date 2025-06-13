@@ -201,6 +201,7 @@ export class CommunityService {
   }
 
   async voteOnPost(postId: string, userId: string, choice: number) {
+    console.log('voteOnPost', { postId, userId, choice });
     const existing = await this.prisma.communityPostVote.findUnique({
       where: { postId_userId: { postId, userId } },
     });

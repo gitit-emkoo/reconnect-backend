@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // 경로에 guards/ 없�
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { VoteDto } from './dto/vote.dto';
 
 @Controller('community')
 export class CommunityController {
@@ -81,10 +82,10 @@ export class CommunityController {
   @Post('posts/:id/vote')
   async voteOnPost(
     @Param('id') postId: string,
-    @Body('choice') choice: string,
+    @Body() voteDto: VoteDto,
     @GetUser() user: any
   ) {
-    return this.communityService.voteOnPost(postId, user.userId, choice);
+    return this.communityService.voteOnPost(postId, user.userId, voteDto.choice);
   }
 
   @Get('posts/:id/poll')
