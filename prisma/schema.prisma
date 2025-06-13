@@ -51,6 +51,7 @@ model User {
   surveys              RelationshipSurvey[]
   reportsAsReporter    Report[] @relation("ReportsByReporter")
   reportsAsReported    Report[] @relation("ReportsOnReported")
+  diaries              Diary[] // 감정일기 1:N 관계 추가
 
   // 파트너 초대 관련 관계 추가
   sentInvites     PartnerInvite[] @relation("SentInvites")
@@ -274,4 +275,18 @@ model CommunityPostVote {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([postId, userId])
+}
+
+model Diary {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  date        String
+  emotion     Json
+  triggers    Json
+  comment     String
+  palette     Json
+  randomInfo  Json
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
