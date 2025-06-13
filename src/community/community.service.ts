@@ -157,7 +157,8 @@ export class CommunityService {
         category: true,
         comments: {
           include: { author: { select: { nickname: true } } }
-        }
+        },
+        votes: true
       }
     });
   }
@@ -206,15 +207,31 @@ export class CommunityService {
       where: { postId_userId: { postId, userId } },
     });
     if (existing) {
-      throw new Error('이미 투표하셨습니다.');
+      if (existing.option === String(choice)) {
+        // 같은 선택지를 또 누르면 투표 취소(삭제)
+        await this.prisma.communityPostVote.delete({
+          where: { postId_userId: { postId, userId } },
+        });
+        return { cancelled: true };
+      } else {
+        // 다른 선택지를 누르면 투표 변경(업데이트)
+        await this.prisma.communityPostVote.update({
+          where: { postId_userId: { postId, userId } },
+          data: { option: String(choice) },
+        });
+        return { changed: true };
+      }
+    } else {
+      // 처음 투표
+      await this.prisma.communityPostVote.create({
+        data: {
+          postId,
+          userId,
+          option: String(choice),
+        },
+      });
+      return { created: true };
     }
-    return this.prisma.communityPostVote.create({
-      data: {
-        postId,
-        userId,
-        option: String(choice),
-      },
-    });
   }
 
   async getPollResult(postId: string) {
