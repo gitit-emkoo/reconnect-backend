@@ -11,6 +11,7 @@ import { UploadsModule } from './uploads/uploads.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { PartnerInvitesModule } from './partner-invites/partner-invites.module';
+import { DiaryModule } from './diary/diary.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { PartnerInvitesModule } from './partner-invites/partner-invites.module';
     CommunityModule,
     PartnerInvitesModule,
     UploadsModule,
+    DiaryModule,
   ],
   controllers: [AppController],
   providers: [
