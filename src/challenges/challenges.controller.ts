@@ -18,6 +18,7 @@ export class ChallengesController {
   // 현재 진행중인 챌린지 조회
   @Get('active')
   async getActiveChallenge(@GetUser() user: any) {
+    console.log('[ChallengeController][getActiveChallenge]', { userId: user.id, partnerId: user.partnerId, coupleId: user.coupleId });
     if (!user.coupleId) {
       throw new BadRequestException('연결된 파트너가 없습니다.');
     }
@@ -30,6 +31,7 @@ export class ChallengesController {
     @Param('challengeId') challengeId: string,
     @GetUser() user: any,
   ) {
+    console.log('[ChallengeController][startChallenge]', { userId: user.id, partnerId: user.partnerId, coupleId: user.coupleId });
     if (!user.coupleId) {
       throw new BadRequestException('연결된 파트너가 없습니다.');
     }
@@ -42,6 +44,7 @@ export class ChallengesController {
     @Param('challengeId') challengeId: string,
     @GetUser() user: any,
   ) {
+    console.log('[ChallengeController][completeChallenge]', { userId: user.id, partnerId: user.partnerId, coupleId: user.coupleId });
     if (!user.coupleId) {
       throw new BadRequestException('연결된 파트너가 없습니다.');
     }
@@ -51,6 +54,7 @@ export class ChallengesController {
   // 챌린지 히스토리 조회
   @Get('history')
   async getChallengeHistory(@GetUser() user: any) {
+    console.log('[ChallengeController][getChallengeHistory]', { userId: user.id, partnerId: user.partnerId, coupleId: user.coupleId });
     if (!user.coupleId) {
       throw new BadRequestException('연결된 파트너가 없습니다.');
     }
