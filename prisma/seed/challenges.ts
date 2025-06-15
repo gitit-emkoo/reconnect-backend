@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 const challengeTemplates = [
   // 일상 공유
-  { title: '오늘의 기분 물어주기', description: '주 3회', category: ChallengeCategory.DAILY_SHARE, isOneTime: false, frequency: 3, points: 10 },
+  { title: '오늘의 기분 물어봐 주기', description: '주 3회', category: ChallengeCategory.DAILY_SHARE, isOneTime: false, frequency: 3, points: 10 },
   { title: '서로의 하루를 3줄로 요약해서 공유하기', description: '주 3회', category: ChallengeCategory.DAILY_SHARE, isOneTime: false, frequency: 3, points: 10 },
   { title: '오늘 점심 메뉴 인증샷 보내기', description: '주 3회', category: ChallengeCategory.DAILY_SHARE, isOneTime: false, frequency: 3, points: 10 },
   { title: '스타일 추천해주고 그대로 입어주기', description: '1회', category: ChallengeCategory.DAILY_SHARE, isOneTime: true, frequency: 1, points: 10 },
