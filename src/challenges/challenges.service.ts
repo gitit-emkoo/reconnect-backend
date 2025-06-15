@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateChallengeDto, ChallengeCategory } from './dto/create-challenge.dto';
+import { CreateChallengeDto } from './dto/create-challenge.dto';
+import { ChallengeCategory } from '@prisma/client';
 
 export enum ChallengeStatus {
   IN_PROGRESS = 'IN_PROGRESS',

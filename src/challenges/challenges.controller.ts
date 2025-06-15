@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Param, UseGuards, BadRequestException } fr
 import { ChallengesService } from './challenges.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { ChallengeCategory } from './dto/create-challenge.dto';
+import { ChallengeCategory } from '@prisma/client';
 
 @Controller('challenges')
 @UseGuards(JwtAuthGuard)
