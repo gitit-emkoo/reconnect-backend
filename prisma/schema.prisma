@@ -109,18 +109,47 @@ enum InviteStatus {
 /// 2. 공유 기능 관련 엔티티
 /// -----------------------------------------------------------
 
+enum ChallengeCategory {
+  DAILY_SHARE    // 일상 공유
+  TOGETHER_ACT   // 함께하기
+  EMOTION_EXPR   // 감정표현
+  MEMORY_BUILD   // 기억쌓기
+  SELF_CARE      // 마음 돌보기
+  GROW_TOGETHER  // 함께성장
+}
+
+enum ChallengeStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
 model Challenge {
-  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
-  title                String
-  description          String
-  recommendationDate   DateTime
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  category    ChallengeCategory
+  frequency   Int      // 주 몇회 수행해야 하는지 (예: 주3회 = 3)
+  isOneTime   Boolean  // 1회성 챌린지인지 여부
+  points      Int      // 달성 시 얻는 점수
+  startDate   DateTime
+  endDate     DateTime
+  status      ChallengeStatus @default(IN_PROGRESS)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 챌린지 진행 상태
   isCompletedByMember1 Boolean  @default(false)
   isCompletedByMember2 Boolean  @default(false)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  completedAt          DateTime?
 
-  coupleId             String   @db.ObjectId
-  couple               Couple   @relation(fields: [coupleId], references: [id])
+  // 관계
+  coupleId    String   @db.ObjectId
+  couple      Couple   @relation(fields: [coupleId], references: [id])
+
+  @@index([coupleId])
+  @@index([status])
+  @@index([category])
 }
 
 model EmotionCard {
