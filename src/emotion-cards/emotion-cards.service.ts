@@ -117,16 +117,37 @@ export class EmotionCardsService {
     return newCard;
   }
 
+  // 한국 시간으로 변환하는 유틸리티 함수
+  private toKST(date: Date): Date {
+    return new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  }
+
+  // 한국 시간 기준 오늘인지 확인하는 함수
+  private isTodayKST(date: Date): boolean {
+    const now = this.toKST(new Date());
+    const target = this.toKST(date);
+    return (
+      now.getFullYear() === target.getFullYear() &&
+      now.getMonth() === target.getMonth() &&
+      now.getDate() === target.getDate()
+    );
+  }
+
   async getReceivedCards(userId: string) {
-    return this.prisma.emotionCard.findMany({
+    const cards = await this.prisma.emotionCard.findMany({
       where: { receiverId: userId },
       orderBy: { createdAt: 'desc' },
     });
+
+    return cards.map(card => ({
+      ...card,
+      isNew: this.isTodayKST(card.createdAt)
+    }));
   }
 
   // 내 카드 + 파트너가 나에게 보낸 카드만 반환
   async getFilteredCards(userId: string, partnerId: string) {
-    return this.prisma.emotionCard.findMany({
+    const cards = await this.prisma.emotionCard.findMany({
       where: {
         OR: [
           { senderId: userId },
@@ -135,5 +156,10 @@ export class EmotionCardsService {
       },
       orderBy: { createdAt: 'desc' }
     });
+
+    return cards.map(card => ({
+      ...card,
+      isNew: this.isTodayKST(card.createdAt)
+    }));
   }
 } 
