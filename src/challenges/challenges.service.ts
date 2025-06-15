@@ -20,6 +20,14 @@ export class ChallengesService {
     });
   }
 
+  // 챌린지 템플릿 카테고리별 목록 조회
+  async getChallengeTemplatesByCategory(category: ChallengeCategory) {
+    return this.prisma.challengeTemplate.findMany({
+      where: { category },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   // 현재 진행중인 챌린지 조회
   async getActiveChallenge(coupleId: string) {
     return this.prisma.challenge.findFirst({

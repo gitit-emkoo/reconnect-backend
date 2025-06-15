@@ -60,4 +60,10 @@ export class ChallengesController {
     }
     return this.challengesService.getChallengeHistory(user.couple.id);
   }
+
+  // 챌린지 템플릿 카테고리별 목록 조회
+  @Get('template/category/:category')
+  async getChallengeTemplatesByCategory(@Param('category') category: ChallengeCategory) {
+    return this.challengesService.getChallengeTemplatesByCategory(category);
+  }
 } 
