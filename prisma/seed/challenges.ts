@@ -1,5 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-import { ChallengeCategory } from '@prisma/client';
+import { PrismaClient, ChallengeCategory } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -58,12 +57,12 @@ async function main() {
 
   try {
     // 기존 챌린지 템플릿 삭제
-    await prisma.challenge.deleteMany({});
+    await prisma.challengeTemplate.deleteMany({});
     console.log('기존 챌린지 템플릿 삭제 완료');
 
     // 새로운 챌린지 템플릿 생성
     for (const template of challengeTemplates) {
-      await prisma.challenge.create({ data: { ...template, startDate: new Date(), endDate: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000), coupleId: '000000000000000000000000' } });
+      await prisma.challengeTemplate.create({ data: template });
     }
 
     console.log('✅ 챌린지 템플릿 데이터 생성 완료!');

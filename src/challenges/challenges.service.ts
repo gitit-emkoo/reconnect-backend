@@ -12,16 +12,11 @@ export enum ChallengeStatus {
 export class ChallengesService {
   constructor(private prisma: PrismaService) {}
 
-  // 카테고리별 챌린지 목록 조회
+  // 카테고리별 챌린지 템플릿 조회
   async getChallengesByCategory(category: ChallengeCategory) {
-    return this.prisma.challenge.findMany({
-      where: {
-        category,
-        status: ChallengeStatus.IN_PROGRESS,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+    return this.prisma.challengeTemplate.findMany({
+      where: { category },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -39,25 +34,24 @@ export class ChallengesService {
   }
 
   // 챌린지 시작
-  async startChallenge(coupleId: string, challengeId: string) {
+  async startChallenge(coupleId: string, templateId: string) {
     // 이미 진행중인 챌린지가 있는지 확인
     const activeChallenge = await this.getActiveChallenge(coupleId);
     if (activeChallenge) {
       throw new BadRequestException('이미 진행중인 챌린지가 있습니다.');
     }
 
-    // 챌린지 시작
+    // 챌린지 템플릿 조회
+    const template = await this.prisma.challengeTemplate.findUnique({
+      where: { id: templateId },
+    });
+    if (!template) {
+      throw new NotFoundException('챌린지 템플릿을 찾을 수 없습니다.');
+    }
+
     const startDate = new Date();
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 7); // 1주일 후
-
-    const templateChallenge = await this.prisma.challenge.findUnique({
-      where: { id: challengeId },
-    });
-
-    if (!templateChallenge) {
-      throw new NotFoundException('챌린지 템플릿을 찾을 수 없습니다.');
-    }
 
     return this.prisma.challenge.create({
       data: {
@@ -65,12 +59,12 @@ export class ChallengesService {
         startDate,
         endDate,
         status: ChallengeStatus.IN_PROGRESS,
-        title: templateChallenge.title,
-        description: templateChallenge.description,
-        category: templateChallenge.category,
-        frequency: templateChallenge.frequency,
-        isOneTime: templateChallenge.isOneTime,
-        points: templateChallenge.points,
+        title: template.title,
+        description: template.description,
+        category: template.category,
+        frequency: template.frequency,
+        isOneTime: template.isOneTime,
+        points: template.points,
       },
     });
   }
