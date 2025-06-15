@@ -124,6 +124,20 @@ enum ChallengeStatus {
   FAILED
 }
 
+model ChallengeTemplate {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  category    ChallengeCategory
+  frequency   Int      // 주 몇회 수행해야 하는지 (예: 주3회 = 3)
+  isOneTime   Boolean  // 1회성 챌린지인지 여부
+  points      Int      // 달성 시 얻는 점수
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+}
+
 model Challenge {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   title       String
