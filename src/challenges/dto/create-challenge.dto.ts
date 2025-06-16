@@ -1,9 +1,35 @@
-import { ChallengeCategory } from '@prisma/client';
+import { IsString, IsNotEmpty, IsOptional, IsInt, IsBoolean, IsDateString } from 'class-validator';
 
 export class CreateChallengeDto {
+  @IsString()
+  @IsNotEmpty()
   title: string;
+
+  @IsString()
+  @IsNotEmpty()
   description: string;
-  category: ChallengeCategory;
-  duration: number; // 챌린지 기간 (일)
-  points: number; // 완료 시 획득 포인트
+
+  @IsString()
+  @IsNotEmpty()
+  category: string;
+
+  @IsInt()
+  @IsNotEmpty()
+  frequency: number;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  isOneTime: boolean;
+
+  @IsInt()
+  @IsOptional()
+  points?: number;
+
+  @IsDateString()
+  @IsOptional()
+  startDate?: string;
+
+  @IsDateString()
+  @IsOptional()
+  endDate?: string;
 } 

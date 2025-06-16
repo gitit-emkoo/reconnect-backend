@@ -17,7 +17,6 @@ exports.ChallengesModule = ChallengesModule = __decorate([
     (0, common_1.Module)({
         controllers: [challenges_controller_1.ChallengesController],
         providers: [challenges_service_1.ChallengesService],
-        exports: [challenges_service_1.ChallengesService],
     })
 ], ChallengesModule);
 //# sourceMappingURL=challenges.module.js.map
