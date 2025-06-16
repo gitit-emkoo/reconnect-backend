@@ -7,6 +7,7 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "ES2020",
+    "rootDir": "src",
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
@@ -14,5 +15,7 @@
     "skipLibCheck": true,
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true
-  }
+  },
+  "exclude": ["node_modules", "dist"],
+  "include": ["src/**/*"]
 }
