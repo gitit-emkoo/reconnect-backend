@@ -44,10 +44,11 @@ export class EmotionCardsController {
   @Post()
   @UseGuards(JwtAuthGuard)
   async createEmotionCard(@Body() body: any, @Req() req: any, @Res() res: Response) {
-    console.log('[EmotionCardsController] POST /emotion-cards 요청:', body, req.headers);
+    console.log('[EmotionCardsController][POST /emotion-cards] req.user:', req.user);
     const senderId = req.user.userId;
     const receiverId = getPartnerId(req.user);
     const coupleId = req.user.couple?.id;
+    console.log('[EmotionCardsController][POST /emotion-cards] senderId:', senderId, 'receiverId:', receiverId, 'coupleId:', coupleId);
     if (!senderId || !receiverId || !coupleId) {
       console.log('[EmotionCardsController] 400: senderId, receiverId, coupleId가 필요합니다.');
       return res.status(400).json({ message: 'senderId, receiverId, coupleId가 필요합니다.' });
@@ -65,7 +66,9 @@ export class EmotionCardsController {
   @Get('received')
   @UseGuards(JwtAuthGuard)
   async getReceivedCards(@Req() req: any, @Res() res: Response) {
+    console.log('[EmotionCardsController][GET /emotion-cards/received] req.user:', req.user);
     const userId = req.user.userId;
+    console.log('[EmotionCardsController][GET /emotion-cards/received] userId:', userId);
     if (!userId) {
       console.log('[EmotionCardsController][GET /emotion-cards/received] 400: userId가 필요합니다.');
       return res.status(400).json({ message: 'userId가 필요합니다.' });
