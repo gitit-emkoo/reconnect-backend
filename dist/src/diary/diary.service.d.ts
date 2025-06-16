@@ -8,8 +8,8 @@ export declare class DiaryService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         comment: string;
+        userId: string;
         date: string;
         emotion: import("@prisma/client/runtime/library").JsonValue;
         triggers: import("@prisma/client/runtime/library").JsonValue;
@@ -20,8 +20,8 @@ export declare class DiaryService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         comment: string;
+        userId: string;
         date: string;
         emotion: import("@prisma/client/runtime/library").JsonValue;
         triggers: import("@prisma/client/runtime/library").JsonValue;
@@ -32,8 +32,8 @@ export declare class DiaryService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         comment: string;
+        userId: string;
         date: string;
         emotion: import("@prisma/client/runtime/library").JsonValue;
         triggers: import("@prisma/client/runtime/library").JsonValue;
@@ -44,8 +44,8 @@ export declare class DiaryService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         comment: string;
+        userId: string;
         date: string;
         emotion: import("@prisma/client/runtime/library").JsonValue;
         triggers: import("@prisma/client/runtime/library").JsonValue;
@@ -56,8 +56,8 @@ export declare class DiaryService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         comment: string;
+        userId: string;
         date: string;
         emotion: import("@prisma/client/runtime/library").JsonValue;
         triggers: import("@prisma/client/runtime/library").JsonValue;

@@ -4,10 +4,10 @@ export declare class PartnerInvitesService {
     constructor(prisma: PrismaService);
     createInviteCode(userId: string): Promise<{
         id: string;
-        status: import(".prisma/client").$Enums.InviteStatus;
         createdAt: Date;
         updatedAt: Date;
         coupleId: string | null;
+        status: import(".prisma/client").$Enums.InviteStatus;
         code: string;
         inviterId: string;
         inviteeId: string | null;
@@ -15,43 +15,43 @@ export declare class PartnerInvitesService {
     respondToInvite(code: string, inviteeId: string): Promise<{
         couple: {
             id: string;
-            status: import(".prisma/client").$Enums.CoupleStatus;
             createdAt: Date;
             updatedAt: Date;
+            status: import(".prisma/client").$Enums.CoupleStatus;
         };
         invite: {
             inviter: {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                coupleId: string | null;
                 email: string;
                 password: string;
                 nickname: string;
                 profileImageUrl: string | null;
                 provider: string | null;
                 providerId: string | null;
+                coupleId: string | null;
                 partnerId: string | null;
             };
             invitee: {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                coupleId: string | null;
                 email: string;
                 password: string;
                 nickname: string;
                 profileImageUrl: string | null;
                 provider: string | null;
                 providerId: string | null;
+                coupleId: string | null;
                 partnerId: string | null;
             } | null;
         } & {
             id: string;
-            status: import(".prisma/client").$Enums.InviteStatus;
             createdAt: Date;
             updatedAt: Date;
             coupleId: string | null;
+            status: import(".prisma/client").$Enums.InviteStatus;
             code: string;
             inviterId: string;
             inviteeId: string | null;
@@ -60,16 +60,16 @@ export declare class PartnerInvitesService {
     acceptInvite(inviteId: string, inviterId: string): Promise<{
         couple: {
             id: string;
-            status: import(".prisma/client").$Enums.CoupleStatus;
             createdAt: Date;
             updatedAt: Date;
+            status: import(".prisma/client").$Enums.CoupleStatus;
         };
         invite: {
             id: string;
-            status: import(".prisma/client").$Enums.InviteStatus;
             createdAt: Date;
             updatedAt: Date;
             coupleId: string | null;
+            status: import(".prisma/client").$Enums.InviteStatus;
             code: string;
             inviterId: string;
             inviteeId: string | null;
@@ -77,10 +77,10 @@ export declare class PartnerInvitesService {
     }>;
     rejectInvite(inviteId: string, inviterId: string): Promise<{
         id: string;
-        status: import(".prisma/client").$Enums.InviteStatus;
         createdAt: Date;
         updatedAt: Date;
         coupleId: string | null;
+        status: import(".prisma/client").$Enums.InviteStatus;
         code: string;
         inviterId: string;
         inviteeId: string | null;
@@ -98,10 +98,10 @@ export declare class PartnerInvitesService {
         } | null;
     } & {
         id: string;
-        status: import(".prisma/client").$Enums.InviteStatus;
         createdAt: Date;
         updatedAt: Date;
         coupleId: string | null;
+        status: import(".prisma/client").$Enums.InviteStatus;
         code: string;
         inviterId: string;
         inviteeId: string | null;

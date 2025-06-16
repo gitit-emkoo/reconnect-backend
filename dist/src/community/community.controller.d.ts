@@ -12,12 +12,12 @@ export declare class CommunityController {
         createdAt: Date;
         updatedAt: Date;
         content: string;
+        categoryId: string;
         imageUrl: string | null;
-        viewCount: number;
         tags: string[];
         poll: import("@prisma/client/runtime/library").JsonValue | null;
+        viewCount: number;
         authorId: string;
-        categoryId: string;
     }>;
     getAllPosts(categoryId?: string, search?: string, page?: number, limit?: number): Promise<{
         posts: {
@@ -29,10 +29,10 @@ export declare class CommunityController {
                 isPollCategory: boolean;
             };
             createdAt: Date;
+            content: string;
             _count: {
                 comments: number;
             };
-            content: string;
             tags: string[];
             poll: import("@prisma/client/runtime/library").JsonValue;
             author: {
@@ -81,12 +81,12 @@ export declare class CommunityController {
         createdAt: Date;
         updatedAt: Date;
         content: string;
+        categoryId: string;
         imageUrl: string | null;
-        viewCount: number;
         tags: string[];
         poll: import("@prisma/client/runtime/library").JsonValue | null;
+        viewCount: number;
         authorId: string;
-        categoryId: string;
     }) | null>;
     createComment(postId: string, content: string, user: any): Promise<{
         id: string;
@@ -114,12 +114,12 @@ export declare class CommunityController {
         createdAt: Date;
         updatedAt: Date;
         content: string;
+        categoryId: string;
         imageUrl: string | null;
-        viewCount: number;
         tags: string[];
         poll: import("@prisma/client/runtime/library").JsonValue | null;
+        viewCount: number;
         authorId: string;
-        categoryId: string;
     }>;
     deletePost(id: string, user: any): Promise<{
         id: string;
@@ -127,12 +127,12 @@ export declare class CommunityController {
         createdAt: Date;
         updatedAt: Date;
         content: string;
+        categoryId: string;
         imageUrl: string | null;
-        viewCount: number;
         tags: string[];
         poll: import("@prisma/client/runtime/library").JsonValue | null;
+        viewCount: number;
         authorId: string;
-        categoryId: string;
     }>;
     voteOnPost(postId: string, voteDto: VoteDto, user: any): Promise<{
         cancelled: boolean;

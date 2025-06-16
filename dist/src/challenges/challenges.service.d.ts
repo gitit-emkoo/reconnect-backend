@@ -40,13 +40,13 @@ export declare class ChallengesService {
         points: number;
         createdAt: Date;
         updatedAt: Date;
+        coupleId: string;
+        status: import(".prisma/client").$Enums.ChallengeStatus;
         startDate: Date;
         endDate: Date;
-        status: import(".prisma/client").$Enums.ChallengeStatus;
         isCompletedByMember1: boolean;
         isCompletedByMember2: boolean;
         completedAt: Date | null;
-        coupleId: string;
     } | null>;
     startChallenge(coupleId: string, templateId: string): Promise<{
         id: string;
@@ -58,13 +58,13 @@ export declare class ChallengesService {
         points: number;
         createdAt: Date;
         updatedAt: Date;
+        coupleId: string;
+        status: import(".prisma/client").$Enums.ChallengeStatus;
         startDate: Date;
         endDate: Date;
-        status: import(".prisma/client").$Enums.ChallengeStatus;
         isCompletedByMember1: boolean;
         isCompletedByMember2: boolean;
         completedAt: Date | null;
-        coupleId: string;
     }>;
     completeChallenge(challengeId: string, userId: string): Promise<{
         id: string;
@@ -76,13 +76,13 @@ export declare class ChallengesService {
         points: number;
         createdAt: Date;
         updatedAt: Date;
+        coupleId: string;
+        status: import(".prisma/client").$Enums.ChallengeStatus;
         startDate: Date;
         endDate: Date;
-        status: import(".prisma/client").$Enums.ChallengeStatus;
         isCompletedByMember1: boolean;
         isCompletedByMember2: boolean;
         completedAt: Date | null;
-        coupleId: string;
     }>;
     getChallengeHistory(coupleId: string): Promise<{
         completed: {
@@ -95,13 +95,13 @@ export declare class ChallengesService {
             points: number;
             createdAt: Date;
             updatedAt: Date;
+            coupleId: string;
+            status: import(".prisma/client").$Enums.ChallengeStatus;
             startDate: Date;
             endDate: Date;
-            status: import(".prisma/client").$Enums.ChallengeStatus;
             isCompletedByMember1: boolean;
             isCompletedByMember2: boolean;
             completedAt: Date | null;
-            coupleId: string;
         }[];
         failed: {
             id: string;
@@ -113,13 +113,13 @@ export declare class ChallengesService {
             points: number;
             createdAt: Date;
             updatedAt: Date;
+            coupleId: string;
+            status: import(".prisma/client").$Enums.ChallengeStatus;
             startDate: Date;
             endDate: Date;
-            status: import(".prisma/client").$Enums.ChallengeStatus;
             isCompletedByMember1: boolean;
             isCompletedByMember2: boolean;
             completedAt: Date | null;
-            coupleId: string;
         }[];
     }>;
     processExpiredChallenges(): Promise<void>;

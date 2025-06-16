@@ -10,12 +10,12 @@ export declare class CommunityService {
         createdAt: Date;
         updatedAt: Date;
         content: string;
+        categoryId: string;
         imageUrl: string | null;
-        viewCount: number;
         tags: string[];
         poll: Prisma.JsonValue | null;
+        viewCount: number;
         authorId: string;
-        categoryId: string;
     }>;
     getAllPosts(categoryId?: string, page?: number, limit?: number): Promise<{
         posts: {
@@ -27,10 +27,10 @@ export declare class CommunityService {
                 isPollCategory: boolean;
             };
             createdAt: Date;
+            content: string;
             _count: {
                 comments: number;
             };
-            content: string;
             tags: string[];
             poll: Prisma.JsonValue;
             author: {
@@ -49,10 +49,10 @@ export declare class CommunityService {
                 isPollCategory: boolean;
             };
             createdAt: Date;
+            content: string;
             _count: {
                 comments: number;
             };
-            content: string;
             tags: string[];
             poll: Prisma.JsonValue;
             author: {
@@ -97,12 +97,12 @@ export declare class CommunityService {
         createdAt: Date;
         updatedAt: Date;
         content: string;
+        categoryId: string;
         imageUrl: string | null;
-        viewCount: number;
         tags: string[];
         poll: Prisma.JsonValue | null;
+        viewCount: number;
         authorId: string;
-        categoryId: string;
     }) | null>;
     createComment(postId: string, content: string, authorId: string): Promise<{
         id: string;
@@ -130,12 +130,12 @@ export declare class CommunityService {
         createdAt: Date;
         updatedAt: Date;
         content: string;
+        categoryId: string;
         imageUrl: string | null;
-        viewCount: number;
         tags: string[];
         poll: Prisma.JsonValue | null;
+        viewCount: number;
         authorId: string;
-        categoryId: string;
     }>;
     deletePost(postId: string, userId: string): Promise<{
         id: string;
@@ -143,12 +143,12 @@ export declare class CommunityService {
         createdAt: Date;
         updatedAt: Date;
         content: string;
+        categoryId: string;
         imageUrl: string | null;
-        viewCount: number;
         tags: string[];
         poll: Prisma.JsonValue | null;
+        viewCount: number;
         authorId: string;
-        categoryId: string;
     }>;
     voteOnPost(postId: string, userId: string, choice: number): Promise<{
         cancelled: boolean;

@@ -6,50 +6,50 @@ export declare class EmotionCardsService {
     refineText(originalText: string): Promise<string>;
     getAllCards(): Promise<{
         id: string;
+        createdAt: Date;
         message: string;
+        coupleId: string;
         aiSuggestion: string | null;
         isRead: boolean;
         emoji: string | null;
-        createdAt: Date;
         senderId: string;
         receiverId: string;
-        coupleId: string;
     }[]>;
     createCard(body: any): Promise<{
         id: string;
+        createdAt: Date;
         message: string;
+        coupleId: string;
         aiSuggestion: string | null;
         isRead: boolean;
         emoji: string | null;
-        createdAt: Date;
         senderId: string;
         receiverId: string;
-        coupleId: string;
     }>;
     private toKST;
     private isTodayKST;
     getReceivedCards(userId: string): Promise<{
         isNew: boolean;
         id: string;
+        createdAt: Date;
         message: string;
+        coupleId: string;
         aiSuggestion: string | null;
         isRead: boolean;
         emoji: string | null;
-        createdAt: Date;
         senderId: string;
         receiverId: string;
-        coupleId: string;
     }[]>;
     getFilteredCards(userId: string, partnerId: string): Promise<{
         isNew: boolean;
         id: string;
+        createdAt: Date;
         message: string;
+        coupleId: string;
         aiSuggestion: string | null;
         isRead: boolean;
         emoji: string | null;
-        createdAt: Date;
         senderId: string;
         receiverId: string;
-        coupleId: string;
     }[]>;
 }
