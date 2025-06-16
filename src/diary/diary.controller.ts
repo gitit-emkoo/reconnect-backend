@@ -7,7 +7,9 @@ import { Request, Response } from 'express';
 
 @Controller('diaries')
 export class DiaryController {
-  constructor(private readonly diaryService: DiaryService) {}
+  constructor(private readonly diaryService: DiaryService) {
+    console.log('DiaryController loaded!');
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard)

@@ -7,4 +7,8 @@ import { PrismaService } from '../prisma/prisma.service';
   controllers: [DiaryController],
   providers: [DiaryService, PrismaService],
 })
-export class DiaryModule {} 
+export class DiaryModule {
+  constructor() {
+    console.log('DiaryModule loaded!');
+  }
+} 

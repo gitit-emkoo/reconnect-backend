@@ -21,6 +21,7 @@ const serve_static_1 = require("@nestjs/serve-static");
 const path_1 = require("path");
 const partner_invites_module_1 = require("./partner-invites/partner-invites.module");
 const diary_module_1 = require("./diary/diary.module");
+console.log('DiaryModule:', diary_module_1.DiaryModule);
 const challenges_module_1 = require("./challenges/challenges.module");
 let AppModule = class AppModule {
 };

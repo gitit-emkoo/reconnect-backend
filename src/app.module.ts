@@ -12,6 +12,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { PartnerInvitesModule } from './partner-invites/partner-invites.module';
 import { DiaryModule } from './diary/diary.module';
+console.log('DiaryModule:', DiaryModule);
 import { ChallengesModule } from './challenges/challenges.module';
 
 @Module({

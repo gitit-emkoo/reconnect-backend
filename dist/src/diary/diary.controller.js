@@ -21,6 +21,7 @@ const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 let DiaryController = class DiaryController {
     constructor(diaryService) {
         this.diaryService = diaryService;
+        console.log('DiaryController loaded!');
     }
     async create(createDiaryDto, req, res) {
         const { userId } = req.user;
