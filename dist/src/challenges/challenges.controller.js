@@ -18,6 +18,7 @@ const challenges_service_1 = require("./challenges.service");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const get_user_decorator_1 = require("../auth/decorators/get-user.decorator");
 const client_1 = require("@prisma/client");
+const getPartnerId_1 = require("../utils/getPartnerId");
 let ChallengesController = class ChallengesController {
     constructor(challengesService) {
         this.challengesService = challengesService;
@@ -26,28 +27,32 @@ let ChallengesController = class ChallengesController {
         return this.challengesService.getChallengesByCategory(category);
     }
     async getActiveChallenge(user) {
-        console.log('[ChallengeController][getActiveChallenge]', { userId: user.userId, partnerId: user.partnerId, coupleId: user.couple?.id });
+        const partnerId = (0, getPartnerId_1.getPartnerId)(user);
+        console.log('[ChallengeController][getActiveChallenge]', { userId: user.userId, partnerId, coupleId: user.couple?.id });
         if (!user.couple || !user.couple.id) {
             throw new common_1.BadRequestException('연결된 파트너가 없습니다.');
         }
         return this.challengesService.getActiveChallenge(user.couple.id);
     }
     async startChallenge(challengeId, user) {
-        console.log('[ChallengeController][startChallenge]', { userId: user.userId, partnerId: user.partnerId, coupleId: user.couple?.id });
+        const partnerId = (0, getPartnerId_1.getPartnerId)(user);
+        console.log('[ChallengeController][startChallenge]', { userId: user.userId, partnerId, coupleId: user.couple?.id });
         if (!user.couple || !user.couple.id) {
             throw new common_1.BadRequestException('연결된 파트너가 없습니다.');
         }
         return this.challengesService.startChallenge(user.couple.id, challengeId);
     }
     async completeChallenge(challengeId, user) {
-        console.log('[ChallengeController][completeChallenge]', { userId: user.userId, partnerId: user.partnerId, coupleId: user.couple?.id });
+        const partnerId = (0, getPartnerId_1.getPartnerId)(user);
+        console.log('[ChallengeController][completeChallenge]', { userId: user.userId, partnerId, coupleId: user.couple?.id });
         if (!user.couple || !user.couple.id) {
             throw new common_1.BadRequestException('연결된 파트너가 없습니다.');
         }
         return this.challengesService.completeChallenge(challengeId, user.userId);
     }
     async getChallengeHistory(user) {
-        console.log('[ChallengeController][getChallengeHistory]', { userId: user.userId, partnerId: user.partnerId, coupleId: user.couple?.id });
+        const partnerId = (0, getPartnerId_1.getPartnerId)(user);
+        console.log('[ChallengeController][getChallengeHistory]', { userId: user.userId, partnerId, coupleId: user.couple?.id });
         if (!user.couple || !user.couple.id) {
             throw new common_1.BadRequestException('연결된 파트너가 없습니다.');
         }

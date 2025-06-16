@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const emotion_cards_service_1 = require("./emotion-cards.service");
 const refine_text_dto_1 = require("./dto/refine-text.dto");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const getPartnerId_1 = require("../utils/getPartnerId");
 let EmotionCardsController = class EmotionCardsController {
     constructor(emotionCardsService) {
         this.emotionCardsService = emotionCardsService;
@@ -27,7 +28,7 @@ let EmotionCardsController = class EmotionCardsController {
     }
     async getEmotionCards(req, res) {
         const userId = req.user.userId;
-        const partnerId = req.user.partnerId || req.user.partner?.id;
+        const partnerId = (0, getPartnerId_1.getPartnerId)(req.user);
         console.log('[EmotionCardsController][GET /emotion-cards] req.user:', req.user);
         console.log('[EmotionCardsController][GET /emotion-cards] userId:', userId, 'partnerId:', partnerId);
         if (!userId || !partnerId) {
@@ -46,10 +47,11 @@ let EmotionCardsController = class EmotionCardsController {
         }
     }
     async createEmotionCard(body, req, res) {
-        console.log('[EmotionCardsController] POST /emotion-cards 요청:', body, req.headers);
+        console.log('[EmotionCardsController][POST /emotion-cards] req.user:', req.user);
         const senderId = req.user.userId;
-        const receiverId = req.user.partnerId || req.user.partner?.id;
+        const receiverId = (0, getPartnerId_1.getPartnerId)(req.user);
         const coupleId = req.user.couple?.id;
+        console.log('[EmotionCardsController][POST /emotion-cards] senderId:', senderId, 'receiverId:', receiverId, 'coupleId:', coupleId);
         if (!senderId || !receiverId || !coupleId) {
             console.log('[EmotionCardsController] 400: senderId, receiverId, coupleId가 필요합니다.');
             return res.status(400).json({ message: 'senderId, receiverId, coupleId가 필요합니다.' });
@@ -65,7 +67,9 @@ let EmotionCardsController = class EmotionCardsController {
         }
     }
     async getReceivedCards(req, res) {
+        console.log('[EmotionCardsController][GET /emotion-cards/received] req.user:', req.user);
         const userId = req.user.userId;
+        console.log('[EmotionCardsController][GET /emotion-cards/received] userId:', userId);
         if (!userId) {
             console.log('[EmotionCardsController][GET /emotion-cards/received] 400: userId가 필요합니다.');
             return res.status(400).json({ message: 'userId가 필요합니다.' });

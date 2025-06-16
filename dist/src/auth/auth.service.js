@@ -53,11 +53,21 @@ let AuthService = class AuthService {
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
         }
+        let partnerId = null;
+        if (user.partnerId) {
+            partnerId = user.partnerId;
+        }
+        else if (user.partner && typeof user.partner === 'object' && user.partner.id) {
+            partnerId = user.partner.id;
+        }
+        else if (typeof user.partner === 'string') {
+            partnerId = user.partner;
+        }
         const payload = {
             userId: user.id,
             email: user.email,
             nickname: user.nickname,
-            partnerId: user.partnerId ?? (user.partner?.id ?? null),
+            partnerId: partnerId ?? null,
             couple: user.couple ? { id: user.couple.id } : null,
         };
         const accessToken = this.jwtService.sign(payload);
@@ -118,11 +128,21 @@ let AuthService = class AuthService {
             if (!user) {
                 throw new common_1.UnauthorizedException('가입되지 않은 사용자입니다. 회원가입을 진행해주세요.');
             }
+            let partnerId = null;
+            if (user.partnerId) {
+                partnerId = user.partnerId;
+            }
+            else if (user.partner && typeof user.partner === 'object' && user.partner.id) {
+                partnerId = user.partner.id;
+            }
+            else if (typeof user.partner === 'string') {
+                partnerId = user.partner;
+            }
             const payload = {
                 userId: user.id,
                 email: user.email,
                 nickname: user.nickname,
-                partnerId: user.partnerId ?? (user.partner?.id ?? null),
+                partnerId: partnerId ?? null,
                 couple: user.couple ? { id: user.couple.id } : null,
             };
             const accessToken = this.jwtService.sign(payload);
@@ -223,11 +243,21 @@ let AuthService = class AuthService {
             if (!user) {
                 throw new common_1.UnauthorizedException('가입되지 않은 사용자입니다. 회원가입을 진행해주세요.');
             }
+            let partnerId = null;
+            if (user.partnerId) {
+                partnerId = user.partnerId;
+            }
+            else if (user.partner && typeof user.partner === 'object' && user.partner.id) {
+                partnerId = user.partner.id;
+            }
+            else if (typeof user.partner === 'string') {
+                partnerId = user.partner;
+            }
             const payload = {
                 userId: user.id,
                 email: user.email,
                 nickname: user.nickname,
-                partnerId: user.partnerId ?? (user.partner?.id ?? null),
+                partnerId: partnerId ?? null,
                 couple: user.couple ? { id: user.couple.id } : null,
             };
             const accessToken = this.jwtService.sign(payload);
