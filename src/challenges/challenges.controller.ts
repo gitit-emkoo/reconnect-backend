@@ -3,6 +3,7 @@ import { ChallengesService } from './challenges.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { ChallengeCategory } from '@prisma/client';
+import { getPartnerId } from '../utils/getPartnerId';
 
 @Controller('challenges')
 @UseGuards(JwtAuthGuard)
@@ -18,7 +19,8 @@ export class ChallengesController {
   // 현재 진행중인 챌린지 조회
   @Get('active')
   async getActiveChallenge(@GetUser() user: any) {
-    console.log('[ChallengeController][getActiveChallenge]', { userId: user.userId, partnerId: user.partnerId, coupleId: user.couple?.id });
+    const partnerId = getPartnerId(user);
+    console.log('[ChallengeController][getActiveChallenge]', { userId: user.userId, partnerId, coupleId: user.couple?.id });
     if (!user.couple || !user.couple.id) {
       throw new BadRequestException('연결된 파트너가 없습니다.');
     }
@@ -31,7 +33,8 @@ export class ChallengesController {
     @Param('challengeId') challengeId: string,
     @GetUser() user: any,
   ) {
-    console.log('[ChallengeController][startChallenge]', { userId: user.userId, partnerId: user.partnerId, coupleId: user.couple?.id });
+    const partnerId = getPartnerId(user);
+    console.log('[ChallengeController][startChallenge]', { userId: user.userId, partnerId, coupleId: user.couple?.id });
     if (!user.couple || !user.couple.id) {
       throw new BadRequestException('연결된 파트너가 없습니다.');
     }
@@ -44,7 +47,8 @@ export class ChallengesController {
     @Param('challengeId') challengeId: string,
     @GetUser() user: any,
   ) {
-    console.log('[ChallengeController][completeChallenge]', { userId: user.userId, partnerId: user.partnerId, coupleId: user.couple?.id });
+    const partnerId = getPartnerId(user);
+    console.log('[ChallengeController][completeChallenge]', { userId: user.userId, partnerId, coupleId: user.couple?.id });
     if (!user.couple || !user.couple.id) {
       throw new BadRequestException('연결된 파트너가 없습니다.');
     }
@@ -54,7 +58,8 @@ export class ChallengesController {
   // 챌린지 히스토리 조회
   @Get('history')
   async getChallengeHistory(@GetUser() user: any) {
-    console.log('[ChallengeController][getChallengeHistory]', { userId: user.userId, partnerId: user.partnerId, coupleId: user.couple?.id });
+    const partnerId = getPartnerId(user);
+    console.log('[ChallengeController][getChallengeHistory]', { userId: user.userId, partnerId, coupleId: user.couple?.id });
     if (!user.couple || !user.couple.id) {
       throw new BadRequestException('연결된 파트너가 없습니다.');
     }

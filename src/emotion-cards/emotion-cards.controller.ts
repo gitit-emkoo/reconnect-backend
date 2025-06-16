@@ -4,6 +4,7 @@ import { RefineTextDto } from './dto/refine-text.dto';
 import { RefinedTextResponseDto } from './dto/refined-text.response.dto';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { getPartnerId } from '../utils/getPartnerId';
 
 @Controller('emotion-cards')
 export class EmotionCardsController {
@@ -22,7 +23,7 @@ export class EmotionCardsController {
   @UseGuards(JwtAuthGuard)
   async getEmotionCards(@Req() req: any, @Res() res: Response) {
     const userId = req.user.userId;
-    const partnerId = req.user.partnerId || req.user.partner?.id;
+    const partnerId = getPartnerId(req.user);
     console.log('[EmotionCardsController][GET /emotion-cards] req.user:', req.user);
     console.log('[EmotionCardsController][GET /emotion-cards] userId:', userId, 'partnerId:', partnerId);
     if (!userId || !partnerId) {
@@ -45,7 +46,7 @@ export class EmotionCardsController {
   async createEmotionCard(@Body() body: any, @Req() req: any, @Res() res: Response) {
     console.log('[EmotionCardsController] POST /emotion-cards 요청:', body, req.headers);
     const senderId = req.user.userId;
-    const receiverId = req.user.partnerId || req.user.partner?.id;
+    const receiverId = getPartnerId(req.user);
     const coupleId = req.user.couple?.id;
     if (!senderId || !receiverId || !coupleId) {
       console.log('[EmotionCardsController] 400: senderId, receiverId, coupleId가 필요합니다.');
