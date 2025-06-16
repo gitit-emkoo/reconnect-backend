@@ -1,12 +1,11 @@
 import { Module } from '@nestjs/common';
 import { DiaryController } from './diary.controller';
 import { DiaryService } from './diary.service';
-import { PrismaModule } from '../prisma/prisma.module';
+import { PrismaService } from '../prisma/prisma.service';
  
 @Module({
-  imports: [PrismaModule],
   controllers: [DiaryController],
-  providers: [DiaryService],
+  providers: [DiaryService, PrismaService],
 })
 export class DiaryModule {
   constructor() {

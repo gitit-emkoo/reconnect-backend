@@ -57,6 +57,7 @@ async function main() {
 
   try {
     // 기존 챌린지 템플릿 삭제
+    
     await prisma.challengeTemplate.deleteMany({});
     console.log('기존 챌린지 템플릿 삭제 완료');
 
