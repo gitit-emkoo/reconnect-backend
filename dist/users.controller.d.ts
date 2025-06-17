@@ -1,4 +1,5 @@
 import { UsersService } from './users.service';
+import { ResetPasswordDto } from './users/dto/reset-password.dto';
 export declare class UsersController {
     private readonly usersService;
     constructor(usersService: UsersService);
@@ -11,53 +12,74 @@ export declare class UsersController {
         } | null;
         partner: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             email: string;
-            password: string;
             nickname: string;
+            partnerId: string | null;
+            password: string;
+            resetPasswordToken: string | null;
+            resetPasswordTokenExpires: Date | null;
             profileImageUrl: string | null;
             provider: string | null;
             providerId: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             coupleId: string | null;
-            partnerId: string | null;
         } | null;
         partnerOf: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             email: string;
-            password: string;
             nickname: string;
+            partnerId: string | null;
+            password: string;
+            resetPasswordToken: string | null;
+            resetPasswordTokenExpires: Date | null;
             profileImageUrl: string | null;
             provider: string | null;
             providerId: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             coupleId: string | null;
-            partnerId: string | null;
         }[];
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         email: string;
         nickname: string;
+        partnerId: string | null;
+        resetPasswordToken: string | null;
+        resetPasswordTokenExpires: Date | null;
         profileImageUrl: string | null;
         provider: string | null;
         providerId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         coupleId: string | null;
-        partnerId: string | null;
     }>;
     updateProfile(req: any, body: {
         nickname: string;
     }): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         email: string;
         nickname: string;
+        partnerId: string | null;
+        resetPasswordToken: string | null;
+        resetPasswordTokenExpires: Date | null;
         profileImageUrl: string | null;
         provider: string | null;
         providerId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         coupleId: string | null;
-        partnerId: string | null;
+    }>;
+    changePassword(req: any, body: {
+        currentPassword: string;
+        newPassword: string;
+    }): Promise<{
+        success: boolean;
+    }>;
+    forgotPassword(email: string): Promise<{
+        message: string;
+    }>;
+    resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{
+        success: boolean;
+        message: string;
     }>;
 }

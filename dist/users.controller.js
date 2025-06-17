@@ -16,6 +16,7 @@ exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
 const users_service_1 = require("./users.service");
 const jwt_auth_guard_1 = require("./auth/jwt-auth.guard");
+const reset_password_dto_1 = require("./users/dto/reset-password.dto");
 let UsersController = class UsersController {
     constructor(usersService) {
         this.usersService = usersService;
@@ -29,6 +30,16 @@ let UsersController = class UsersController {
     async updateProfile(req, body) {
         const userId = req.user.userId;
         return this.usersService.updateNickname(userId, body.nickname);
+    }
+    async changePassword(req, body) {
+        const userId = req.user.userId;
+        return this.usersService.changePassword(userId, body.currentPassword, body.newPassword);
+    }
+    async forgotPassword(email) {
+        return this.usersService.sendPasswordResetEmail(email);
+    }
+    async resetPassword(resetPasswordDto) {
+        return this.usersService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword);
     }
 };
 exports.UsersController = UsersController;
@@ -49,6 +60,29 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "updateProfile", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Put)('password'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "changePassword", null);
+__decorate([
+    (0, common_1.Post)('forgot-password'),
+    __param(0, (0, common_1.Body)('email')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "forgotPassword", null);
+__decorate([
+    (0, common_1.Post)('reset-password'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [reset_password_dto_1.ResetPasswordDto]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "resetPassword", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('users'),
     __metadata("design:paramtypes", [users_service_1.UsersService])

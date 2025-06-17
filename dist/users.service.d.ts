@@ -1,18 +1,22 @@
 import { PrismaService } from './prisma/prisma.service';
+import { MailService } from './mail.service';
 export declare class UsersService {
     private readonly prisma;
-    constructor(prisma: PrismaService);
+    private readonly mailService;
+    constructor(prisma: PrismaService, mailService: MailService);
     updateNickname(userId: string, nickname: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         email: string;
         nickname: string;
+        partnerId: string | null;
+        resetPasswordToken: string | null;
+        resetPasswordTokenExpires: Date | null;
         profileImageUrl: string | null;
         provider: string | null;
         providerId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         coupleId: string | null;
-        partnerId: string | null;
     }>;
     findUserById(userId: string): Promise<{
         couple: {
@@ -23,39 +27,55 @@ export declare class UsersService {
         } | null;
         partner: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             email: string;
-            password: string;
             nickname: string;
+            partnerId: string | null;
+            password: string;
+            resetPasswordToken: string | null;
+            resetPasswordTokenExpires: Date | null;
             profileImageUrl: string | null;
             provider: string | null;
             providerId: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             coupleId: string | null;
-            partnerId: string | null;
         } | null;
         partnerOf: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             email: string;
-            password: string;
             nickname: string;
+            partnerId: string | null;
+            password: string;
+            resetPasswordToken: string | null;
+            resetPasswordTokenExpires: Date | null;
             profileImageUrl: string | null;
             provider: string | null;
             providerId: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             coupleId: string | null;
-            partnerId: string | null;
         }[];
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         email: string;
         nickname: string;
+        partnerId: string | null;
+        resetPasswordToken: string | null;
+        resetPasswordTokenExpires: Date | null;
         profileImageUrl: string | null;
         provider: string | null;
         providerId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         coupleId: string | null;
-        partnerId: string | null;
+    }>;
+    changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{
+        success: boolean;
+    }>;
+    sendPasswordResetEmail(email: string): Promise<{
+        message: string;
+    }>;
+    resetPassword(token: string, newPassword: string): Promise<{
+        success: boolean;
+        message: string;
     }>;
 }

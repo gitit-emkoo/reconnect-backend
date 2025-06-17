@@ -7,10 +7,10 @@ export declare class DiaryService {
     create(createDiaryDto: CreateDiaryDto): Promise<{
         id: string;
         userId: string;
-        date: string;
         createdAt: Date;
         updatedAt: Date;
         comment: string;
+        date: string;
         emotion: import("@prisma/client/runtime/library").JsonValue;
         triggers: import("@prisma/client/runtime/library").JsonValue;
         palette: import("@prisma/client/runtime/library").JsonValue;
@@ -19,10 +19,10 @@ export declare class DiaryService {
     findAll(userId: string): Promise<{
         id: string;
         userId: string;
-        date: string;
         createdAt: Date;
         updatedAt: Date;
         comment: string;
+        date: string;
         emotion: import("@prisma/client/runtime/library").JsonValue;
         triggers: import("@prisma/client/runtime/library").JsonValue;
         palette: import("@prisma/client/runtime/library").JsonValue;
@@ -31,10 +31,10 @@ export declare class DiaryService {
     findByDate(userId: string, date: string): Promise<{
         id: string;
         userId: string;
-        date: string;
         createdAt: Date;
         updatedAt: Date;
         comment: string;
+        date: string;
         emotion: import("@prisma/client/runtime/library").JsonValue;
         triggers: import("@prisma/client/runtime/library").JsonValue;
         palette: import("@prisma/client/runtime/library").JsonValue;
@@ -43,10 +43,10 @@ export declare class DiaryService {
     update(id: string, updateDiaryDto: UpdateDiaryDto): Promise<{
         id: string;
         userId: string;
-        date: string;
         createdAt: Date;
         updatedAt: Date;
         comment: string;
+        date: string;
         emotion: import("@prisma/client/runtime/library").JsonValue;
         triggers: import("@prisma/client/runtime/library").JsonValue;
         palette: import("@prisma/client/runtime/library").JsonValue;
@@ -55,10 +55,10 @@ export declare class DiaryService {
     remove(id: string): Promise<{
         id: string;
         userId: string;
-        date: string;
         createdAt: Date;
         updatedAt: Date;
         comment: string;
+        date: string;
         emotion: import("@prisma/client/runtime/library").JsonValue;
         triggers: import("@prisma/client/runtime/library").JsonValue;
         palette: import("@prisma/client/runtime/library").JsonValue;

@@ -61,6 +61,12 @@ let ChallengesController = class ChallengesController {
     async getChallengeTemplatesByCategory(category) {
         return this.challengesService.getChallengeTemplatesByCategory(category);
     }
+    async checkWeeklyCompletion(user) {
+        if (!user.couple || !user.couple.id) {
+            throw new common_1.BadRequestException('연결된 파트너가 없습니다.');
+        }
+        return this.challengesService.checkWeeklyChallengeCompletion(user.couple.id);
+    }
 };
 exports.ChallengesController = ChallengesController;
 __decorate([
@@ -107,6 +113,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ChallengesController.prototype, "getChallengeTemplatesByCategory", null);
+__decorate([
+    (0, common_1.Get)('weekly-completion'),
+    __param(0, (0, get_user_decorator_1.GetUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ChallengesController.prototype, "checkWeeklyCompletion", null);
 exports.ChallengesController = ChallengesController = __decorate([
     (0, common_1.Controller)('challenges'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

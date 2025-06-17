@@ -8,10 +8,10 @@ export declare class CommunityController {
     constructor(communityService: CommunityService, prisma: PrismaService);
     createPost(createPostDto: CreatePostDto, user: any): Promise<{
         id: string;
-        content: string;
         createdAt: Date;
         updatedAt: Date;
         title: string;
+        content: string;
         categoryId: string;
         imageUrl: string | null;
         tags: string[];
@@ -22,17 +22,17 @@ export declare class CommunityController {
     getAllPosts(categoryId?: string, search?: string, page?: number, limit?: number): Promise<{
         posts: {
             id: string;
-            content: string;
             createdAt: Date;
+            _count: {
+                comments: number;
+            };
+            title: string;
             category: {
                 id: string;
                 name: string;
                 isPollCategory: boolean;
             };
-            _count: {
-                comments: number;
-            };
-            title: string;
+            content: string;
             tags: string[];
             poll: import("@prisma/client/runtime/library").JsonValue;
             author: {
@@ -46,20 +46,15 @@ export declare class CommunityController {
         name: string;
     }[]>;
     getPostById(id: string): Promise<({
-        category: {
-            id: string;
-            name: string;
-            isPollCategory: boolean;
-        };
         comments: ({
             author: {
                 nickname: string;
             };
         } & {
             id: string;
-            content: string;
             createdAt: Date;
             updatedAt: Date;
+            content: string;
             authorId: string;
             communityPostId: string | null;
             journalId: string | null;
@@ -72,15 +67,20 @@ export declare class CommunityController {
             option: string;
             postId: string;
         }[];
+        category: {
+            id: string;
+            name: string;
+            isPollCategory: boolean;
+        };
         author: {
             nickname: string;
         };
     } & {
         id: string;
-        content: string;
         createdAt: Date;
         updatedAt: Date;
         title: string;
+        content: string;
         categoryId: string;
         imageUrl: string | null;
         tags: string[];
@@ -90,9 +90,9 @@ export declare class CommunityController {
     }) | null>;
     createComment(postId: string, content: string, user: any): Promise<{
         id: string;
-        content: string;
         createdAt: Date;
         updatedAt: Date;
+        content: string;
         authorId: string;
         communityPostId: string | null;
         journalId: string | null;
@@ -100,9 +100,9 @@ export declare class CommunityController {
     }>;
     createReply(postId: string, parentId: string, content: string, user: any): Promise<{
         id: string;
-        content: string;
         createdAt: Date;
         updatedAt: Date;
+        content: string;
         authorId: string;
         communityPostId: string | null;
         journalId: string | null;
@@ -110,10 +110,10 @@ export declare class CommunityController {
     }>;
     updatePost(id: string, updateData: any, user: any): Promise<{
         id: string;
-        content: string;
         createdAt: Date;
         updatedAt: Date;
         title: string;
+        content: string;
         categoryId: string;
         imageUrl: string | null;
         tags: string[];
@@ -123,10 +123,10 @@ export declare class CommunityController {
     }>;
     deletePost(id: string, user: any): Promise<{
         id: string;
-        content: string;
         createdAt: Date;
         updatedAt: Date;
         title: string;
+        content: string;
         categoryId: string;
         imageUrl: string | null;
         tags: string[];

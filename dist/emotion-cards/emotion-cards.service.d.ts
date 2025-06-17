@@ -7,8 +7,8 @@ export declare class EmotionCardsService {
     getAllCards(): Promise<{
         id: string;
         createdAt: Date;
-        message: string;
         coupleId: string;
+        message: string;
         aiSuggestion: string | null;
         isRead: boolean;
         emoji: string | null;
@@ -18,8 +18,8 @@ export declare class EmotionCardsService {
     createCard(body: any): Promise<{
         id: string;
         createdAt: Date;
-        message: string;
         coupleId: string;
+        message: string;
         aiSuggestion: string | null;
         isRead: boolean;
         emoji: string | null;
@@ -32,8 +32,8 @@ export declare class EmotionCardsService {
         isNew: boolean;
         id: string;
         createdAt: Date;
-        message: string;
         coupleId: string;
+        message: string;
         aiSuggestion: string | null;
         isRead: boolean;
         emoji: string | null;
@@ -44,8 +44,8 @@ export declare class EmotionCardsService {
         isNew: boolean;
         id: string;
         createdAt: Date;
-        message: string;
         coupleId: string;
+        message: string;
         aiSuggestion: string | null;
         isRead: boolean;
         emoji: string | null;

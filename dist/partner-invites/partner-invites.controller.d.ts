@@ -24,29 +24,33 @@ export declare class PartnerInvitesController {
         invite: {
             inviter: {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
                 email: string;
-                password: string;
                 nickname: string;
+                partnerId: string | null;
+                password: string;
+                resetPasswordToken: string | null;
+                resetPasswordTokenExpires: Date | null;
                 profileImageUrl: string | null;
                 provider: string | null;
                 providerId: string | null;
+                createdAt: Date;
+                updatedAt: Date;
                 coupleId: string | null;
-                partnerId: string | null;
             };
             invitee: {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
                 email: string;
-                password: string;
                 nickname: string;
+                partnerId: string | null;
+                password: string;
+                resetPasswordToken: string | null;
+                resetPasswordTokenExpires: Date | null;
                 profileImageUrl: string | null;
                 provider: string | null;
                 providerId: string | null;
+                createdAt: Date;
+                updatedAt: Date;
                 coupleId: string | null;
-                partnerId: string | null;
             } | null;
         } & {
             id: string;

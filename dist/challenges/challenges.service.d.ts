@@ -12,9 +12,9 @@ export declare class ChallengesService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        category: import(".prisma/client").$Enums.ChallengeCategory;
         title: string;
         description: string;
+        category: import(".prisma/client").$Enums.ChallengeCategory;
         frequency: number;
         isOneTime: boolean;
         points: number;
@@ -23,9 +23,9 @@ export declare class ChallengesService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        category: import(".prisma/client").$Enums.ChallengeCategory;
         title: string;
         description: string;
+        category: import(".prisma/client").$Enums.ChallengeCategory;
         frequency: number;
         isOneTime: boolean;
         points: number;
@@ -34,11 +34,11 @@ export declare class ChallengesService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        category: import(".prisma/client").$Enums.ChallengeCategory;
         coupleId: string;
         status: import(".prisma/client").$Enums.ChallengeStatus;
         title: string;
         description: string;
+        category: import(".prisma/client").$Enums.ChallengeCategory;
         frequency: number;
         isOneTime: boolean;
         points: number;
@@ -52,11 +52,11 @@ export declare class ChallengesService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        category: import(".prisma/client").$Enums.ChallengeCategory;
         coupleId: string;
         status: import(".prisma/client").$Enums.ChallengeStatus;
         title: string;
         description: string;
+        category: import(".prisma/client").$Enums.ChallengeCategory;
         frequency: number;
         isOneTime: boolean;
         points: number;
@@ -70,11 +70,11 @@ export declare class ChallengesService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        category: import(".prisma/client").$Enums.ChallengeCategory;
         coupleId: string;
         status: import(".prisma/client").$Enums.ChallengeStatus;
         title: string;
         description: string;
+        category: import(".prisma/client").$Enums.ChallengeCategory;
         frequency: number;
         isOneTime: boolean;
         points: number;
@@ -89,11 +89,11 @@ export declare class ChallengesService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            category: import(".prisma/client").$Enums.ChallengeCategory;
             coupleId: string;
             status: import(".prisma/client").$Enums.ChallengeStatus;
             title: string;
             description: string;
+            category: import(".prisma/client").$Enums.ChallengeCategory;
             frequency: number;
             isOneTime: boolean;
             points: number;
@@ -107,11 +107,11 @@ export declare class ChallengesService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            category: import(".prisma/client").$Enums.ChallengeCategory;
             coupleId: string;
             status: import(".prisma/client").$Enums.ChallengeStatus;
             title: string;
             description: string;
+            category: import(".prisma/client").$Enums.ChallengeCategory;
             frequency: number;
             isOneTime: boolean;
             points: number;
@@ -123,4 +123,5 @@ export declare class ChallengesService {
         }[];
     }>;
     processExpiredChallenges(): Promise<void>;
+    checkWeeklyChallengeCompletion(coupleId: string): Promise<boolean>;
 }

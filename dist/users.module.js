@@ -12,13 +12,14 @@ const users_controller_1 = require("./users.controller");
 const users_service_1 = require("./users.service");
 const prisma_service_1 = require("./prisma/prisma.service");
 const jwt_auth_guard_1 = require("./auth/jwt-auth.guard");
+const mail_service_1 = require("./mail.service");
 let UsersModule = class UsersModule {
 };
 exports.UsersModule = UsersModule;
 exports.UsersModule = UsersModule = __decorate([
     (0, common_1.Module)({
         controllers: [users_controller_1.UsersController],
-        providers: [users_service_1.UsersService, prisma_service_1.PrismaService, jwt_auth_guard_1.JwtAuthGuard],
+        providers: [users_service_1.UsersService, prisma_service_1.PrismaService, jwt_auth_guard_1.JwtAuthGuard, mail_service_1.MailService],
     })
 ], UsersModule);
 //# sourceMappingURL=users.module.js.map
