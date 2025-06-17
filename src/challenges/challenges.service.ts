@@ -178,4 +178,29 @@ export class ChallengesService {
       });
     }
   }
+
+  // 이번 주 챌린지 달성 여부 확인
+  async checkWeeklyChallengeCompletion(coupleId: string) {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // 이번 주 일요일
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6); // 이번 주 토요일
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const completedChallenge = await this.prisma.challenge.findFirst({
+      where: {
+        coupleId,
+        status: ChallengeStatus.COMPLETED,
+        completedAt: {
+          gte: startOfWeek,
+          lte: endOfWeek,
+        },
+      },
+    });
+
+    return !!completedChallenge;
+  }
 } 

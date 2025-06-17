@@ -71,4 +71,13 @@ export class ChallengesController {
   async getChallengeTemplatesByCategory(@Param('category') category: ChallengeCategory) {
     return this.challengesService.getChallengeTemplatesByCategory(category);
   }
+
+  // 이번 주 챌린지 달성 여부 확인
+  @Get('weekly-completion')
+  async checkWeeklyCompletion(@GetUser() user: any) {
+    if (!user.couple || !user.couple.id) {
+      throw new BadRequestException('연결된 파트너가 없습니다.');
+    }
+    return this.challengesService.checkWeeklyChallengeCompletion(user.couple.id);
+  }
 } 
