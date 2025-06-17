@@ -23,6 +23,7 @@ const partner_invites_module_1 = require("./partner-invites/partner-invites.modu
 const diary_module_1 = require("./diary/diary.module");
 console.log('DiaryModule:', diary_module_1.DiaryModule);
 const challenges_module_1 = require("./challenges/challenges.module");
+const schedules_module_1 = require("./schedules/schedules.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -42,6 +43,7 @@ exports.AppModule = AppModule = __decorate([
             uploads_module_1.UploadsModule,
             diary_module_1.DiaryModule,
             challenges_module_1.ChallengesModule,
+            schedules_module_1.SchedulesModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

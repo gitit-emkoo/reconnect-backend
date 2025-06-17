@@ -5,9 +5,9 @@ export declare class EmotionCardsService {
     private prisma;
     refineText(originalText: string): Promise<string>;
     getAllCards(): Promise<{
-        message: string;
         id: string;
         createdAt: Date;
+        message: string;
         coupleId: string;
         aiSuggestion: string | null;
         isRead: boolean;
@@ -16,9 +16,9 @@ export declare class EmotionCardsService {
         receiverId: string;
     }[]>;
     createCard(body: any): Promise<{
-        message: string;
         id: string;
         createdAt: Date;
+        message: string;
         coupleId: string;
         aiSuggestion: string | null;
         isRead: boolean;
@@ -30,9 +30,9 @@ export declare class EmotionCardsService {
     private isTodayKST;
     getReceivedCards(userId: string): Promise<{
         isNew: boolean;
-        message: string;
         id: string;
         createdAt: Date;
+        message: string;
         coupleId: string;
         aiSuggestion: string | null;
         isRead: boolean;
@@ -42,9 +42,9 @@ export declare class EmotionCardsService {
     }[]>;
     getFilteredCards(userId: string, partnerId: string): Promise<{
         isNew: boolean;
-        message: string;
         id: string;
         createdAt: Date;
+        message: string;
         coupleId: string;
         aiSuggestion: string | null;
         isRead: boolean;

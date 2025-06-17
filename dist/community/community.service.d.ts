@@ -5,8 +5,8 @@ export declare class CommunityService {
     private prisma;
     constructor(prisma: PrismaService);
     createPost(createPostDto: CreatePostDto, authorId: string): Promise<{
-        content: string;
         id: string;
+        content: string;
         createdAt: Date;
         updatedAt: Date;
         title: string;
@@ -19,14 +19,14 @@ export declare class CommunityService {
     }>;
     getAllPosts(categoryId?: string, page?: number, limit?: number): Promise<{
         posts: {
+            id: string;
+            content: string;
+            createdAt: Date;
             category: {
-                name: string;
                 id: string;
+                name: string;
                 isPollCategory: boolean;
             };
-            content: string;
-            id: string;
-            createdAt: Date;
             _count: {
                 comments: number;
             };
@@ -41,14 +41,14 @@ export declare class CommunityService {
     }>;
     findAll(categoryId?: string, search?: string, page?: number, limit?: number): Promise<{
         posts: {
+            id: string;
+            content: string;
+            createdAt: Date;
             category: {
-                name: string;
                 id: string;
+                name: string;
                 isPollCategory: boolean;
             };
-            content: string;
-            id: string;
-            createdAt: Date;
             _count: {
                 comments: number;
             };
@@ -63,8 +63,8 @@ export declare class CommunityService {
     }>;
     getPostById(id: string): Promise<({
         category: {
-            name: string;
             id: string;
+            name: string;
             isPollCategory: boolean;
         };
         comments: ({
@@ -72,8 +72,8 @@ export declare class CommunityService {
                 nickname: string;
             };
         } & {
-            content: string;
             id: string;
+            content: string;
             createdAt: Date;
             updatedAt: Date;
             authorId: string;
@@ -83,8 +83,8 @@ export declare class CommunityService {
         })[];
         votes: {
             id: string;
-            createdAt: Date;
             userId: string;
+            createdAt: Date;
             option: string;
             postId: string;
         }[];
@@ -92,8 +92,8 @@ export declare class CommunityService {
             nickname: string;
         };
     } & {
-        content: string;
         id: string;
+        content: string;
         createdAt: Date;
         updatedAt: Date;
         title: string;
@@ -105,8 +105,8 @@ export declare class CommunityService {
         authorId: string;
     }) | null>;
     createComment(postId: string, content: string, authorId: string): Promise<{
-        content: string;
         id: string;
+        content: string;
         createdAt: Date;
         updatedAt: Date;
         authorId: string;
@@ -115,8 +115,8 @@ export declare class CommunityService {
         parentId: string | null;
     }>;
     createReply(postId: string, parentId: string, content: string, authorId: string): Promise<{
-        content: string;
         id: string;
+        content: string;
         createdAt: Date;
         updatedAt: Date;
         authorId: string;
@@ -125,8 +125,8 @@ export declare class CommunityService {
         parentId: string | null;
     }>;
     updatePost(postId: string, updateData: any, userId: string): Promise<{
-        content: string;
         id: string;
+        content: string;
         createdAt: Date;
         updatedAt: Date;
         title: string;
@@ -138,8 +138,8 @@ export declare class CommunityService {
         authorId: string;
     }>;
     deletePost(postId: string, userId: string): Promise<{
-        content: string;
         id: string;
+        content: string;
         createdAt: Date;
         updatedAt: Date;
         title: string;

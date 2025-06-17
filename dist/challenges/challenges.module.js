@@ -10,11 +10,13 @@ exports.ChallengesModule = void 0;
 const common_1 = require("@nestjs/common");
 const challenges_controller_1 = require("./challenges.controller");
 const challenges_service_1 = require("./challenges.service");
+const prisma_module_1 = require("../prisma/prisma.module");
 let ChallengesModule = class ChallengesModule {
 };
 exports.ChallengesModule = ChallengesModule;
 exports.ChallengesModule = ChallengesModule = __decorate([
     (0, common_1.Module)({
+        imports: [prisma_module_1.PrismaModule],
         controllers: [challenges_controller_1.ChallengesController],
         providers: [challenges_service_1.ChallengesService],
     })

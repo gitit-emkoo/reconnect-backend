@@ -29,6 +29,7 @@ model User {
   providerId           String? // 소셜 로그인 제공자의 고유 ID
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
+  schedules            Schedule[]
 
   // 소속된 커플 정보
   coupleId             String?   @db.ObjectId
@@ -332,4 +333,14 @@ model Diary {
   user        User     @relation(fields: [userId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Schedule {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  date      String   // 'YYYY-MM-DD' 형식
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
