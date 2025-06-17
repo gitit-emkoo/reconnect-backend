@@ -1,4 +1,4 @@
-import { Controller, Patch, Body, Req, UseGuards, Get } from '@nestjs/common';
+import { Controller, Patch, Body, Req, UseGuards, Get, Put } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
@@ -19,5 +19,12 @@ export class UsersController {
   async updateProfile(@Req() req, @Body() body: { nickname: string }) {
     const userId = req.user.userId;
     return this.usersService.updateNickname(userId, body.nickname);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('password')
+  async changePassword(@Req() req, @Body() body: { currentPassword: string, newPassword: string }) {
+    const userId = req.user.userId;
+    return this.usersService.changePassword(userId, body.currentPassword, body.newPassword);
   }
 } 
