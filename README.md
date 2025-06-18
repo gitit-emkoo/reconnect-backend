@@ -1,98 +1,89 @@
+# ReConnect Backend
+
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## 💖 프로젝트 소개
+ReConnect 프로젝트의 백엔드 서버입니다. NestJS 프레임워크를 기반으로 구축되었으며, 사용자 인증, 데이터 관리, API 제공 등 핵심 비즈니스 로직을 담당합니다.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## ✨ 주요 기능
+- 사용자 인증 (JWT, 소셜 로그인)
+- 파트너 연결 및 관리
+- 감정 카드, 감정 일기, 챌린지 등 핵심 기능 API
+- 콘텐츠 관리 (Admin 전용)
+- 이미지 업로드
 
-## Description
+## 🛠️ 기술 스택
+- **Framework**: [NestJS](https://nestjs.com/), [Express](https://expressjs.com/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Database**: [MongoDB](https://www.mongodb.com/) with [Prisma](https://www.prisma.io/) ORM
+- **Authentication**: [JWT](https://jwt.io/), [Passport.js](http://www.passportjs.org/)
+- **Validation**: `class-validator`, `class-transformer`
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
 
-## Project setup
+## 🚀 시작하기
 
+### 1. 의존성 설치
 ```bash
-$ npm install
+# reconnect-be 디렉토리에서 실행
+npm install
 ```
 
-## Compile and run the project
+### 2. 환경 변수 설정
+프로젝트를 실행하기 위해, 루트 디렉토리(`reconnect-be/`)에 `.env` 파일을 생성하고 아래 내용을 채워야 합니다.
 
-```bash
-# development
-$ npm run start
+```env
+# 데이터베이스 연결 정보 (MongoDB Atlas 또는 로컬 MongoDB)
+DATABASE_URL="mongodb+srv://<user>:<password>@cluster0.xxxx.mongodb.net/reconnect?retryWrites=true&w=majority"
 
-# watch mode
-$ npm run start:dev
+# JWT 토큰 암호화를 위한 시크릿 키 (아무 문자열이나 가능)
+JWT_SECRET="your-super-secret-jwt-key"
 
-# production mode
-$ npm run start:prod
+# Google 소셜 로그인을 위한 클라이언트 ID 및 시크릿
+GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+
+# 서버 포트 (기본값: 3000)
+PORT=3000
 ```
 
-## Run tests
+### 3. Prisma 클라이언트 생성
+환경 변수 설정 후, Prisma 클라이언트를 생성해야 데이터베이스와 통신할 수 있습니다.
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npx prisma generate
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+### 4. 개발 서버 실행
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# 일반 모드
+npm run start
+
+# 실시간 변경 감지 모드
+npm run start:dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Resources
+## 🏗️ 프로젝트 구조
+```
+reconnect-be/
+├── prisma/         # Prisma 스키마 및 시드
+├── src/
+│   ├── auth/         # 인증 (로그인, 회원가입)
+│   ├── users/        # 사용자 정보
+│   ├── community/    # 커뮤니티 (게시글)
+│   ├── content/      # 콘텐츠 (관계 가이드)
+│   ├── diary/        # 감정 일기
+│   ├── challenges/   # 챌린지
+│   └── ...           # 기타 기능 모듈
+├── uploads/        # 이미지 업로드 폴더
+└── .env.example    # 환경 변수 예시
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+## 📜 API 문서
+API 엔드포인트에 대한 문서는 Postman 또는 Swagger를 통해 제공될 예정입니다. (현재 준비 중)
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+© 2024 ReConnect. All Rights Reserved.
