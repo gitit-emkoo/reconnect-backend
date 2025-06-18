@@ -13,13 +13,13 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { PartnerInvitesModule } from './partner-invites/partner-invites.module';
 import { DiaryModule } from './diary/diary.module';
-console.log('DiaryModule:', DiaryModule);
 import { ChallengesModule } from './challenges/challenges.module';
 import { SchedulesModule } from './schedules/schedules.module';
 import { ContentModule } from './content/content.module';
 
 @Module({
   imports: [
+    UsersModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
@@ -30,7 +30,6 @@ import { ContentModule } from './content/content.module';
     }),
     AuthModule,
     PrismaModule,
-    UsersModule,
     EmotionCardsModule,
     CommunityModule,
     PartnerInvitesModule,
