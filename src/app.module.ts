@@ -4,7 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { UsersModule } from './users.module'; // <--- 이 경로가 올바른 경로입니다.
+import { UsersModule } from './users/users.module';
 import { EmotionCardsModule } from './emotion-cards/emotion-cards.module';
 import { CommunityModule } from './community/community.module';
 import { APP_PIPE } from '@nestjs/core';
