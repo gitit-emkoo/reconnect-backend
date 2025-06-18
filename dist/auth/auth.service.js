@@ -67,6 +67,7 @@ let AuthService = class AuthService {
             userId: user.id,
             email: user.email,
             nickname: user.nickname,
+            role: user.role,
             partnerId: partnerId ?? null,
             couple: user.couple ? { id: user.couple.id } : null,
         };
@@ -142,6 +143,7 @@ let AuthService = class AuthService {
                 userId: user.id,
                 email: user.email,
                 nickname: user.nickname,
+                role: user.role,
                 partnerId: partnerId ?? null,
                 couple: user.couple ? { id: user.couple.id } : null,
             };
@@ -257,6 +259,7 @@ let AuthService = class AuthService {
                 userId: user.id,
                 email: user.email,
                 nickname: user.nickname,
+                role: user.role,
                 partnerId: partnerId ?? null,
                 couple: user.couple ? { id: user.couple.id } : null,
             };

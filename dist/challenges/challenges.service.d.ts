@@ -13,8 +13,8 @@ export declare class ChallengesService {
         createdAt: Date;
         updatedAt: Date;
         title: string;
-        description: string;
         category: import(".prisma/client").$Enums.ChallengeCategory;
+        description: string;
         frequency: number;
         isOneTime: boolean;
         points: number;
@@ -24,8 +24,8 @@ export declare class ChallengesService {
         createdAt: Date;
         updatedAt: Date;
         title: string;
-        description: string;
         category: import(".prisma/client").$Enums.ChallengeCategory;
+        description: string;
         frequency: number;
         isOneTime: boolean;
         points: number;
@@ -37,8 +37,8 @@ export declare class ChallengesService {
         coupleId: string;
         status: import(".prisma/client").$Enums.ChallengeStatus;
         title: string;
-        description: string;
         category: import(".prisma/client").$Enums.ChallengeCategory;
+        description: string;
         frequency: number;
         isOneTime: boolean;
         points: number;
@@ -55,8 +55,8 @@ export declare class ChallengesService {
         coupleId: string;
         status: import(".prisma/client").$Enums.ChallengeStatus;
         title: string;
-        description: string;
         category: import(".prisma/client").$Enums.ChallengeCategory;
+        description: string;
         frequency: number;
         isOneTime: boolean;
         points: number;
@@ -73,8 +73,8 @@ export declare class ChallengesService {
         coupleId: string;
         status: import(".prisma/client").$Enums.ChallengeStatus;
         title: string;
-        description: string;
         category: import(".prisma/client").$Enums.ChallengeCategory;
+        description: string;
         frequency: number;
         isOneTime: boolean;
         points: number;
@@ -92,8 +92,8 @@ export declare class ChallengesService {
             coupleId: string;
             status: import(".prisma/client").$Enums.ChallengeStatus;
             title: string;
-            description: string;
             category: import(".prisma/client").$Enums.ChallengeCategory;
+            description: string;
             frequency: number;
             isOneTime: boolean;
             points: number;
@@ -110,8 +110,8 @@ export declare class ChallengesService {
             coupleId: string;
             status: import(".prisma/client").$Enums.ChallengeStatus;
             title: string;
-            description: string;
             category: import(".prisma/client").$Enums.ChallengeCategory;
+            description: string;
             frequency: number;
             isOneTime: boolean;
             points: number;

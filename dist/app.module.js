@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const auth_module_1 = require("./auth/auth.module");
@@ -24,12 +25,17 @@ const diary_module_1 = require("./diary/diary.module");
 console.log('DiaryModule:', diary_module_1.DiaryModule);
 const challenges_module_1 = require("./challenges/challenges.module");
 const schedules_module_1 = require("./schedules/schedules.module");
+const content_module_1 = require("./content/content.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            config_1.ConfigModule.forRoot({
+                isGlobal: true,
+                envFilePath: '.env',
+            }),
             serve_static_1.ServeStaticModule.forRoot({
                 rootPath: (0, path_1.join)(__dirname, '..', '..', 'uploads'),
                 serveRoot: '/uploads',
@@ -44,6 +50,7 @@ exports.AppModule = AppModule = __decorate([
             diary_module_1.DiaryModule,
             challenges_module_1.ChallengesModule,
             schedules_module_1.SchedulesModule,
+            content_module_1.ContentModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

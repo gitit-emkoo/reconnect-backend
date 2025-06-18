@@ -23,32 +23,34 @@ export declare class PartnerInvitesService {
             inviter: {
                 id: string;
                 email: string;
-                nickname: string;
-                partnerId: string | null;
                 password: string;
                 resetPasswordToken: string | null;
                 resetPasswordTokenExpires: Date | null;
+                nickname: string;
                 profileImageUrl: string | null;
+                role: import(".prisma/client").$Enums.Role;
                 provider: string | null;
                 providerId: string | null;
                 createdAt: Date;
                 updatedAt: Date;
                 coupleId: string | null;
+                partnerId: string | null;
             };
             invitee: {
                 id: string;
                 email: string;
-                nickname: string;
-                partnerId: string | null;
                 password: string;
                 resetPasswordToken: string | null;
                 resetPasswordTokenExpires: Date | null;
+                nickname: string;
                 profileImageUrl: string | null;
+                role: import(".prisma/client").$Enums.Role;
                 provider: string | null;
                 providerId: string | null;
                 createdAt: Date;
                 updatedAt: Date;
                 coupleId: string | null;
+                partnerId: string | null;
             } | null;
         } & {
             id: string;

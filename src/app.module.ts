@@ -16,6 +16,7 @@ import { DiaryModule } from './diary/diary.module';
 console.log('DiaryModule:', DiaryModule);
 import { ChallengesModule } from './challenges/challenges.module';
 import { SchedulesModule } from './schedules/schedules.module';
+import { ContentModule } from './content/content.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { SchedulesModule } from './schedules/schedules.module';
     DiaryModule,
     ChallengesModule,
     SchedulesModule,
+    ContentModule,
   ],
   controllers: [AppController],
   providers: [

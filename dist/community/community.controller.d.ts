@@ -10,8 +10,8 @@ export declare class CommunityController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        title: string;
         content: string;
+        title: string;
         categoryId: string;
         imageUrl: string | null;
         tags: string[];
@@ -26,13 +26,13 @@ export declare class CommunityController {
             _count: {
                 comments: number;
             };
+            content: string;
             title: string;
             category: {
-                id: string;
                 name: string;
+                id: string;
                 isPollCategory: boolean;
             };
-            content: string;
             tags: string[];
             poll: import("@prisma/client/runtime/library").JsonValue;
             author: {
@@ -42,8 +42,8 @@ export declare class CommunityController {
         total: number;
     }>;
     getCategories(): Promise<{
-        id: string;
         name: string;
+        id: string;
     }[]>;
     getPostById(id: string): Promise<({
         comments: ({
@@ -62,14 +62,14 @@ export declare class CommunityController {
         })[];
         votes: {
             id: string;
-            userId: string;
             createdAt: Date;
+            userId: string;
             option: string;
             postId: string;
         }[];
         category: {
-            id: string;
             name: string;
+            id: string;
             isPollCategory: boolean;
         };
         author: {
@@ -79,8 +79,8 @@ export declare class CommunityController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        title: string;
         content: string;
+        title: string;
         categoryId: string;
         imageUrl: string | null;
         tags: string[];
@@ -112,8 +112,8 @@ export declare class CommunityController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        title: string;
         content: string;
+        title: string;
         categoryId: string;
         imageUrl: string | null;
         tags: string[];
@@ -125,8 +125,8 @@ export declare class CommunityController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        title: string;
         content: string;
+        title: string;
         categoryId: string;
         imageUrl: string | null;
         tags: string[];

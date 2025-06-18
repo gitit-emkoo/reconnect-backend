@@ -8,8 +8,8 @@ export declare class CommunityService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        title: string;
         content: string;
+        title: string;
         categoryId: string;
         imageUrl: string | null;
         tags: string[];
@@ -24,13 +24,13 @@ export declare class CommunityService {
             _count: {
                 comments: number;
             };
+            content: string;
             title: string;
             category: {
-                id: string;
                 name: string;
+                id: string;
                 isPollCategory: boolean;
             };
-            content: string;
             tags: string[];
             poll: Prisma.JsonValue;
             author: {
@@ -46,13 +46,13 @@ export declare class CommunityService {
             _count: {
                 comments: number;
             };
+            content: string;
             title: string;
             category: {
-                id: string;
                 name: string;
+                id: string;
                 isPollCategory: boolean;
             };
-            content: string;
             tags: string[];
             poll: Prisma.JsonValue;
             author: {
@@ -78,14 +78,14 @@ export declare class CommunityService {
         })[];
         votes: {
             id: string;
-            userId: string;
             createdAt: Date;
+            userId: string;
             option: string;
             postId: string;
         }[];
         category: {
-            id: string;
             name: string;
+            id: string;
             isPollCategory: boolean;
         };
         author: {
@@ -95,8 +95,8 @@ export declare class CommunityService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        title: string;
         content: string;
+        title: string;
         categoryId: string;
         imageUrl: string | null;
         tags: string[];
@@ -128,8 +128,8 @@ export declare class CommunityService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        title: string;
         content: string;
+        title: string;
         categoryId: string;
         imageUrl: string | null;
         tags: string[];
@@ -141,8 +141,8 @@ export declare class CommunityService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        title: string;
         content: string;
+        title: string;
         categoryId: string;
         imageUrl: string | null;
         tags: string[];
