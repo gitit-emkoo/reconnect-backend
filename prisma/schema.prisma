@@ -61,6 +61,8 @@ model User {
   reportsAsReporter    Report[] @relation("ReportsByReporter")
   reportsAsReported    Report[] @relation("ReportsOnReported")
   diaries              Diary[] // 감정일기 1:N 관계 추가
+  contentLikes         ContentLike[]
+  contentBookmarks     ContentBookmark[]
 
   // 파트너 초대 관련 관계 추가
   sentInvites     PartnerInvite[] @relation("SentInvites")
@@ -255,6 +257,8 @@ model Content {
   isPremium Boolean     @default(false)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+  likes     ContentLike[]
+  bookmarks ContentBookmark[]
 }
 
 enum ContentType {
@@ -351,4 +355,26 @@ model Schedule {
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ContentLike {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String   @db.ObjectId
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId])
+}
+
+model ContentBookmark {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String   @db.ObjectId
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId])
 }
