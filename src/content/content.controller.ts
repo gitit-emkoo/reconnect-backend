@@ -22,6 +22,12 @@ export class ContentController {
     return this.contentService.findAll();
   }
 
+  @Get('bookmarked')
+  @UseGuards(JwtAuthGuard)
+  findBookmarked(@GetUser() user: User) {
+    return this.contentService.findBookmarkedByUserId(user.id);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string, @GetUser() user: User) {

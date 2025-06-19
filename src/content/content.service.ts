@@ -126,4 +126,19 @@ export class ContentService {
       },
     });
   }
+
+  async findBookmarkedByUserId(userId: string) {
+    return this.prisma.content.findMany({
+      where: {
+        bookmarks: {
+          some: {
+            userId,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
 }
