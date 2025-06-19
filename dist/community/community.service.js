@@ -198,35 +198,64 @@ let CommunityService = class CommunityService {
         return this.prisma.communityPost.delete({ where: { id: postId } });
     }
     async voteOnPost(postId, userId, choice) {
-        console.log('voteOnPost', { postId, userId, choice });
-        const existing = await this.prisma.communityPostVote.findUnique({
+        if (choice !== 1 && choice !== 2) {
+            throw new common_1.BadRequestException('투표 선택지는 1(찬성) 또는 2(반대)여야 합니다.');
+        }
+        const choiceStr = String(choice);
+        const existingVote = await this.prisma.communityPostVote.findUnique({
             where: { postId_userId: { postId, userId } },
         });
-        if (existing) {
-            if (existing.option === String(choice)) {
-                await this.prisma.communityPostVote.delete({
-                    where: { postId_userId: { postId, userId } },
+        return this.prisma.$transaction(async (tx) => {
+            if (existingVote) {
+                const updates = {
+                    agree: { decrement: 0, increment: 0 },
+                    disagree: { decrement: 0, increment: 0 },
+                };
+                const prevChoice = existingVote.option;
+                if (prevChoice === '1')
+                    updates.agree.decrement = 1;
+                else if (prevChoice === '2')
+                    updates.disagree.decrement = 1;
+                if (existingVote.option === choiceStr) {
+                    await tx.communityPostVote.delete({
+                        where: { postId_userId: { postId, userId } },
+                    });
+                }
+                else {
+                    await tx.communityPostVote.update({
+                        where: { postId_userId: { postId, userId } },
+                        data: { option: choiceStr },
+                    });
+                    if (choiceStr === '1')
+                        updates.agree.increment = 1;
+                    else if (choiceStr === '2')
+                        updates.disagree.increment = 1;
+                }
+                await tx.communityPost.update({
+                    where: { id: postId },
+                    data: {
+                        agreeVotes: {
+                            increment: updates.agree.increment,
+                            decrement: updates.agree.decrement,
+                        },
+                        disagreeVotes: {
+                            increment: updates.disagree.increment,
+                            decrement: updates.disagree.decrement,
+                        },
+                    },
                 });
-                return { cancelled: true };
             }
             else {
-                await this.prisma.communityPostVote.update({
-                    where: { postId_userId: { postId, userId } },
-                    data: { option: String(choice) },
+                await tx.communityPostVote.create({
+                    data: { postId, userId, option: choiceStr },
                 });
-                return { changed: true };
+                const voteField = choice === 1 ? 'agreeVotes' : 'disagreeVotes';
+                await tx.communityPost.update({
+                    where: { id: postId },
+                    data: { [voteField]: { increment: 1 } },
+                });
             }
-        }
-        else {
-            await this.prisma.communityPostVote.create({
-                data: {
-                    postId,
-                    userId,
-                    option: String(choice),
-                },
-            });
-            return { created: true };
-        }
+        });
     }
     async getPollResult(postId) {
         const votes = await this.prisma.communityPostVote.findMany({

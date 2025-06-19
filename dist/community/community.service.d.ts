@@ -15,6 +15,8 @@ export declare class CommunityService {
         tags: string[];
         poll: Prisma.JsonValue | null;
         viewCount: number;
+        agreeVotes: number;
+        disagreeVotes: number;
         authorId: string;
     }>;
     getAllPosts(categoryId?: string, page?: number, limit?: number): Promise<{
@@ -102,6 +104,8 @@ export declare class CommunityService {
         tags: string[];
         poll: Prisma.JsonValue | null;
         viewCount: number;
+        agreeVotes: number;
+        disagreeVotes: number;
         authorId: string;
     }) | null>;
     createComment(postId: string, content: string, authorId: string): Promise<{
@@ -135,6 +139,8 @@ export declare class CommunityService {
         tags: string[];
         poll: Prisma.JsonValue | null;
         viewCount: number;
+        agreeVotes: number;
+        disagreeVotes: number;
         authorId: string;
     }>;
     deletePost(postId: string, userId: string): Promise<{
@@ -148,20 +154,10 @@ export declare class CommunityService {
         tags: string[];
         poll: Prisma.JsonValue | null;
         viewCount: number;
+        agreeVotes: number;
+        disagreeVotes: number;
         authorId: string;
     }>;
-    voteOnPost(postId: string, userId: string, choice: number): Promise<{
-        cancelled: boolean;
-        changed?: undefined;
-        created?: undefined;
-    } | {
-        changed: boolean;
-        cancelled?: undefined;
-        created?: undefined;
-    } | {
-        created: boolean;
-        cancelled?: undefined;
-        changed?: undefined;
-    }>;
+    voteOnPost(postId: string, userId: string, choice: number): Promise<void>;
     getPollResult(postId: string): Promise<Record<string, number>>;
 }

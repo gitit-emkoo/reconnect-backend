@@ -289,6 +289,8 @@ model CommunityPost {
   viewCount  Int       @default(0)
   tags       String[]
   poll       Json?
+  agreeVotes Int       @default(0)
+  disagreeVotes Int    @default(0)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 

@@ -10,5 +10,8 @@
         "tsconfig": "<rootDir>/tsconfig.e2e.json"
       }
     ]
+  },
+  "moduleNameMapper": {
+    "^src/(.*)$": "<rootDir>/../src/$1"
   }
 }

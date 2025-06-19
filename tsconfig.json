@@ -7,15 +7,15 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "ES2020",
-    "rootDir": "src",
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": false,
     "skipLibCheck": true,
     "strictNullChecks": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node", "jest"]
   },
   "exclude": ["node_modules", "dist"],
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "test/**/*"]
 }
