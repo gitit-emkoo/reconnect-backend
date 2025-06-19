@@ -207,21 +207,25 @@ export class CommunityService {
     }
 
     const choiceStr = String(choice);
-    const existingVote = await this.prisma.communityPostVote.findUnique({
-      where: { postId_userId: { postId, userId } },
+    const post = await this.prisma.communityPost.findUnique({
+      where: { id: postId },
+      include: { votes: true },
     });
 
+    if (!post) {
+      throw new BadRequestException('게시글을 찾을 수 없습니다.');
+    }
+
+    const existingVote = post.votes.find((v) => v.userId === userId);
+
     return this.prisma.$transaction(async (tx) => {
+      let agreeUpdate = 0;
+      let disagreeUpdate = 0;
+
       if (existingVote) {
         // 이미 투표한 경우
-        const updates = {
-          agree: { decrement: 0, increment: 0 },
-          disagree: { decrement: 0, increment: 0 },
-        };
-        const prevChoice = existingVote.option;
-
-        if (prevChoice === '1') updates.agree.decrement = 1;
-        else if (prevChoice === '2') updates.disagree.decrement = 1;
+        if (existingVote.option === '1') agreeUpdate--;
+        else if (existingVote.option === '2') disagreeUpdate--;
 
         if (existingVote.option === choiceStr) {
           // 같은 선택지: 투표 취소
@@ -230,40 +234,44 @@ export class CommunityService {
           });
         } else {
           // 다른 선택지: 투표 변경
+          if (choiceStr === '1') agreeUpdate++;
+          else if (choiceStr === '2') disagreeUpdate++;
+          
           await tx.communityPostVote.update({
             where: { postId_userId: { postId, userId } },
             data: { option: choiceStr },
           });
-          if (choiceStr === '1') updates.agree.increment = 1;
-          else if (choiceStr === '2') updates.disagree.increment = 1;
         }
+      } else {
+        // 첫 투표
+        if (choiceStr === '1') agreeUpdate++;
+        else if (choiceStr === '2') disagreeUpdate++;
 
+        await tx.communityPostVote.create({
+          data: {
+            postId,
+            userId,
+            option: choiceStr,
+          },
+        });
+      }
+
+      // 최종적으로 한 번만 업데이트
+      if (agreeUpdate !== 0 || disagreeUpdate !== 0) {
         await tx.communityPost.update({
           where: { id: postId },
           data: {
-            agreeVotes: { 
-              increment: updates.agree.increment,
-              decrement: updates.agree.decrement,
-            },
-            disagreeVotes: {
-              increment: updates.disagree.increment,
-              decrement: updates.disagree.decrement,
-            },
+            agreeVotes: { increment: agreeUpdate },
+            disagreeVotes: { increment: disagreeUpdate },
           },
         });
-
-      } else {
-        // 처음 투표하는 경우
-        await tx.communityPostVote.create({
-          data: { postId, userId, option: choiceStr },
-        });
-
-        const voteField = choice === 1 ? 'agreeVotes' : 'disagreeVotes';
-        await tx.communityPost.update({
-          where: { id: postId },
-          data: { [voteField]: { increment: 1 } },
-        });
       }
+      
+      // 최신 포스트 상태 반환 (옵션)
+      return tx.communityPost.findUnique({
+        where: { id: postId },
+        include: { votes: true },
+      });
     });
   }
 
