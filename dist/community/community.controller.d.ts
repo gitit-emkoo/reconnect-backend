@@ -17,6 +17,7 @@ export declare class CommunityController {
         tags: string[];
         poll: import("@prisma/client/runtime/library").JsonValue | null;
         viewCount: number;
+        isAnonymous: boolean;
         agreeVotes: number;
         disagreeVotes: number;
         authorId: string;
@@ -88,6 +89,7 @@ export declare class CommunityController {
         tags: string[];
         poll: import("@prisma/client/runtime/library").JsonValue | null;
         viewCount: number;
+        isAnonymous: boolean;
         agreeVotes: number;
         disagreeVotes: number;
         authorId: string;
@@ -123,6 +125,7 @@ export declare class CommunityController {
         tags: string[];
         poll: import("@prisma/client/runtime/library").JsonValue | null;
         viewCount: number;
+        isAnonymous: boolean;
         agreeVotes: number;
         disagreeVotes: number;
         authorId: string;
@@ -138,10 +141,34 @@ export declare class CommunityController {
         tags: string[];
         poll: import("@prisma/client/runtime/library").JsonValue | null;
         viewCount: number;
+        isAnonymous: boolean;
         agreeVotes: number;
         disagreeVotes: number;
         authorId: string;
     }>;
-    voteOnPost(postId: string, voteDto: VoteDto, user: any): Promise<void>;
+    voteOnPost(postId: string, voteDto: VoteDto, user: any): Promise<({
+        votes: {
+            id: string;
+            createdAt: Date;
+            userId: string;
+            option: string;
+            postId: string;
+        }[];
+    } & {
+        content: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        title: string;
+        categoryId: string;
+        imageUrl: string | null;
+        tags: string[];
+        poll: import("@prisma/client/runtime/library").JsonValue | null;
+        viewCount: number;
+        isAnonymous: boolean;
+        agreeVotes: number;
+        disagreeVotes: number;
+        authorId: string;
+    }) | null>;
     getPollResult(postId: string): Promise<Record<string, number>>;
 }

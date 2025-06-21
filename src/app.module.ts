@@ -16,6 +16,7 @@ import { DiaryModule } from './diary/diary.module';
 import { ChallengesModule } from './challenges/challenges.module';
 import { SchedulesModule } from './schedules/schedules.module';
 import { ContentModule } from './content/content.module';
+import { DiagnosisModule } from './diagnosis/diagnosis.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ContentModule } from './content/content.module';
     ChallengesModule,
     SchedulesModule,
     ContentModule,
+    DiagnosisModule,
   ],
   controllers: [AppController],
   providers: [

@@ -39,6 +39,9 @@ model User {
   updatedAt            DateTime  @updatedAt
   schedules            Schedule[]
 
+  // 진단 결과와의 관계
+  diagnosisResults     DiagnosisResult[]
+
   // 소속된 커플 정보
   coupleId             String?   @db.ObjectId
   couple               Couple?   @relation(fields: [coupleId], references: [id])
@@ -67,6 +70,17 @@ model User {
   // 파트너 초대 관련 관계 추가
   sentInvites     PartnerInvite[] @relation("SentInvites")
   receivedInvites PartnerInvite[] @relation("ReceivedInvites")
+}
+
+model DiagnosisResult {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  score      Int      // 최종 점수
+  resultType String   // 결과 유형 (e.g., "안정기", "위험기")
+  createdAt  DateTime @default(now())
+
+  // 연결 정보
+  userId     String?  @db.ObjectId // 실제 User ID (회원가입 후 연결)
+  user       User?    @relation(fields: [userId], references: [id])
 }
 
 model Couple {

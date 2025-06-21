@@ -69,4 +69,5 @@ export class ContentController {
   unbookmarkContent(@Param('id') id: string, @GetUser() user: User) {
     return this.contentService.unbookmarkContent(id, user.id);
   }
+  
 }

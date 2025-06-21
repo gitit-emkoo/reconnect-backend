@@ -21,23 +21,34 @@ let AuthService = class AuthService {
         this.jwtService = jwtService;
     }
     async register(registerDto) {
-        const { email, password, nickname, provider = 'EMAIL' } = registerDto;
-        const existingUser = await this.prisma.user.findUnique({
-            where: { email },
-        });
-        if (existingUser) {
-            throw new common_1.ConflictException('이미 존재하는 이메일입니다.');
+        const { email, password, nickname, diagnosisId } = registerDto;
+        const existingUserByEmail = await this.prisma.user.findUnique({ where: { email } });
+        if (existingUserByEmail) {
+            throw new common_1.ConflictException('이미 사용중인 이메일입니다.');
+        }
+        const existingUserByNickname = await this.prisma.user.findUnique({ where: { nickname } });
+        if (existingUserByNickname) {
+            throw new common_1.ConflictException('이미 사용중인 닉네임입니다.');
         }
         const hashedPassword = await bcrypt.hash(password, 10);
-        const user = await this.prisma.user.create({
-            data: {
-                email,
-                password: hashedPassword,
-                nickname,
-                provider: provider,
-            },
+        const newUser = await this.prisma.$transaction(async (tx) => {
+            const user = await tx.user.create({
+                data: {
+                    email,
+                    password: hashedPassword,
+                    nickname,
+                    provider: 'EMAIL',
+                },
+            });
+            if (diagnosisId) {
+                await tx.diagnosisResult.update({
+                    where: { id: diagnosisId },
+                    data: { userId: user.id },
+                });
+            }
+            return user;
         });
-        const { password: userPassword, ...result } = user;
+        const { password: userPassword, ...result } = newUser;
         return result;
     }
     async login(loginDto) {

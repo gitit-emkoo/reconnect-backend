@@ -202,59 +202,64 @@ let CommunityService = class CommunityService {
             throw new common_1.BadRequestException('투표 선택지는 1(찬성) 또는 2(반대)여야 합니다.');
         }
         const choiceStr = String(choice);
-        const existingVote = await this.prisma.communityPostVote.findUnique({
-            where: { postId_userId: { postId, userId } },
+        const post = await this.prisma.communityPost.findUnique({
+            where: { id: postId },
+            include: { votes: true },
         });
+        if (!post) {
+            throw new common_1.BadRequestException('게시글을 찾을 수 없습니다.');
+        }
+        const existingVote = post.votes.find((v) => v.userId === userId);
         return this.prisma.$transaction(async (tx) => {
+            let agreeUpdate = 0;
+            let disagreeUpdate = 0;
             if (existingVote) {
-                const updates = {
-                    agree: { decrement: 0, increment: 0 },
-                    disagree: { decrement: 0, increment: 0 },
-                };
-                const prevChoice = existingVote.option;
-                if (prevChoice === '1')
-                    updates.agree.decrement = 1;
-                else if (prevChoice === '2')
-                    updates.disagree.decrement = 1;
+                if (existingVote.option === '1')
+                    agreeUpdate--;
+                else if (existingVote.option === '2')
+                    disagreeUpdate--;
                 if (existingVote.option === choiceStr) {
                     await tx.communityPostVote.delete({
                         where: { postId_userId: { postId, userId } },
                     });
                 }
                 else {
+                    if (choiceStr === '1')
+                        agreeUpdate++;
+                    else if (choiceStr === '2')
+                        disagreeUpdate++;
                     await tx.communityPostVote.update({
                         where: { postId_userId: { postId, userId } },
                         data: { option: choiceStr },
                     });
-                    if (choiceStr === '1')
-                        updates.agree.increment = 1;
-                    else if (choiceStr === '2')
-                        updates.disagree.increment = 1;
                 }
-                await tx.communityPost.update({
-                    where: { id: postId },
+            }
+            else {
+                if (choiceStr === '1')
+                    agreeUpdate++;
+                else if (choiceStr === '2')
+                    disagreeUpdate++;
+                await tx.communityPostVote.create({
                     data: {
-                        agreeVotes: {
-                            increment: updates.agree.increment,
-                            decrement: updates.agree.decrement,
-                        },
-                        disagreeVotes: {
-                            increment: updates.disagree.increment,
-                            decrement: updates.disagree.decrement,
-                        },
+                        postId,
+                        userId,
+                        option: choiceStr,
                     },
                 });
             }
-            else {
-                await tx.communityPostVote.create({
-                    data: { postId, userId, option: choiceStr },
-                });
-                const voteField = choice === 1 ? 'agreeVotes' : 'disagreeVotes';
+            if (agreeUpdate !== 0 || disagreeUpdate !== 0) {
                 await tx.communityPost.update({
                     where: { id: postId },
-                    data: { [voteField]: { increment: 1 } },
+                    data: {
+                        agreeVotes: { increment: agreeUpdate },
+                        disagreeVotes: { increment: disagreeUpdate },
+                    },
                 });
             }
+            return tx.communityPost.findUnique({
+                where: { id: postId },
+                include: { votes: true },
+            });
         });
     }
     async getPollResult(postId) {

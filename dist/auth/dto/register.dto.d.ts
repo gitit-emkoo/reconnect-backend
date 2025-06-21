@@ -5,4 +5,5 @@ export declare class RegisterDto {
     nickname: string;
     provider?: Provider;
     socialId?: string;
+    diagnosisId?: string;
 }

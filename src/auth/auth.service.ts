@@ -23,32 +23,48 @@ export class AuthService {
    * @returns 생성된 사용자 정보 (비밀번호 제외)
    */
   async register(registerDto: RegisterDto): Promise<Omit<User, 'password'>> {
-    const { email, password, nickname, provider = 'EMAIL' } = registerDto;
+    const { email, password, nickname, diagnosisId } = registerDto;
 
     // 1. 이메일 중복 확인
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
-    });
-    if (existingUser) {
-      throw new ConflictException('이미 존재하는 이메일입니다.'); // HTTP 409 Conflict
+    const existingUserByEmail = await this.prisma.user.findUnique({ where: { email } });
+    if (existingUserByEmail) {
+      throw new ConflictException('이미 사용중인 이메일입니다.');
     }
 
-    // 2. 비밀번호 해싱
+    // 2. 닉네임 중복 확인
+    const existingUserByNickname = await this.prisma.user.findUnique({ where: { nickname } });
+    if (existingUserByNickname) {
+      throw new ConflictException('이미 사용중인 닉네임입니다.');
+    }
+
+    // 3. 비밀번호 해싱
     const hashedPassword = await bcrypt.hash(password, 10); // 솔트 라운드 10
 
-    // 3. 사용자 생성
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword, // 해싱된 비밀번호 저장
-        nickname,
-        provider: provider as Provider,
-      },
+    const newUser = await this.prisma.$transaction(async (tx) => {
+      // 1. 새로운 사용자 생성
+      const user = await tx.user.create({
+        data: {
+          email,
+          password: hashedPassword, // 해싱된 비밀번호 저장
+          nickname,
+          provider: 'EMAIL',
+        },
+      });
+
+      // 2. diagnosisId가 있으면 진단 결과와 연결
+      if (diagnosisId) {
+        await tx.diagnosisResult.update({
+          where: { id: diagnosisId },
+          data: { userId: user.id },
+        });
+      }
+
+      return user;
     });
 
     // 민감 정보(비밀번호)는 응답에서 제외하고 반환
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: userPassword, ...result } = user;
+    const { password: userPassword, ...result } = newUser;
     return result; // 'as User' 캐스팅 제거, Omit<User, 'password'> 타입으로 반환
   }
 

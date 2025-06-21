@@ -22,4 +22,8 @@ export class RegisterDto {
   @IsString({ message: '소셜 ID는 문자열이어야 합니다.' })
   @IsOptional()
   socialId?: string;
+
+  @IsOptional()
+  @IsString()
+  diagnosisId?: string;
 }

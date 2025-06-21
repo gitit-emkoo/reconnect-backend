@@ -56,9 +56,15 @@ let ChallengesService = class ChallengesService {
         if (!template) {
             throw new common_1.NotFoundException('챌린지 템플릿을 찾을 수 없습니다.');
         }
-        const startDate = new Date();
+        const now = new Date();
+        const currentDay = now.getDay();
+        const startDate = new Date(now);
+        const offset = (currentDay === 0) ? 6 : currentDay - 1;
+        startDate.setDate(now.getDate() - offset);
+        startDate.setHours(0, 0, 0, 0);
         const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + 7);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
         return this.prisma.challenge.create({
             data: {
                 coupleId,
