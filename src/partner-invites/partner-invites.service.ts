@@ -84,9 +84,35 @@ export class PartnerInvitesService {
     }
 
     // 트랜잭션으로 커플 생성 및 초대 상태 업데이트 (바로 CONFIRMED)
-    const result = await this.prisma.$transaction(async (prisma) => {
+    const result = await this.prisma.$transaction(async (_tx) => {
+
+      // 1. 두 사용자의 최근 진단 결과 조회
+      const inviterDiagnosis = await this.prisma.diagnosis.findFirst({
+        where: { userId: invite.inviterId },
+        orderBy: { createdAt: 'desc' },
+      });
+      const inviteeDiagnosis = await this.prisma.diagnosis.findFirst({
+        where: { userId: inviteeId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // 2. 두 사람의 점수를 비교하여 낮은 점수로 동기화
+      if (inviterDiagnosis && inviteeDiagnosis) {
+        const lowerScore = Math.min(inviterDiagnosis.score, inviteeDiagnosis.score);
+
+        // 두 사용자의 진단 점수를 낮은 점수로 업데이트
+        await this.prisma.diagnosis.update({
+          where: { id: inviterDiagnosis.id },
+          data: { score: lowerScore },
+        });
+        await this.prisma.diagnosis.update({
+          where: { id: inviteeDiagnosis.id },
+          data: { score: lowerScore },
+        });
+      }
+
       // 새로운 커플 생성
-      const couple = await prisma.couple.create({
+      const couple = await this.prisma.couple.create({
         data: {
           members: {
             connect: [
@@ -98,7 +124,7 @@ export class PartnerInvitesService {
       });
 
       // 초대 상태 업데이트 (바로 CONFIRMED)
-      const updatedInvite = await prisma.partnerInvite.update({
+      const updatedInvite = await this.prisma.partnerInvite.update({
         where: { id: invite.id },
         data: {
           inviteeId,
@@ -112,11 +138,11 @@ export class PartnerInvitesService {
       });
 
       // 서로의 partnerId 업데이트
-      await prisma.user.update({
+      await this.prisma.user.update({
         where: { id: invite.inviterId },
         data: { partnerId: inviteeId }
       });
-      await prisma.user.update({
+      await this.prisma.user.update({
         where: { id: inviteeId },
         data: { partnerId: invite.inviterId }
       });
