@@ -32,16 +32,24 @@ export class CommunityService {
       }
     }
 
+    const data: Prisma.CommunityPostCreateInput = {
+      title,
+      content,
+      imageUrl,
+      tags,
+      author: { connect: { id: authorId } },
+      category: { connect: { id: categoryId } },
+    };
+
+    if (category.isPollCategory && poll) {
+      data.poll = {
+        question: poll.question,
+        options: poll.options.map(option => ({ text: option })),
+      };
+    }
+
     return this.prisma.communityPost.create({
-      data: {
-        title,
-        content,
-        imageUrl,
-        tags,
-        poll,
-        author: { connect: { id: authorId } },
-        category: { connect: { id: categoryId } },
-      },
+      data,
     });
   }
 
