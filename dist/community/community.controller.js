@@ -40,6 +40,10 @@ let CommunityController = class CommunityController {
         });
     }
     async getPostById(id) {
+        const isMongoId = /^[0-9a-fA-F]{24}$/.test(id);
+        if (!isMongoId) {
+            throw new common_1.BadRequestException('Invalid ID format');
+        }
         return this.communityService.getPostById(id);
     }
     async createComment(postId, content, user) {

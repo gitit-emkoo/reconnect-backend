@@ -72,8 +72,27 @@ let PartnerInvitesService = class PartnerInvitesService {
         if (invitee.couple) {
             throw new common_1.BadRequestException('이미 파트너와 연결되어 있습니다.');
         }
-        const result = await this.prisma.$transaction(async (prisma) => {
-            const couple = await prisma.couple.create({
+        const result = await this.prisma.$transaction(async (_tx) => {
+            const inviterDiagnosis = await this.prisma.diagnosisResult.findFirst({
+                where: { userId: invite.inviterId },
+                orderBy: { createdAt: 'desc' },
+            });
+            const inviteeDiagnosis = await this.prisma.diagnosisResult.findFirst({
+                where: { userId: inviteeId },
+                orderBy: { createdAt: 'desc' },
+            });
+            if (inviterDiagnosis && inviteeDiagnosis) {
+                const lowerScore = Math.min(inviterDiagnosis.score, inviteeDiagnosis.score);
+                await this.prisma.diagnosisResult.update({
+                    where: { id: inviterDiagnosis.id },
+                    data: { score: lowerScore },
+                });
+                await this.prisma.diagnosisResult.update({
+                    where: { id: inviteeDiagnosis.id },
+                    data: { score: lowerScore },
+                });
+            }
+            const couple = await this.prisma.couple.create({
                 data: {
                     members: {
                         connect: [
@@ -83,7 +102,7 @@ let PartnerInvitesService = class PartnerInvitesService {
                     }
                 }
             });
-            const updatedInvite = await prisma.partnerInvite.update({
+            const updatedInvite = await this.prisma.partnerInvite.update({
                 where: { id: invite.id },
                 data: {
                     inviteeId,
@@ -95,11 +114,11 @@ let PartnerInvitesService = class PartnerInvitesService {
                     invitee: true
                 }
             });
-            await prisma.user.update({
+            await this.prisma.user.update({
                 where: { id: invite.inviterId },
                 data: { partnerId: inviteeId }
             });
-            await prisma.user.update({
+            await this.prisma.user.update({
                 where: { id: inviteeId },
                 data: { partnerId: invite.inviterId }
             });

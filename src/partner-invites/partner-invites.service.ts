@@ -87,11 +87,11 @@ export class PartnerInvitesService {
     const result = await this.prisma.$transaction(async (_tx) => {
 
       // 1. 두 사용자의 최근 진단 결과 조회
-      const inviterDiagnosis = await this.prisma.diagnosis.findFirst({
+      const inviterDiagnosis = await this.prisma.diagnosisResult.findFirst({
         where: { userId: invite.inviterId },
         orderBy: { createdAt: 'desc' },
       });
-      const inviteeDiagnosis = await this.prisma.diagnosis.findFirst({
+      const inviteeDiagnosis = await this.prisma.diagnosisResult.findFirst({
         where: { userId: inviteeId },
         orderBy: { createdAt: 'desc' },
       });
@@ -101,11 +101,11 @@ export class PartnerInvitesService {
         const lowerScore = Math.min(inviterDiagnosis.score, inviteeDiagnosis.score);
 
         // 두 사용자의 진단 점수를 낮은 점수로 업데이트
-        await this.prisma.diagnosis.update({
+        await this.prisma.diagnosisResult.update({
           where: { id: inviterDiagnosis.id },
           data: { score: lowerScore },
         });
-        await this.prisma.diagnosis.update({
+        await this.prisma.diagnosisResult.update({
           where: { id: inviteeDiagnosis.id },
           data: { score: lowerScore },
         });

@@ -35,16 +35,22 @@ let CommunityService = class CommunityService {
                 throw new common_1.BadRequestException('일반 카테고리에는 투표를 추가할 수 없습니다.');
             }
         }
+        const data = {
+            title,
+            content,
+            imageUrl,
+            tags,
+            author: { connect: { id: authorId } },
+            category: { connect: { id: categoryId } },
+        };
+        if (category.isPollCategory && poll) {
+            data.poll = {
+                question: poll.question,
+                options: poll.options.map(option => ({ text: option })),
+            };
+        }
         return this.prisma.communityPost.create({
-            data: {
-                title,
-                content,
-                imageUrl,
-                tags,
-                poll,
-                author: { connect: { id: authorId } },
-                category: { connect: { id: categoryId } },
-            },
+            data,
         });
     }
     async getAllPosts(categoryId, page = 1, limit = 20) {
