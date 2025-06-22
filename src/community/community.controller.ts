@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Query, Param, Patch, Delete, ForbiddenException } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Query, Param, Patch, Delete, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { CommunityService } from './community.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // 경로에 guards/ 없음
@@ -42,6 +42,10 @@ export class CommunityController {
 
   @Get('posts/:id')
   async getPostById(@Param('id') id: string) {
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(id);
+    if (!isMongoId) {
+      throw new BadRequestException('Invalid ID format');
+    }
     return this.communityService.getPostById(id);
   }
 
