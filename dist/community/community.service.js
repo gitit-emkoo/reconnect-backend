@@ -207,74 +207,42 @@ let CommunityService = class CommunityService {
         if (choice !== 1 && choice !== 2) {
             throw new common_1.BadRequestException('투표 선택지는 1(찬성) 또는 2(반대)여야 합니다.');
         }
-        const choiceStr = String(choice);
+        const option = String(choice);
         const post = await this.prisma.communityPost.findUnique({
             where: { id: postId },
-            include: { votes: true },
         });
-        if (!post) {
-            throw new common_1.BadRequestException('게시글을 찾을 수 없습니다.');
+        if (!post || !post.poll) {
+            throw new common_1.BadRequestException('투표가 가능한 게시글이 아닙니다.');
         }
-        const existingVote = post.votes.find((v) => v.userId === userId);
-        return this.prisma.$transaction(async (tx) => {
-            let agreeUpdate = 0;
-            let disagreeUpdate = 0;
-            if (existingVote) {
-                if (existingVote.option === '1')
-                    agreeUpdate--;
-                else if (existingVote.option === '2')
-                    disagreeUpdate--;
-                if (existingVote.option === choiceStr) {
-                    await tx.communityPostVote.delete({
-                        where: { postId_userId: { postId, userId } },
-                    });
-                }
-                else {
-                    if (choiceStr === '1')
-                        agreeUpdate++;
-                    else if (choiceStr === '2')
-                        disagreeUpdate++;
-                    await tx.communityPostVote.update({
-                        where: { postId_userId: { postId, userId } },
-                        data: { option: choiceStr },
-                    });
-                }
-            }
-            else {
-                if (choiceStr === '1')
-                    agreeUpdate++;
-                else if (choiceStr === '2')
-                    disagreeUpdate++;
-                await tx.communityPostVote.create({
-                    data: {
-                        postId,
-                        userId,
-                        option: choiceStr,
-                    },
-                });
-            }
-            if (agreeUpdate !== 0 || disagreeUpdate !== 0) {
-                await tx.communityPost.update({
-                    where: { id: postId },
-                    data: {
-                        agreeVotes: { increment: agreeUpdate },
-                        disagreeVotes: { increment: disagreeUpdate },
-                    },
-                });
-            }
-            return tx.communityPost.findUnique({
-                where: { id: postId },
-                include: { votes: true },
+        const existingVote = await this.prisma.communityPostVote.findUnique({
+            where: { postId_userId: { postId, userId } },
+        });
+        if (existingVote && existingVote.option === option) {
+            return this.prisma.communityPostVote.delete({
+                where: { postId_userId: { postId, userId } },
             });
+        }
+        return this.prisma.communityPostVote.upsert({
+            where: { postId_userId: { postId, userId } },
+            update: { option },
+            create: {
+                userId,
+                postId,
+                option,
+            },
         });
     }
     async getPollResult(postId) {
-        const votes = await this.prisma.communityPostVote.findMany({
+        const voteGroups = await this.prisma.communityPostVote.groupBy({
             where: { postId },
+            by: ['option'],
+            _count: {
+                option: true,
+            },
         });
         const result = {};
-        for (const vote of votes) {
-            result[vote.option] = (result[vote.option] || 0) + 1;
+        for (const group of voteGroups) {
+            result[group.option] = group._count.option;
         }
         return result;
     }

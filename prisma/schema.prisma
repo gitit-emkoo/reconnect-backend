@@ -61,7 +61,6 @@ model User {
   emotionJournals      EmotionJournal[]
   votes                CommunityPostVote[]
   surveys              RelationshipSurvey[]
-  reports              Report[]
   diaries              Diary[] // 감정일기 1:N 관계 추가
   contentLikes         ContentLike[]
   contentBookmarks     ContentBookmark[]
@@ -92,6 +91,7 @@ model Couple {
   challenges     Challenge[]
   emotionCards   EmotionCard[]
   partnerInvites PartnerInvite[] // 파트너 초대 정보와 1:N 관계
+  reports        Report[]
 }
 
 model PartnerInvite {
@@ -220,7 +220,7 @@ model RelationshipSurvey {
 model Report {
   id                         String   @id @default(auto()) @map("_id") @db.ObjectId
   weekStartDate              DateTime
-  score                      Float    @default(0)
+  overallScore               Float    @default(0)
   cardsSentCount             Int      @default(0)
   challengesCompletedCount   Int      @default(0)
   expertSolutionsCount       Int      @default(0)
@@ -228,10 +228,10 @@ model Report {
   createdAt                  DateTime @default(now())
   updatedAt                  DateTime @updatedAt
 
-  userId                     String   @db.ObjectId
-  user                       User     @relation(fields: [userId], references: [id])
+  coupleId                   String   @db.ObjectId
+  couple                     Couple   @relation(fields: [coupleId], references: [id])
 
-  @@unique([userId, weekStartDate])
+  @@unique([coupleId, weekStartDate])
 }
 
 model Message {

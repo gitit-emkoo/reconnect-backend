@@ -26,6 +26,7 @@ const challenges_module_1 = require("./challenges/challenges.module");
 const schedules_module_1 = require("./schedules/schedules.module");
 const content_module_1 = require("./content/content.module");
 const diagnosis_module_1 = require("./diagnosis/diagnosis.module");
+const reports_module_1 = require("./reports/reports.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -52,6 +53,7 @@ exports.AppModule = AppModule = __decorate([
             schedules_module_1.SchedulesModule,
             content_module_1.ContentModule,
             diagnosis_module_1.DiagnosisModule,
+            reports_module_1.ReportsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

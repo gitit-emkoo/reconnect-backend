@@ -213,7 +213,7 @@ export class CommunityService {
     if (choice !== 1 && choice !== 2) {
       throw new BadRequestException('투표 선택지는 1(찬성) 또는 2(반대)여야 합니다.');
     }
-    
+
     const option = String(choice); // 숫자 1, 2를 문자열 "1", "2"로 변경
 
     const post = await this.prisma.communityPost.findUnique({
@@ -225,15 +225,15 @@ export class CommunityService {
     }
 
     const existingVote = await this.prisma.communityPostVote.findUnique({
-      where: { postId_userId: { postId, userId } },
-    });
-    
+            where: { postId_userId: { postId, userId } },
+          });
+          
     // 같은 선택지를 다시 누른 경우: 투표 취소 (삭제)
     if (existingVote && existingVote.option === option) {
       return this.prisma.communityPostVote.delete({
-        where: { postId_userId: { postId, userId } },
-      });
-    }
+            where: { postId_userId: { postId, userId } },
+          });
+        }
 
     // 신규 투표 또는 다른 선택지로 변경: upsert 사용
     return this.prisma.communityPostVote.upsert({

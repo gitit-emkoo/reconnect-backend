@@ -146,29 +146,12 @@ export declare class CommunityController {
         disagreeVotes: number;
         authorId: string;
     }>;
-    voteOnPost(postId: string, voteDto: VoteDto, user: any): Promise<({
-        votes: {
-            id: string;
-            createdAt: Date;
-            userId: string;
-            option: string;
-            postId: string;
-        }[];
-    } & {
-        content: string;
+    voteOnPost(postId: string, voteDto: VoteDto, user: any): Promise<{
         id: string;
         createdAt: Date;
-        updatedAt: Date;
-        title: string;
-        categoryId: string;
-        imageUrl: string | null;
-        tags: string[];
-        poll: import("@prisma/client/runtime/library").JsonValue | null;
-        viewCount: number;
-        isAnonymous: boolean;
-        agreeVotes: number;
-        disagreeVotes: number;
-        authorId: string;
-    }) | null>;
+        userId: string;
+        option: string;
+        postId: string;
+    }>;
     getPollResult(postId: string): Promise<Record<string, number>>;
 }
