@@ -17,6 +17,7 @@ import { ChallengesModule } from './challenges/challenges.module';
 import { SchedulesModule } from './schedules/schedules.module';
 import { ContentModule } from './content/content.module';
 import { DiagnosisModule } from './diagnosis/diagnosis.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { DiagnosisModule } from './diagnosis/diagnosis.module';
     SchedulesModule,
     ContentModule,
     DiagnosisModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [

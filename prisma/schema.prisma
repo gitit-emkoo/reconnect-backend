@@ -61,8 +61,7 @@ model User {
   emotionJournals      EmotionJournal[]
   votes                CommunityPostVote[]
   surveys              RelationshipSurvey[]
-  reportsAsReporter    Report[] @relation("ReportsByReporter")
-  reportsAsReported    Report[] @relation("ReportsOnReported")
+  reports              Report[]
   diaries              Diary[] // 감정일기 1:N 관계 추가
   contentLikes         ContentLike[]
   contentBookmarks     ContentBookmark[]
@@ -91,7 +90,6 @@ model Couple {
 
   members        User[]
   challenges     Challenge[]
-  reports        Report[]
   emotionCards   EmotionCard[]
   partnerInvites PartnerInvite[] // 파트너 초대 정보와 1:N 관계
 }
@@ -220,23 +218,20 @@ model RelationshipSurvey {
 }
 
 model Report {
-  id                       String   @id @default(auto()) @map("_id") @db.ObjectId
-  weekStartDate            DateTime
-  overallScore             Int
-  cardsSentCount           Int
-  challengesCompletedCount Int
-  reason                   String
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  id                         String   @id @default(auto()) @map("_id") @db.ObjectId
+  weekStartDate              DateTime
+  score                      Float    @default(0)
+  cardsSentCount             Int      @default(0)
+  challengesCompletedCount   Int      @default(0)
+  expertSolutionsCount       Int      @default(0)
+  marriageDiagnosisCount     Int      @default(0)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 
-  coupleId                 String   @db.ObjectId
-  couple                   Couple   @relation(fields: [coupleId], references: [id])
-  
-  reporterId               String   @db.ObjectId
-  reporter                 User     @relation("ReportsByReporter", fields: [reporterId], references: [id])
+  userId                     String   @db.ObjectId
+  user                       User     @relation(fields: [userId], references: [id])
 
-  reportedId               String   @db.ObjectId
-  reported                 User     @relation("ReportsOnReported", fields: [reportedId], references: [id])
+  @@unique([userId, weekStartDate])
 }
 
 model Message {

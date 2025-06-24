@@ -26,8 +26,8 @@ export class DiagnosisController {
   }
 
   @Post()
-  create(@Body() createDiagnosisDto: CreateDiagnosisDto) {
-    return this.diagnosisService.create(createDiagnosisDto);
+  create(@Body() createDiagnosisDto: CreateDiagnosisDto, @GetUser() user: User) {
+    return this.diagnosisService.create(createDiagnosisDto, user);
   }
 
   @Get()
