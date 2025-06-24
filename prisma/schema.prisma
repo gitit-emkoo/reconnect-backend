@@ -221,6 +221,7 @@ model Report {
   id                         String   @id @default(auto()) @map("_id") @db.ObjectId
   weekStartDate              DateTime
   overallScore               Float    @default(0)
+  reason                     String   @default("") // 리포트 요약 (e.g., "감정 카드 교환으로 온도가 상승했어요")
   cardsSentCount             Int      @default(0)
   challengesCompletedCount   Int      @default(0)
   expertSolutionsCount       Int      @default(0)

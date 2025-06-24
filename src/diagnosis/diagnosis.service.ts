@@ -46,12 +46,11 @@ export class DiagnosisService {
             coupleId: user.coupleId,
             weekStartDate: weekStartDate,
             overallScore: score,
-            // 다른 필드들은 기본값 또는 초기값 설정 필요
-            cardsSentCount: 0, 
-            challengesCompletedCount: 0,
             reason: '', // 초기값
-            reporterId: user.id, // 임시로 진단자 ID 사용
-            reportedId: user.partnerId || user.id, // 파트너가 없으면 자기 자신
+            cardsSentCount: 0,
+            challengesCompletedCount: 0,
+            expertSolutionsCount: 0,
+            marriageDiagnosisCount: 1, // 최초 진단이므로 1로 설정
           },
         });
       }
