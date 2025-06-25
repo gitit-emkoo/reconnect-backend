@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards, Query, BadRequestException } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
@@ -8,6 +8,15 @@ import { User } from '@prisma/client';
 @UseGuards(JwtAuthGuard)
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
+
+  /**
+   * (개발용) 수동으로 모든 커플의 지난주 리포트를 생성합니다.
+   */
+  @Post('generate')
+  async generateReports() {
+    // 실제 프로덕션에서는 이 엔드포인트를 AdminGuard 등으로 보호해야 합니다.
+    return this.reportsService.generateWeeklyReports();
+  }
 
   @Get('available-weeks')
   async findAvailableWeeks(@GetUser() user: User) {

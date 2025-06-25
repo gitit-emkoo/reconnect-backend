@@ -12,13 +12,11 @@ export declare class AuthService {
         accessToken: string;
         user: Omit<User, 'password'>;
     }>;
-    googleRegister(accessToken: string): Promise<{
-        message: string;
-    }>;
     googleLogin(googleAccessToken: string): Promise<{
         accessToken: string;
         user: Omit<User, 'password'>;
     }>;
+    private getGoogleUserInfo;
     kakaoRegister(code: string): Promise<{
         message: string;
     }>;
@@ -29,4 +27,5 @@ export declare class AuthService {
     logout(): Promise<{
         message: string;
     }>;
+    private handleOAuthError;
 }

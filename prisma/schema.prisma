@@ -231,7 +231,7 @@ model Report {
 
   coupleId                   String   @db.ObjectId
   couple                     Couple   @relation(fields: [coupleId], references: [id])
-
+  
   @@unique([coupleId, weekStartDate])
 }
 

@@ -26,11 +26,8 @@ export class AuthController {
   }
 
   @Post('google/register')
-  @HttpCode(HttpStatus.CREATED)
-  async googleRegister(
-    @Body() googleAuthDto: GoogleAuthDto
-  ): Promise<{ message: string }> {
-    return this.authService.googleRegister(googleAuthDto.access_token);
+  googleRegister(@Body() googleAuthDto: GoogleAuthDto) {
+    return this.authService.googleLogin(googleAuthDto.access_token);
   }
 
   @Post('google/login')

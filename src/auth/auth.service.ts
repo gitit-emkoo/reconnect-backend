@@ -113,36 +113,32 @@ export class AuthService {
   }
 
   /**
-   * Google OAuth 토큰으로 회원가입을 처리합니다.
-   * @param accessToken Google에서 받은 액세스 토큰
+   * Google OAuth 토큰으로 로그인을 처리합니다.
+   * 사용자가 없으면 자동으로 회원가입을 진행합니다.
+   * @param googleAccessToken Google에서 받은 액세스 토큰
    */
-  async googleRegister(accessToken: string): Promise<{ message: string }> {
-    try {
-      // 1. Google API를 통해 사용자 정보 조회
-      const { data } = await axios.get(
-        'https://www.googleapis.com/oauth2/v2/userinfo',
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
+  async googleLogin(googleAccessToken: string): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
+    // 1. 구글에서 사용자 정보 가져오기
+    const googleUserInfo = await this.getGoogleUserInfo(googleAccessToken);
+    const { email, name, sub: providerId } = googleUserInfo;
 
-      const { email, name, sub: providerId } = data;
+    if (!email) {
+      throw new BadRequestException('구글 계정에서 이메일 정보를 가져올 수 없습니다. 동의 항목을 확인해주세요.');
+    }
 
-      // 2. 이메일로 기존 사용자 조회
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email },
-      });
+    // 2. 이메일로 기존 사용자 찾기
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
 
-      // 3. 이미 가입된 사용자인 경우
-      if (existingUser) {
-        throw new ConflictException('이미 가입된 사용자입니다. 로그인을 진행해주세요.');
-      }
+    let user: User;
 
-      // 4. 새로운 사용자 생성
+    // 3. 사용자가 존재하지 않으면, 새로 생성 (회원가입)
+    if (!existingUser) {
       const randomPassword = Math.random().toString(36).slice(-10);
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
-      await this.prisma.user.create({
+      user = await this.prisma.user.create({
         data: {
           email,
           password: hashedPassword,
@@ -151,70 +147,65 @@ export class AuthService {
           providerId,
         },
       });
-
-      return {
-        message: '구글 회원가입이 완료되었습니다.',
-      };
-    } catch (error) {
-      if (error instanceof ConflictException) {
-        throw error;
-      }
-      console.error('Google register error:', error);
-      throw new UnauthorizedException('구글 회원가입에 실패했습니다.');
     }
+    // 4. 사용자가 존재하지만, 구글 연동이 안된 경우 -> 연동
+    else if (existingUser.provider !== 'GOOGLE') {
+      user = await this.prisma.user.update({
+        where: { email },
+        data: {
+          provider: 'GOOGLE',
+          providerId,
+        },
+      });
+    }
+    // 5. 이미 구글로 가입된 사용자인 경우
+    else {
+      user = existingUser;
+    }
+
+    // 6. JWT 토큰 생성 및 반환 (로그인)
+    const userWithDetails = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      include: { partner: true, couple: true },
+    });
+
+    if (!userWithDetails) {
+      throw new UnauthorizedException('사용자 정보를 찾는 데 실패했습니다.');
+    }
+
+    const payload = {
+      userId: userWithDetails.id,
+      email: userWithDetails.email,
+      nickname: userWithDetails.nickname,
+      role: userWithDetails.role,
+      partnerId: userWithDetails.partner?.id ?? null,
+      couple: userWithDetails.couple ? { id: userWithDetails.couple.id } : null,
+    };
+    const accessToken = this.jwtService.sign(payload);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = userWithDetails;
+
+    return {
+      accessToken,
+      user: result,
+    };
   }
 
   /**
-   * Google OAuth 토큰으로 로그인을 처리합니다.
-   * @param googleAccessToken Google에서 받은 액세스 토큰
+   * Google Access Token으로 사용자 정보를 조회하는 헬퍼 함수
    */
-  async googleLogin(googleAccessToken: string): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
+  private async getGoogleUserInfo(accessToken: string): Promise<{ email: string; name: string; sub: string }> {
     try {
       const { data } = await axios.get(
         'https://www.googleapis.com/oauth2/v2/userinfo',
         {
-          headers: { Authorization: `Bearer ${googleAccessToken}` },
+          headers: { Authorization: `Bearer ${accessToken}` },
         }
       );
-      const { email, name, sub: providerId } = data;
-      const user = await this.prisma.user.findFirst({
-        where: { 
-          email,
-          provider: 'GOOGLE',
-        } as Prisma.UserWhereInput,
-        include: { partner: true, couple: true },
-      });
-      if (!user) {
-        throw new UnauthorizedException('가입되지 않은 사용자입니다. 회원가입을 진행해주세요.');
-      }
-      let partnerId: string | null = null;
-      if (user.partnerId) {
-        partnerId = user.partnerId;
-      } else if (user.partner && typeof user.partner === 'object' && user.partner.id) {
-        partnerId = user.partner.id;
-      } else if (typeof user.partner === 'string') {
-        partnerId = user.partner;
-      }
-      const payload = {
-        userId: user.id,
-        email: user.email,
-        nickname: user.nickname,
-        role: (user as any).role,
-        partnerId: partnerId ?? null,
-        couple: user.couple ? { id: user.couple.id } : null,
-      };
-      const accessToken = this.jwtService.sign(payload);
-      const { password: _, ...userWithoutPassword } = user;
-      return {
-        accessToken,
-        user: userWithoutPassword,
-      };
+      return data;
     } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-      console.error('Google login error:', error);
-      throw new UnauthorizedException('구글 로그인에 실패했습니다.');
+      this.handleOAuthError('Google', error);
     }
   }
 
@@ -347,5 +338,16 @@ export class AuthService {
     // (예: 토큰 블랙리스트 추가 등)
     // 따라서 성공 메시지만 반환합니다.
     return { message: '성공적으로 로그아웃되었습니다.' };
+  }
+
+  /**
+   * OAuth 관련 에러를 처리하는 헬퍼 함수
+   */
+  private handleOAuthError(provider: string, error: any): never {
+    if (error instanceof ConflictException || error instanceof UnauthorizedException) {
+      throw error;
+    }
+    console.error(`${provider} auth error:`, error.response?.data || error.message);
+    throw new UnauthorizedException(`${provider} 인증에 실패했습니다.`);
   }
 }

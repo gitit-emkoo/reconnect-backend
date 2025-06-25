@@ -89,21 +89,20 @@ let AuthService = class AuthService {
             user: result
         };
     }
-    async googleRegister(accessToken) {
-        try {
-            const { data } = await axios_1.default.get('https://www.googleapis.com/oauth2/v2/userinfo', {
-                headers: { Authorization: `Bearer ${accessToken}` },
-            });
-            const { email, name, sub: providerId } = data;
-            const existingUser = await this.prisma.user.findUnique({
-                where: { email },
-            });
-            if (existingUser) {
-                throw new common_1.ConflictException('이미 가입된 사용자입니다. 로그인을 진행해주세요.');
-            }
+    async googleLogin(googleAccessToken) {
+        const googleUserInfo = await this.getGoogleUserInfo(googleAccessToken);
+        const { email, name, sub: providerId } = googleUserInfo;
+        if (!email) {
+            throw new common_1.BadRequestException('구글 계정에서 이메일 정보를 가져올 수 없습니다. 동의 항목을 확인해주세요.');
+        }
+        const existingUser = await this.prisma.user.findUnique({
+            where: { email },
+        });
+        let user;
+        if (!existingUser) {
             const randomPassword = Math.random().toString(36).slice(-10);
             const hashedPassword = await bcrypt.hash(randomPassword, 10);
-            await this.prisma.user.create({
+            user = await this.prisma.user.create({
                 data: {
                     email,
                     password: hashedPassword,
@@ -112,65 +111,50 @@ let AuthService = class AuthService {
                     providerId,
                 },
             });
-            return {
-                message: '구글 회원가입이 완료되었습니다.',
-            };
         }
-        catch (error) {
-            if (error instanceof common_1.ConflictException) {
-                throw error;
-            }
-            console.error('Google register error:', error);
-            throw new common_1.UnauthorizedException('구글 회원가입에 실패했습니다.');
+        else if (existingUser.provider !== 'GOOGLE') {
+            user = await this.prisma.user.update({
+                where: { email },
+                data: {
+                    provider: 'GOOGLE',
+                    providerId,
+                },
+            });
         }
+        else {
+            user = existingUser;
+        }
+        const userWithDetails = await this.prisma.user.findUnique({
+            where: { id: user.id },
+            include: { partner: true, couple: true },
+        });
+        if (!userWithDetails) {
+            throw new common_1.UnauthorizedException('사용자 정보를 찾는 데 실패했습니다.');
+        }
+        const payload = {
+            userId: userWithDetails.id,
+            email: userWithDetails.email,
+            nickname: userWithDetails.nickname,
+            role: userWithDetails.role,
+            partnerId: userWithDetails.partner?.id ?? null,
+            couple: userWithDetails.couple ? { id: userWithDetails.couple.id } : null,
+        };
+        const accessToken = this.jwtService.sign(payload);
+        const { password, ...result } = userWithDetails;
+        return {
+            accessToken,
+            user: result,
+        };
     }
-    async googleLogin(googleAccessToken) {
+    async getGoogleUserInfo(accessToken) {
         try {
             const { data } = await axios_1.default.get('https://www.googleapis.com/oauth2/v2/userinfo', {
-                headers: { Authorization: `Bearer ${googleAccessToken}` },
+                headers: { Authorization: `Bearer ${accessToken}` },
             });
-            const { email, name, sub: providerId } = data;
-            const user = await this.prisma.user.findFirst({
-                where: {
-                    email,
-                    provider: 'GOOGLE',
-                },
-                include: { partner: true, couple: true },
-            });
-            if (!user) {
-                throw new common_1.UnauthorizedException('가입되지 않은 사용자입니다. 회원가입을 진행해주세요.');
-            }
-            let partnerId = null;
-            if (user.partnerId) {
-                partnerId = user.partnerId;
-            }
-            else if (user.partner && typeof user.partner === 'object' && user.partner.id) {
-                partnerId = user.partner.id;
-            }
-            else if (typeof user.partner === 'string') {
-                partnerId = user.partner;
-            }
-            const payload = {
-                userId: user.id,
-                email: user.email,
-                nickname: user.nickname,
-                role: user.role,
-                partnerId: partnerId ?? null,
-                couple: user.couple ? { id: user.couple.id } : null,
-            };
-            const accessToken = this.jwtService.sign(payload);
-            const { password: _, ...userWithoutPassword } = user;
-            return {
-                accessToken,
-                user: userWithoutPassword,
-            };
+            return data;
         }
         catch (error) {
-            if (error instanceof common_1.UnauthorizedException) {
-                throw error;
-            }
-            console.error('Google login error:', error);
-            throw new common_1.UnauthorizedException('구글 로그인에 실패했습니다.');
+            this.handleOAuthError('Google', error);
         }
     }
     async kakaoRegister(code) {
@@ -288,6 +272,13 @@ let AuthService = class AuthService {
     }
     async logout() {
         return { message: '성공적으로 로그아웃되었습니다.' };
+    }
+    handleOAuthError(provider, error) {
+        if (error instanceof common_1.ConflictException || error instanceof common_1.UnauthorizedException) {
+            throw error;
+        }
+        console.error(`${provider} auth error:`, error.response?.data || error.message);
+        throw new common_1.UnauthorizedException(`${provider} 인증에 실패했습니다.`);
     }
 };
 exports.AuthService = AuthService;

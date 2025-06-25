@@ -12,7 +12,8 @@ export declare class AuthController {
         user: Omit<User, 'password'>;
     }>;
     googleRegister(googleAuthDto: GoogleAuthDto): Promise<{
-        message: string;
+        accessToken: string;
+        user: Omit<User, "password">;
     }>;
     googleLogin(googleAuthDto: GoogleAuthDto): Promise<{
         accessToken: string;

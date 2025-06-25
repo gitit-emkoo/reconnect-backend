@@ -52,7 +52,7 @@ export class DiagnosisService {
             expertSolutionsCount: 0,
             marriageDiagnosisCount: 1, // 최초 진단이므로 1로 설정
           },
-        });
+    });
       }
     }
 
