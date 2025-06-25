@@ -23,7 +23,7 @@ export class AuthService {
    * @returns 생성된 사용자 정보 (비밀번호 제외)
    */
   async register(registerDto: RegisterDto): Promise<Omit<User, 'password'>> {
-    const { email, password, nickname, diagnosisId } = registerDto;
+    const { email, password, nickname, unauthDiagnosisId } = registerDto;
 
     // 1. 이메일 중복 확인
     const existingUserByEmail = await this.prisma.user.findUnique({ where: { email } });
@@ -51,12 +51,22 @@ export class AuthService {
         },
       });
 
-      // 2. diagnosisId가 있으면 진단 결과와 연결
-      if (diagnosisId) {
-        await tx.diagnosisResult.update({
-          where: { id: diagnosisId },
-          data: { userId: user.id },
+      // 2. unauthDiagnosisId가 있으면 진단 결과와 연결
+      if (unauthDiagnosisId) {
+        // 연결되지 않은 진단 결과인지 한 번 더 확인 (선택적)
+        const diagnosis = await tx.diagnosisResult.findFirst({
+          where: {
+            id: unauthDiagnosisId,
+            userId: null, // 아직 유저와 연결되지 않은 진단 결과
+          }
         });
+
+        if (diagnosis) {
+          await tx.diagnosisResult.update({
+            where: { id: unauthDiagnosisId },
+            data: { userId: user.id },
+          });
+        }
       }
 
       return user;
