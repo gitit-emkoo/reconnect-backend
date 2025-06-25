@@ -7,6 +7,8 @@ import {
   Param,
   Delete,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { DiagnosisService } from './diagnosis.service';
 import { CreateDiagnosisDto } from './dto/create-diagnosis.dto';
@@ -14,33 +16,39 @@ import { UpdateDiagnosisDto } from './dto/update-diagnosis.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import type { User } from '@prisma/client';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 
 @Controller('diagnosis')
-@UseGuards(JwtAuthGuard)
 export class DiagnosisController {
   constructor(private readonly diagnosisService: DiagnosisService) {}
 
+  @Post()
+  @UseGuards(OptionalJwtAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
+  create(@Body() createDiagnosisDto: CreateDiagnosisDto, @GetUser() user?: User) {
+    return this.diagnosisService.create(createDiagnosisDto, user);
+  }
+
   @Get('my-latest')
+  @UseGuards(JwtAuthGuard)
   findMyLatest(@GetUser() user: User) {
     return this.diagnosisService.findLatest(user.id);
   }
 
-  @Post()
-  create(@Body() createDiagnosisDto: CreateDiagnosisDto, @GetUser() user: User) {
-    return this.diagnosisService.create(createDiagnosisDto, user);
-  }
-
   @Get()
+  @UseGuards(JwtAuthGuard)
   findAll() {
     return this.diagnosisService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string) {
     return this.diagnosisService.findOne(+id);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   update(
     @Param('id') id: string,
     @Body() updateDiagnosisDto: UpdateDiagnosisDto,
@@ -49,6 +57,7 @@ export class DiagnosisController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   remove(@Param('id') id: string) {
     return this.diagnosisService.remove(+id);
   }

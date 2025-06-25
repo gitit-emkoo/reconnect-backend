@@ -2,14 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { CreateDiagnosisDto } from './dto/create-diagnosis.dto';
 import { UpdateDiagnosisDto } from './dto/update-diagnosis.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { User } from '@prisma/client';
+import type { User } from '@prisma/client';
 import { startOfWeek, endOfWeek } from 'date-fns';
 
 @Injectable()
 export class DiagnosisService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(createDiagnosisDto: CreateDiagnosisDto, user: User) {
+  async create(createDiagnosisDto: CreateDiagnosisDto, user?: User) {
     const { score, resultType } = createDiagnosisDto;
     
     // 1. DiagnosisResult 생성
@@ -17,12 +17,12 @@ export class DiagnosisService {
       data: {
         score,
         resultType,
-        userId: user.id,
+        userId: user ? user.id : null,
       },
     });
 
     // 2. Report 생성 또는 업데이트
-    if (user.coupleId) {
+    if (user && user.coupleId) {
       const now = new Date();
       const weekStartDate = startOfWeek(now, { weekStartsOn: 1 }); // 월요일을 주의 시작으로 설정
 
