@@ -9,57 +9,60 @@ import { startOfWeek, endOfWeek } from 'date-fns';
 export class DiagnosisService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createDiagnosisDto: CreateDiagnosisDto, user?: User) {
-    const { score, resultType } = createDiagnosisDto;
-    
+  async create(userId: string, createDiagnosisDto: CreateDiagnosisDto) {
+    const { score, resultType, createdAt } = createDiagnosisDto;
+
     // 1. DiagnosisResult 생성
     const newDiagnosis = await this.prisma.diagnosisResult.create({
       data: {
+        userId,
         score,
-        resultType,
-        userId: user ? user.id : null,
+        resultType: resultType || 'USER_SUBMITTED', // 타입이 없으면 기본값
+        createdAt: createdAt ? new Date(createdAt) : new Date(),
       },
     });
-
-    // 2. Report 생성 또는 업데이트
-    if (user && user.coupleId) {
-      const now = new Date();
-      const weekStartDate = startOfWeek(now, { weekStartsOn: 1 }); // 월요일을 주의 시작으로 설정
-
-      const existingReport = await this.prisma.report.findFirst({
-        where: {
-          coupleId: user.coupleId,
-          weekStartDate: weekStartDate,
-        }
-      });
-
-      if (existingReport) {
-        // 기존 리포트가 있으면 점수 업데이트 (여기서는 덮어쓰기. 평균 등 다른 로직도 가능)
-        await this.prisma.report.update({
-          where: { id: existingReport.id },
-          data: { overallScore: score },
-        });
-      } else {
-        // 기존 리포트가 없으면 새로 생성
-        await this.prisma.report.create({
-          data: {
-            coupleId: user.coupleId,
-            weekStartDate: weekStartDate,
-            overallScore: score,
-            reason: '', // 초기값
-            cardsSentCount: 0,
-            challengesCompletedCount: 0,
-            expertSolutionsCount: 0,
-            marriageDiagnosisCount: 1, // 최초 진단이므로 1로 설정
-          },
-    });
-      }
-    }
 
     return newDiagnosis;
   }
 
-  async findLatest(userId: string) {
+  async createOrUpdateFromUnauth(userId: string, createDiagnosisDto: CreateDiagnosisDto) {
+    const { score, createdAt } = createDiagnosisDto;
+
+    // 1. 사용자의 초기 진단 결과가 있는지 확인
+    const existingInitialDiagnosis = await this.prisma.diagnosisResult.findFirst({
+      where: {
+        userId,
+        resultType: 'INITIAL',
+      },
+    });
+
+    // 2. 있으면 해당 결과를 비회원 진단 결과로 업데이트
+    if (existingInitialDiagnosis) {
+      return this.prisma.diagnosisResult.update({
+        where: { id: existingInitialDiagnosis.id },
+        data: {
+          score,
+          resultType: 'UNAUTH_CONVERTED', // 비회원->회원 전환됨
+          createdAt: createdAt ? new Date(createdAt) : new Date(),
+        },
+      });
+    } else {
+      // 3. 없으면(드문 경우), 새로운 진단 결과를 생성
+      return this.prisma.diagnosisResult.create({
+        data: {
+          userId,
+          score,
+          resultType: 'UNAUTH_CONVERTED',
+          createdAt: createdAt ? new Date(createdAt) : new Date(),
+        },
+      });
+    }
+  }
+
+  async getMyLatestDiagnosis(userId: string) {
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
     return this.prisma.diagnosisResult.findFirst({
       where: { userId },
       orderBy: {

@@ -23,16 +23,22 @@ export class DiagnosisController {
   constructor(private readonly diagnosisService: DiagnosisService) {}
 
   @Post()
-  @UseGuards(OptionalJwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createDiagnosisDto: CreateDiagnosisDto, @GetUser() user?: User) {
-    return this.diagnosisService.create(createDiagnosisDto, user);
+  create(@Body() createDiagnosisDto: CreateDiagnosisDto, @GetUser() user: User) {
+    return this.diagnosisService.create(user.id, createDiagnosisDto);
+  }
+
+  @Post('unauth')
+  @UseGuards(JwtAuthGuard)
+  createFromUnauth(@Body() createDiagnosisDto: CreateDiagnosisDto, @GetUser() user: User) {
+    return this.diagnosisService.createOrUpdateFromUnauth(user.id, createDiagnosisDto);
   }
 
   @Get('my-latest')
   @UseGuards(JwtAuthGuard)
   findMyLatest(@GetUser() user: User) {
-    return this.diagnosisService.findLatest(user.id);
+    return this.diagnosisService.getMyLatestDiagnosis(user.id);
   }
 
   @Get()

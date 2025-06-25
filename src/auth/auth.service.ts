@@ -52,14 +52,10 @@ export class AuthService {
         },
       });
 
-      // 2. unauthDiagnosisId가 있으면 진단 결과와 연결
+      // 2. unauthDiagnosisId가 있으면 진단 결과와 연결, 없으면 기본값으로 생성
       if (unauthDiagnosisId) {
-        // 연결되지 않은 진단 결과인지 한 번 더 확인 (선택적)
         const diagnosis = await tx.diagnosisResult.findFirst({
-          where: {
-            id: unauthDiagnosisId,
-            userId: null, // 아직 유저와 연결되지 않은 진단 결과
-          }
+          where: { id: unauthDiagnosisId, userId: null },
         });
 
         if (diagnosis) {
@@ -68,6 +64,15 @@ export class AuthService {
             data: { userId: user.id },
           });
         }
+      } else {
+        // 연결할 진단 결과가 없으면 기본값 61점으로 새로 생성
+        await tx.diagnosisResult.create({
+          data: {
+            userId: user.id,
+            score: 61,
+            resultType: 'INITIAL' // 기본값으로 생성되었음을 명시
+          }
+        });
       }
 
       return user;
@@ -162,7 +167,7 @@ export class AuthService {
           },
         });
 
-        // 3-1. 비회원 진단 결과 연결
+        // 3-1. 비회원 진단 결과 연결 또는 기본값 생성
         if (unauthDiagnosisId) {
           const diagnosis = await tx.diagnosisResult.findFirst({
             where: { id: unauthDiagnosisId, userId: null },
@@ -173,6 +178,15 @@ export class AuthService {
               data: { userId: user.id },
             });
           }
+        } else {
+          // 기본값 61점 생성
+          await tx.diagnosisResult.create({
+            data: {
+              userId: user.id,
+              score: 61,
+              resultType: 'INITIAL'
+            }
+          });
         }
       }
       // 4. 사용자가 존재하지만, 구글 연동이 안된 경우 -> 연동
