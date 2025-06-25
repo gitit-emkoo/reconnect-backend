@@ -5,6 +5,7 @@ import { Prisma, User, Provider } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt'; // JwtService 임포트 유지
 import * as bcrypt from 'bcryptjs'; // bcryptjs 임포트
 import axios from 'axios';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 
 // DTO(Data Transfer Object) 임포트 (이전에 정의했었던 dto 파일들)
 import { RegisterDto } from './dto/register.dto';
@@ -124,10 +125,12 @@ export class AuthService {
 
   /**
    * Google OAuth 토큰으로 로그인을 처리합니다.
-   * 사용자가 없으면 자동으로 회원가입을 진행합니다.
-   * @param googleAccessToken Google에서 받은 액세스 토큰
+   * 사용자가 없으면 자동으로 회원가입을 진행하고, 비회원 진단 결과가 있으면 연결합니다.
+   * @param googleAuthDto Google 액세스 토큰과 비회원 진단 ID를 포함하는 DTO
    */
-  async googleLogin(googleAccessToken: string): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
+  async googleLogin(googleAuthDto: GoogleAuthDto): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
+    const { accessToken: googleAccessToken, unauthDiagnosisId } = googleAuthDto;
+
     // 1. 구글에서 사용자 정보 가져오기
     const googleUserInfo = await this.getGoogleUserInfo(googleAccessToken);
     const { email, name, sub: providerId } = googleUserInfo;
@@ -136,42 +139,59 @@ export class AuthService {
       throw new BadRequestException('구글 계정에서 이메일 정보를 가져올 수 없습니다. 동의 항목을 확인해주세요.');
     }
 
-    // 2. 이메일로 기존 사용자 찾기
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
-    });
-
-    let user: User;
-
-    // 3. 사용자가 존재하지 않으면, 새로 생성 (회원가입)
-    if (!existingUser) {
-      const randomPassword = Math.random().toString(36).slice(-10);
-      const hashedPassword = await bcrypt.hash(randomPassword, 10);
-
-      user = await this.prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          nickname: name || email.split('@')[0],
-          provider: 'GOOGLE',
-          providerId,
-        },
-      });
-    }
-    // 4. 사용자가 존재하지만, 구글 연동이 안된 경우 -> 연동
-    else if (existingUser.provider !== 'GOOGLE') {
-      user = await this.prisma.user.update({
+    const user = await this.prisma.$transaction(async (tx) => {
+      // 2. 이메일로 기존 사용자 찾기
+      const existingUser = await tx.user.findUnique({
         where: { email },
-        data: {
-          provider: 'GOOGLE',
-          providerId,
-        },
       });
-    }
-    // 5. 이미 구글로 가입된 사용자인 경우
-    else {
-      user = existingUser;
-    }
+
+      let user: User;
+
+      // 3. 사용자가 존재하지 않으면, 새로 생성 (회원가입)
+      if (!existingUser) {
+        const randomPassword = Math.random().toString(36).slice(-10);
+        const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+        user = await tx.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            nickname: name || email.split('@')[0],
+            provider: 'GOOGLE',
+            providerId,
+          },
+        });
+
+        // 3-1. 비회원 진단 결과 연결
+        if (unauthDiagnosisId) {
+          const diagnosis = await tx.diagnosisResult.findFirst({
+            where: { id: unauthDiagnosisId, userId: null },
+          });
+          if (diagnosis) {
+            await tx.diagnosisResult.update({
+              where: { id: unauthDiagnosisId },
+              data: { userId: user.id },
+            });
+          }
+        }
+      }
+      // 4. 사용자가 존재하지만, 구글 연동이 안된 경우 -> 연동
+      else if (existingUser.provider !== 'GOOGLE') {
+        user = await tx.user.update({
+          where: { email },
+          data: {
+            provider: 'GOOGLE',
+            providerId,
+          },
+        });
+      }
+      // 5. 이미 구글로 가입된 사용자인 경우
+      else {
+        user = existingUser;
+      }
+      
+      return user;
+    });
 
     // 6. JWT 토큰 생성 및 반환 (로그인)
     const userWithDetails = await this.prisma.user.findUnique({

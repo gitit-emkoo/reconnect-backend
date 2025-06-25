@@ -6,4 +6,6 @@ export declare class RegisterDto {
     provider?: Provider;
     socialId?: string;
     diagnosisId?: string;
+    answers?: number[];
+    unauthDiagnosisId?: string;
 }

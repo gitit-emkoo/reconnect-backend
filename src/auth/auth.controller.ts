@@ -3,7 +3,8 @@ import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { SocialAuthDto, GoogleAuthDto } from './dto/social-auth.dto';
+import { SocialAuthDto } from './dto/social-auth.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { User } from '@prisma/client'; // User 타입 임포트는 유지
 
 @Controller('auth') // 이 컨트롤러의 기본 경로가 /auth가 됩니다.
@@ -25,27 +26,22 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  @Post('google/register')
-  googleRegister(@Body() googleAuthDto: GoogleAuthDto) {
-    return this.authService.googleLogin(googleAuthDto.access_token);
-  }
-
   @Post('google/login')
   @HttpCode(HttpStatus.OK)
   async googleLogin(
     @Body() googleAuthDto: GoogleAuthDto
   ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
-    return this.authService.googleLogin(googleAuthDto.access_token);
+    return this.authService.googleLogin(googleAuthDto);
   }
 
   @Post('kakao/register')
   @HttpCode(HttpStatus.CREATED)
-  async kakaoRegister(
-    @Body() socialAuthDto: SocialAuthDto
-  ): Promise<{ message: string }> {
-    console.log('카카오 회원가입 요청 받음');
-    console.log('인증 코드:', socialAuthDto.code);
-    return this.authService.kakaoRegister(socialAuthDto.code);
+  async kakaoRegister(@Body('code') code: string) {
+    if (!code) {
+      console.log('카카오 회원가입 요청 받음');
+      console.log('인증 코드:', code);
+      return this.authService.kakaoRegister(code);
+    }
   }
 
   @Post('kakao/login')

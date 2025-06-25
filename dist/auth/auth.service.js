@@ -21,7 +21,7 @@ let AuthService = class AuthService {
         this.jwtService = jwtService;
     }
     async register(registerDto) {
-        const { email, password, nickname, diagnosisId } = registerDto;
+        const { email, password, nickname, unauthDiagnosisId } = registerDto;
         const existingUserByEmail = await this.prisma.user.findUnique({ where: { email } });
         if (existingUserByEmail) {
             throw new common_1.ConflictException('이미 사용중인 이메일입니다.');
@@ -40,11 +40,19 @@ let AuthService = class AuthService {
                     provider: 'EMAIL',
                 },
             });
-            if (diagnosisId) {
-                await tx.diagnosisResult.update({
-                    where: { id: diagnosisId },
-                    data: { userId: user.id },
+            if (unauthDiagnosisId) {
+                const diagnosis = await tx.diagnosisResult.findFirst({
+                    where: {
+                        id: unauthDiagnosisId,
+                        userId: null,
+                    }
                 });
+                if (diagnosis) {
+                    await tx.diagnosisResult.update({
+                        where: { id: unauthDiagnosisId },
+                        data: { userId: user.id },
+                    });
+                }
             }
             return user;
         });
