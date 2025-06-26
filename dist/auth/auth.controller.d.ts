@@ -1,7 +1,8 @@
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { SocialAuthDto, GoogleAuthDto } from './dto/social-auth.dto';
+import { SocialAuthDto } from './dto/social-auth.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { User } from '@prisma/client';
 export declare class AuthController {
     private authService;
@@ -11,17 +12,13 @@ export declare class AuthController {
         accessToken: string;
         user: Omit<User, 'password'>;
     }>;
-    googleRegister(googleAuthDto: GoogleAuthDto): Promise<{
-        accessToken: string;
-        user: Omit<User, "password">;
-    }>;
     googleLogin(googleAuthDto: GoogleAuthDto): Promise<{
         accessToken: string;
         user: Omit<User, 'password'>;
     }>;
-    kakaoRegister(socialAuthDto: SocialAuthDto): Promise<{
+    kakaoRegister(code: string): Promise<{
         message: string;
-    }>;
+    } | undefined>;
     kakaoLogin(socialAuthDto: SocialAuthDto): Promise<{
         accessToken: string;
         user: Omit<User, 'password'>;

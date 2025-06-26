@@ -1,6 +1,7 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { User } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 export declare class AuthService {
@@ -12,7 +13,7 @@ export declare class AuthService {
         accessToken: string;
         user: Omit<User, 'password'>;
     }>;
-    googleLogin(googleAccessToken: string): Promise<{
+    googleLogin(googleAuthDto: GoogleAuthDto): Promise<{
         accessToken: string;
         user: Omit<User, 'password'>;
     }>;

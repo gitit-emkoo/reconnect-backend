@@ -42,10 +42,7 @@ let AuthService = class AuthService {
             });
             if (unauthDiagnosisId) {
                 const diagnosis = await tx.diagnosisResult.findFirst({
-                    where: {
-                        id: unauthDiagnosisId,
-                        userId: null,
-                    }
+                    where: { id: unauthDiagnosisId, userId: null },
                 });
                 if (diagnosis) {
                     await tx.diagnosisResult.update({
@@ -53,6 +50,15 @@ let AuthService = class AuthService {
                         data: { userId: user.id },
                     });
                 }
+            }
+            else {
+                await tx.diagnosisResult.create({
+                    data: {
+                        userId: user.id,
+                        score: 61,
+                        resultType: 'INITIAL'
+                    }
+                });
             }
             return user;
         });
@@ -97,41 +103,65 @@ let AuthService = class AuthService {
             user: result
         };
     }
-    async googleLogin(googleAccessToken) {
+    async googleLogin(googleAuthDto) {
+        const { accessToken: googleAccessToken, unauthDiagnosisId } = googleAuthDto;
         const googleUserInfo = await this.getGoogleUserInfo(googleAccessToken);
         const { email, name, sub: providerId } = googleUserInfo;
         if (!email) {
             throw new common_1.BadRequestException('구글 계정에서 이메일 정보를 가져올 수 없습니다. 동의 항목을 확인해주세요.');
         }
-        const existingUser = await this.prisma.user.findUnique({
-            where: { email },
-        });
-        let user;
-        if (!existingUser) {
-            const randomPassword = Math.random().toString(36).slice(-10);
-            const hashedPassword = await bcrypt.hash(randomPassword, 10);
-            user = await this.prisma.user.create({
-                data: {
-                    email,
-                    password: hashedPassword,
-                    nickname: name || email.split('@')[0],
-                    provider: 'GOOGLE',
-                    providerId,
-                },
-            });
-        }
-        else if (existingUser.provider !== 'GOOGLE') {
-            user = await this.prisma.user.update({
+        const user = await this.prisma.$transaction(async (tx) => {
+            const existingUser = await tx.user.findUnique({
                 where: { email },
-                data: {
-                    provider: 'GOOGLE',
-                    providerId,
-                },
             });
-        }
-        else {
-            user = existingUser;
-        }
+            let user;
+            if (!existingUser) {
+                const randomPassword = Math.random().toString(36).slice(-10);
+                const hashedPassword = await bcrypt.hash(randomPassword, 10);
+                user = await tx.user.create({
+                    data: {
+                        email,
+                        password: hashedPassword,
+                        nickname: name || email.split('@')[0],
+                        provider: 'GOOGLE',
+                        providerId,
+                    },
+                });
+                if (unauthDiagnosisId) {
+                    const diagnosis = await tx.diagnosisResult.findFirst({
+                        where: { id: unauthDiagnosisId, userId: null },
+                    });
+                    if (diagnosis) {
+                        await tx.diagnosisResult.update({
+                            where: { id: unauthDiagnosisId },
+                            data: { userId: user.id },
+                        });
+                    }
+                }
+                else {
+                    await tx.diagnosisResult.create({
+                        data: {
+                            userId: user.id,
+                            score: 61,
+                            resultType: 'INITIAL'
+                        }
+                    });
+                }
+            }
+            else if (existingUser.provider !== 'GOOGLE') {
+                user = await tx.user.update({
+                    where: { email },
+                    data: {
+                        provider: 'GOOGLE',
+                        providerId,
+                    },
+                });
+            }
+            else {
+                user = existingUser;
+            }
+            return user;
+        });
         const userWithDetails = await this.prisma.user.findUnique({
             where: { id: user.id },
             include: { partner: true, couple: true },

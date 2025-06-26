@@ -18,6 +18,7 @@ const auth_service_1 = require("./auth.service");
 const register_dto_1 = require("./dto/register.dto");
 const login_dto_1 = require("./dto/login.dto");
 const social_auth_dto_1 = require("./dto/social-auth.dto");
+const google_auth_dto_1 = require("./dto/google-auth.dto");
 let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
@@ -28,16 +29,15 @@ let AuthController = class AuthController {
     async login(loginDto) {
         return this.authService.login(loginDto);
     }
-    googleRegister(googleAuthDto) {
-        return this.authService.googleLogin(googleAuthDto.access_token);
-    }
     async googleLogin(googleAuthDto) {
-        return this.authService.googleLogin(googleAuthDto.access_token);
+        return this.authService.googleLogin(googleAuthDto);
     }
-    async kakaoRegister(socialAuthDto) {
-        console.log('카카오 회원가입 요청 받음');
-        console.log('인증 코드:', socialAuthDto.code);
-        return this.authService.kakaoRegister(socialAuthDto.code);
+    async kakaoRegister(code) {
+        if (!code) {
+            console.log('카카오 회원가입 요청 받음');
+            console.log('인증 코드:', code);
+            return this.authService.kakaoRegister(code);
+        }
     }
     async kakaoLogin(socialAuthDto) {
         console.log('카카오 로그인 요청 받음');
@@ -66,26 +66,19 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([
-    (0, common_1.Post)('google/register'),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [social_auth_dto_1.GoogleAuthDto]),
-    __metadata("design:returntype", void 0)
-], AuthController.prototype, "googleRegister", null);
-__decorate([
     (0, common_1.Post)('google/login'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [social_auth_dto_1.GoogleAuthDto]),
+    __metadata("design:paramtypes", [google_auth_dto_1.GoogleAuthDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "googleLogin", null);
 __decorate([
     (0, common_1.Post)('kakao/register'),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, common_1.Body)('code')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [social_auth_dto_1.SocialAuthDto]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "kakaoRegister", null);
 __decorate([

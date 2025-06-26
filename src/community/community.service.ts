@@ -209,12 +209,10 @@ export class CommunityService {
     return this.prisma.communityPost.delete({ where: { id: postId } });
   }
 
-  async voteOnPost(postId: string, userId: string, choice: number) {
-    if (choice !== 1 && choice !== 2) {
+  async voteOnPost(postId: string, userId: string, optionIndex: number) {
+    if (optionIndex !== 1 && optionIndex !== 2) {
       throw new BadRequestException('투표 선택지는 1(찬성) 또는 2(반대)여야 합니다.');
     }
-
-    const option = String(choice); // 숫자 1, 2를 문자열 "1", "2"로 변경
 
     const post = await this.prisma.communityPost.findUnique({
       where: { id: postId },
@@ -225,40 +223,74 @@ export class CommunityService {
     }
 
     const existingVote = await this.prisma.communityPostVote.findUnique({
-            where: { postId_userId: { postId, userId } },
-          });
-          
-    // 같은 선택지를 다시 누른 경우: 투표 취소 (삭제)
-    if (existingVote && existingVote.option === option) {
-      return this.prisma.communityPostVote.delete({
-            where: { postId_userId: { postId, userId } },
-          });
-        }
-
-    // 신규 투표 또는 다른 선택지로 변경: upsert 사용
-    return this.prisma.communityPostVote.upsert({
-      where: { postId_userId: { postId, userId } },
-      update: { option }, // 이미 투표한 경우 선택지를 업데이트
-      create: { 
-        userId, 
-        postId, 
-        option, 
-      }, // 새로 투표하는 경우 생성
+      where: {
+        userId_postId: {
+          userId,
+          postId,
+        },
+      },
     });
+
+    // 같은 선택지를 다시 누른 경우: 투표 취소
+    if (existingVote && existingVote.optionIndex === optionIndex) {
+      await this.prisma.communityPostVote.delete({
+        where: {
+          userId_postId: {
+            userId,
+            postId,
+          },
+        },
+      });
+    } else {
+      // 다른 선택지로 변경 또는 신규 투표
+      await this.prisma.communityPostVote.upsert({
+        where: {
+          userId_postId: {
+            userId,
+            postId,
+          },
+        },
+        update: { optionIndex },
+        create: {
+          userId,
+          postId,
+          optionIndex,
+        },
+      });
+    }
+
+    // 투표 결과 집계
+    const agreeVotes = await this.prisma.communityPostVote.count({
+      where: { postId, optionIndex: 1 },
+    });
+    const disagreeVotes = await this.prisma.communityPostVote.count({
+      where: { postId, optionIndex: 2 },
+    });
+
+    // 게시글의 총 투표 수 업데이트
+    await this.prisma.communityPost.update({
+      where: { id: postId },
+      data: {
+        agreeVotes,
+        disagreeVotes,
+      },
+    });
+
+    return { agreeVotes, disagreeVotes };
   }
 
   async getPollResult(postId: string) {
     const voteGroups = await this.prisma.communityPostVote.groupBy({
       where: { postId },
-      by: ['option'],
+      by: ['optionIndex'],
       _count: {
-        option: true,
+        optionIndex: true,
       },
     });
 
-    const result: Record<string, number> = {};
+    const result: Record<number, number> = {};
     for (const group of voteGroups) {
-      result[group.option] = group._count.option;
+      result[group.optionIndex] = group._count.optionIndex;
     }
     return result;
   }
