@@ -337,16 +337,17 @@ model Comment {
 }
 
 model CommunityPostVote {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  option    String
-  createdAt DateTime @default(now())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  optionIndex Int
+  createdAt   DateTime @default(now())
 
-  postId    String   @db.ObjectId
-  post      CommunityPost @relation(fields: [postId], references: [id])
-  userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id])
+  postId      String   @db.ObjectId
+  post        CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  @@unique([postId, userId])
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
 }
 
 model Diary {
