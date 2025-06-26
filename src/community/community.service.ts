@@ -276,7 +276,10 @@ export class CommunityService {
       },
     });
 
-    return { agreeVotes, disagreeVotes };
+    // 업데이트된 투표 목록 전체를 반환
+    return this.prisma.communityPostVote.findMany({
+      where: { postId },
+    });
   }
 
   async getPollResult(postId: string) {
