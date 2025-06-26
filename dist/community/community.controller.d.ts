@@ -147,8 +147,8 @@ export declare class CommunityController {
         authorId: string;
     }>;
     voteOnPost(postId: string, voteDto: VoteDto, user: any): Promise<{
-        agreeVotes: number;
-        disagreeVotes: number;
-    }>;
+        userId: string;
+        choice: number;
+    }[]>;
     getPollResult(postId: string): Promise<Record<number, number>>;
 }

@@ -63,10 +63,30 @@ export class DiagnosisService {
     if (!userId) {
       throw new Error("User ID is required");
     }
+
+    // 1) 우선 사용자의 초기(베이스라인) 진단 결과를 찾습니다.
+    //    INITIAL 또는 비회원→회원 전환된 UNAUTH_CONVERTED 타입 중 가장 오래된(첫 번째) 진단을 반환합니다.
+    const baseline = await this.prisma.diagnosisResult.findFirst({
+      where: {
+        userId,
+        resultType: {
+          in: ['INITIAL', 'UNAUTH_CONVERTED'],
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    if (baseline) {
+      return baseline;
+    }
+
+    // 2) 위 타입이 없을 경우, 사용자의 가장 첫 번째 진단 결과(최초 기록)를 반환합니다.
     return this.prisma.diagnosisResult.findFirst({
       where: { userId },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: 'asc',
       },
     });
   }

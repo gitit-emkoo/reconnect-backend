@@ -7,8 +7,8 @@ export declare class PartnerInvitesController {
         createdAt: Date;
         updatedAt: Date;
         coupleId: string | null;
-        status: import(".prisma/client").$Enums.InviteStatus;
         code: string;
+        status: import(".prisma/client").$Enums.InviteStatus;
         inviterId: string;
         inviteeId: string | null;
     }>;
@@ -59,8 +59,8 @@ export declare class PartnerInvitesController {
             createdAt: Date;
             updatedAt: Date;
             coupleId: string | null;
-            status: import(".prisma/client").$Enums.InviteStatus;
             code: string;
+            status: import(".prisma/client").$Enums.InviteStatus;
             inviterId: string;
             inviteeId: string | null;
         };
@@ -77,8 +77,8 @@ export declare class PartnerInvitesController {
             createdAt: Date;
             updatedAt: Date;
             coupleId: string | null;
-            status: import(".prisma/client").$Enums.InviteStatus;
             code: string;
+            status: import(".prisma/client").$Enums.InviteStatus;
             inviterId: string;
             inviteeId: string | null;
         };
@@ -88,8 +88,8 @@ export declare class PartnerInvitesController {
         createdAt: Date;
         updatedAt: Date;
         coupleId: string | null;
-        status: import(".prisma/client").$Enums.InviteStatus;
         code: string;
+        status: import(".prisma/client").$Enums.InviteStatus;
         inviterId: string;
         inviteeId: string | null;
     }>;
@@ -109,8 +109,8 @@ export declare class PartnerInvitesController {
         createdAt: Date;
         updatedAt: Date;
         coupleId: string | null;
-        status: import(".prisma/client").$Enums.InviteStatus;
         code: string;
+        status: import(".prisma/client").$Enums.InviteStatus;
         inviterId: string;
         inviteeId: string | null;
     })[]>;

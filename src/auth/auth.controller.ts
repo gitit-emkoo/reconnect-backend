@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { SocialAuthDto } from './dto/social-auth.dto';
-import { GoogleAuthDto } from './dto/google-auth.dto';
+import { GoogleAuthDto } from './dto/social-auth.dto';
 import { User } from '@prisma/client'; // User 타입 임포트는 유지
 
 @Controller('auth') // 이 컨트롤러의 기본 경로가 /auth가 됩니다.

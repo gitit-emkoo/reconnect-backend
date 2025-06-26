@@ -277,9 +277,16 @@ export class CommunityService {
     });
 
     // 업데이트된 투표 목록 전체를 반환
-    return this.prisma.communityPostVote.findMany({
+    const votes = await this.prisma.communityPostVote.findMany({
       where: { postId },
+      select: {
+        userId: true,
+        optionIndex: true,
+      },
     });
+
+    // 프런트 호환을 위해 optionIndex -> choice 로 필드명을 변환합니다.
+    return votes.map(v => ({ userId: v.userId, choice: v.optionIndex }));
   }
 
   async getPollResult(postId: string) {

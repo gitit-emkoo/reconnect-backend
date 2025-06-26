@@ -18,7 +18,7 @@ const auth_service_1 = require("./auth.service");
 const register_dto_1 = require("./dto/register.dto");
 const login_dto_1 = require("./dto/login.dto");
 const social_auth_dto_1 = require("./dto/social-auth.dto");
-const google_auth_dto_1 = require("./dto/google-auth.dto");
+const social_auth_dto_2 = require("./dto/social-auth.dto");
 let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
@@ -70,7 +70,7 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [google_auth_dto_1.GoogleAuthDto]),
+    __metadata("design:paramtypes", [social_auth_dto_2.GoogleAuthDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "googleLogin", null);
 __decorate([

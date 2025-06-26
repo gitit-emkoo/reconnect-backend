@@ -26,5 +26,10 @@ __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)({ message: '액세스 토큰은 필수입니다.' }),
     __metadata("design:type", String)
-], GoogleAuthDto.prototype, "access_token", void 0);
+], GoogleAuthDto.prototype, "accessToken", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], GoogleAuthDto.prototype, "unauthDiagnosisId", void 0);
 //# sourceMappingURL=social-auth.dto.js.map

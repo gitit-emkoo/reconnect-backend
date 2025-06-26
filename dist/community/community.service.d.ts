@@ -163,8 +163,8 @@ export declare class CommunityService {
         authorId: string;
     }>;
     voteOnPost(postId: string, userId: string, optionIndex: number): Promise<{
-        agreeVotes: number;
-        disagreeVotes: number;
-    }>;
+        userId: string;
+        choice: number;
+    }[]>;
     getPollResult(postId: string): Promise<Record<number, number>>;
 }

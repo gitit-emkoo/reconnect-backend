@@ -2,7 +2,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { SocialAuthDto } from './dto/social-auth.dto';
-import { GoogleAuthDto } from './dto/google-auth.dto';
+import { GoogleAuthDto } from './dto/social-auth.dto';
 import { User } from '@prisma/client';
 export declare class AuthController {
     private authService;

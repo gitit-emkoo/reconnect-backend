@@ -260,7 +260,14 @@ let CommunityService = class CommunityService {
                 disagreeVotes,
             },
         });
-        return { agreeVotes, disagreeVotes };
+        const votes = await this.prisma.communityPostVote.findMany({
+            where: { postId },
+            select: {
+                userId: true,
+                optionIndex: true,
+            },
+        });
+        return votes.map(v => ({ userId: v.userId, choice: v.optionIndex }));
     }
     async getPollResult(postId) {
         const voteGroups = await this.prisma.communityPostVote.groupBy({

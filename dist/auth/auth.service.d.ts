@@ -1,7 +1,7 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { User } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
-import { GoogleAuthDto } from './dto/google-auth.dto';
+import { GoogleAuthDto } from './dto/social-auth.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 export declare class AuthService {
