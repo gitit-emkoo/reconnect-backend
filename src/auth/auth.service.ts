@@ -189,15 +189,11 @@ export class AuthService {
           });
         }
       }
-      // 4. 사용자가 존재하지만, 구글 연동이 안된 경우 -> 연동
+      // 4. 사용자가 존재하지만, 구글 연동이 안된 경우 -> 에러 발생
       else if (existingUser.provider !== 'GOOGLE') {
-        user = await tx.user.update({
-          where: { email },
-          data: {
-            provider: 'GOOGLE',
-            providerId,
-          },
-        });
+        throw new ConflictException(
+          '이미 다른 방식으로 가입된 이메일입니다. 해당 방식으로 로그인해주세요.',
+        );
       }
       // 5. 이미 구글로 가입된 사용자인 경우
       else {
