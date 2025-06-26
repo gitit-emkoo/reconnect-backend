@@ -149,13 +149,7 @@ let AuthService = class AuthService {
                 }
             }
             else if (existingUser.provider !== 'GOOGLE') {
-                user = await tx.user.update({
-                    where: { email },
-                    data: {
-                        provider: 'GOOGLE',
-                        providerId,
-                    },
-                });
+                throw new common_1.ConflictException('이미 다른 방식으로 가입된 이메일입니다. 해당 방식으로 로그인해주세요.');
             }
             else {
                 user = existingUser;
