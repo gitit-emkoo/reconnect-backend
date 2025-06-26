@@ -96,8 +96,11 @@ export class PartnerInvitesService {
         orderBy: { createdAt: 'desc' },
       });
 
-      // 2. 두 사람의 점수를 비교하여 낮은 점수로 동기화
-      if (inviterDiagnosis && inviteeDiagnosis) {
+      // 두 사람 모두 최신 진단 결과가 있는지 확인
+      const needDiagnosis = !inviterDiagnosis || !inviteeDiagnosis;
+
+      // 2. 두 사람 모두 결과가 있으면 점수를 비교하여 낮은 점수로 동기화
+      if (!needDiagnosis && inviterDiagnosis && inviteeDiagnosis) {
         const lowerScore = Math.min(inviterDiagnosis.score, inviteeDiagnosis.score);
 
         // 두 사용자의 진단 점수를 낮은 점수로 업데이트
@@ -147,7 +150,7 @@ export class PartnerInvitesService {
         data: { partnerId: invite.inviterId }
       });
 
-      return { couple, invite: updatedInvite };
+      return { couple, invite: updatedInvite, needDiagnosis };
     });
 
     return result;
