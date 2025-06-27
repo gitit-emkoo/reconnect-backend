@@ -86,18 +86,43 @@ export class PartnerInvitesService {
     // 트랜잭션으로 커플 생성 및 초대 상태 업데이트 (바로 CONFIRMED)
     const result = await this.prisma.$transaction(async (_tx) => {
 
-      // 1. 두 사용자의 최근 진단 결과 조회
+      // 1. 두 사용자의 '베이스라인(INITIAL/UNAUTH_CONVERTED)' 진단 결과 조회 (가장 오래된 것)
       const inviterDiagnosis = await this.prisma.diagnosisResult.findFirst({
-        where: { userId: invite.inviterId },
-        orderBy: { createdAt: 'desc' },
+        where: {
+          userId: invite.inviterId,
+          resultType: { in: ['INITIAL', 'UNAUTH_CONVERTED'] },
+        },
+        orderBy: { createdAt: 'asc' },
       });
       const inviteeDiagnosis = await this.prisma.diagnosisResult.findFirst({
-        where: { userId: inviteeId },
-        orderBy: { createdAt: 'desc' },
+        where: {
+          userId: inviteeId,
+          resultType: { in: ['INITIAL', 'UNAUTH_CONVERTED'] },
+        },
+        orderBy: { createdAt: 'asc' },
       });
 
-      // 두 사람 모두 최신 진단 결과가 있는지 확인
-      const needDiagnosis = !inviterDiagnosis || !inviteeDiagnosis;
+      // 없으면 새로운 베이스라인 레코드 생성 (기본 61점)
+      const ensureBaseline = async (userId: string) => {
+        return this.prisma.diagnosisResult.create({
+          data: {
+            userId,
+            score: 61,
+            resultType: 'INITIAL',
+          },
+        });
+      };
+
+      const inviterBase = inviterDiagnosis ?? await ensureBaseline(invite.inviterId);
+      const inviteeBase = inviteeDiagnosis ?? await ensureBaseline(inviteeId);
+
+      // 두 사람의 낮은 점수 계산
+      const lowerScore = Math.min(inviterBase.score, inviteeBase.score);
+
+      await this.prisma.diagnosisResult.update({ where: { id: inviterBase.id }, data: { score: lowerScore } });
+      await this.prisma.diagnosisResult.update({ where: { id: inviteeBase.id }, data: { score: lowerScore } });
+
+      const needDiagnosis = false; // 이미 베이스라인 확보됨
 
       // 2. 두 사람 모두 결과가 있으면 점수를 비교하여 낮은 점수로 동기화
       if (!needDiagnosis && inviterDiagnosis && inviteeDiagnosis) {
