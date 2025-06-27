@@ -186,6 +186,13 @@ export class ReportsService {
 
     return report;
   }
+
+  async getMyLatestReport(coupleId: string) {
+    return this.prisma.report.findFirst({
+      where: { coupleId },
+      orderBy: { weekStartDate: 'desc' },
+    });
+  }
   
   /**
    * 년도와 주차를 기반으로 해당 주의 시작일(월요일)을 반환합니다.

@@ -40,4 +40,12 @@ export class ReportsController {
     }
     return this.reportsService.findReportByWeek(user.coupleId, parseInt(year), parseInt(week));
   }
+
+  @Get('my-latest')
+  async findMyLatest(@GetUser() user: User) {
+    if (!user.coupleId) {
+      throw new BadRequestException('Couple not found for this user.');
+    }
+    return this.reportsService.getMyLatestReport(user.coupleId);
+  }
 } 
