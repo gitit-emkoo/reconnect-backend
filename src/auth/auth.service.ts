@@ -213,12 +213,22 @@ export class AuthService {
       throw new UnauthorizedException('사용자 정보를 찾는 데 실패했습니다.');
     }
 
+    // partnerId, couple 정보 포함 (login 함수와 동일한 로직으로 수정)
+    let partnerId: string | null = null;
+    if (userWithDetails.partnerId) {
+      partnerId = userWithDetails.partnerId;
+    } else if (userWithDetails.partner && typeof userWithDetails.partner === 'object' && userWithDetails.partner.id) {
+      partnerId = userWithDetails.partner.id;
+    } else if (typeof userWithDetails.partner === 'string') {
+      partnerId = userWithDetails.partner as any;
+    }
+
     const payload = {
       userId: userWithDetails.id,
       email: userWithDetails.email,
       nickname: userWithDetails.nickname,
       role: userWithDetails.role,
-      partnerId: userWithDetails.partner?.id ?? null,
+      partnerId: partnerId ?? null, // 수정된 partnerId 사용
       couple: userWithDetails.couple ? { id: userWithDetails.couple.id } : null,
     };
     const accessToken = this.jwtService.sign(payload);

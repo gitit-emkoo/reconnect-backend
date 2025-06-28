@@ -2,10 +2,14 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { v4 as uuidv4 } from 'uuid';
 import type { User } from '@prisma/client';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class PartnerInvitesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
   // 초대 코드 생성
   async createInviteCode(userId: string) {
@@ -72,7 +76,7 @@ export class PartnerInvitesService {
     // 이미 파트너가 있는지 확인
     const invitee = await this.prisma.user.findUnique({
       where: { id: inviteeId },
-      include: { couple: true }
+      include: { couple: true },
     });
 
     if (!invitee) {
@@ -168,17 +172,57 @@ export class PartnerInvitesService {
       // 서로의 partnerId 업데이트
       await this.prisma.user.update({
         where: { id: invite.inviterId },
-        data: { partnerId: inviteeId }
+        data: { partnerId: inviteeId },
       });
       await this.prisma.user.update({
         where: { id: inviteeId },
-        data: { partnerId: invite.inviterId }
+        data: { partnerId: invite.inviterId },
       });
 
-      return { couple, invite: updatedInvite, needDiagnosis };
-    });
+      // 최신 유저 정보 다시 불러오기 (partner, couple 포함)
+      const updatedInvitee = await this.prisma.user.findUnique({
+        where: { id: inviteeId },
+        include: { partner: true, couple: true },
+      });
 
-    return result;
+      return { couple, invite: updatedInvite, needDiagnosis, updatedInvitee };
+    });
+    
+    // 트랜잭션 성공 후 토큰 생성
+    const { updatedInvitee } = result;
+    if (!updatedInvitee) {
+      throw new Error('파트너 연결 후 사용자 정보를 업데이트하지 못했습니다.');
+    }
+
+    // partnerId, couple 정보 포함 (auth.service.ts와 동일한 로직)
+    let partnerId: string | null = null;
+    if (updatedInvitee.partnerId) {
+      partnerId = updatedInvitee.partnerId;
+    } else if (updatedInvitee.partner && typeof updatedInvitee.partner === 'object' && updatedInvitee.partner.id) {
+      partnerId = updatedInvitee.partner.id;
+    } else if (typeof updatedInvitee.partner === 'string') {
+      partnerId = updatedInvitee.partner as any;
+    }
+
+    const payload = {
+      userId: updatedInvitee.id,
+      email: updatedInvitee.email,
+      nickname: updatedInvitee.nickname,
+      role: updatedInvitee.role,
+      partnerId: partnerId ?? null,
+      couple: updatedInvitee.couple ? { id: updatedInvitee.couple.id } : null,
+    };
+    const accessToken = this.jwtService.sign(payload);
+
+    // 응답에서 비밀번호 제외
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = updatedInvitee;
+
+    return { 
+      message: '파트너 연결에 성공했습니다.',
+      user: userWithoutPassword,
+      accessToken,
+    };
   }
 
   // 초대 수락
