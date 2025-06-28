@@ -64,6 +64,7 @@ export declare class PartnerInvitesController {
             inviterId: string;
             inviteeId: string | null;
         };
+        needDiagnosis: boolean;
     }>;
     acceptInvite(inviteId: string, req: any): Promise<{
         couple: {

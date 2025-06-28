@@ -74,14 +74,35 @@ let PartnerInvitesService = class PartnerInvitesService {
         }
         const result = await this.prisma.$transaction(async (_tx) => {
             const inviterDiagnosis = await this.prisma.diagnosisResult.findFirst({
-                where: { userId: invite.inviterId },
-                orderBy: { createdAt: 'desc' },
+                where: {
+                    userId: invite.inviterId,
+                    resultType: { in: ['INITIAL', 'UNAUTH_CONVERTED'] },
+                },
+                orderBy: { createdAt: 'asc' },
             });
             const inviteeDiagnosis = await this.prisma.diagnosisResult.findFirst({
-                where: { userId: inviteeId },
-                orderBy: { createdAt: 'desc' },
+                where: {
+                    userId: inviteeId,
+                    resultType: { in: ['INITIAL', 'UNAUTH_CONVERTED'] },
+                },
+                orderBy: { createdAt: 'asc' },
             });
-            if (inviterDiagnosis && inviteeDiagnosis) {
+            const ensureBaseline = async (userId) => {
+                return this.prisma.diagnosisResult.create({
+                    data: {
+                        userId,
+                        score: 61,
+                        resultType: 'INITIAL',
+                    },
+                });
+            };
+            const inviterBase = inviterDiagnosis ?? await ensureBaseline(invite.inviterId);
+            const inviteeBase = inviteeDiagnosis ?? await ensureBaseline(inviteeId);
+            const lowerScore = Math.min(inviterBase.score, inviteeBase.score);
+            await this.prisma.diagnosisResult.update({ where: { id: inviterBase.id }, data: { score: lowerScore } });
+            await this.prisma.diagnosisResult.update({ where: { id: inviteeBase.id }, data: { score: lowerScore } });
+            const needDiagnosis = false;
+            if (!needDiagnosis && inviterDiagnosis && inviteeDiagnosis) {
                 const lowerScore = Math.min(inviterDiagnosis.score, inviteeDiagnosis.score);
                 await this.prisma.diagnosisResult.update({
                     where: { id: inviterDiagnosis.id },
@@ -122,7 +143,7 @@ let PartnerInvitesService = class PartnerInvitesService {
                 where: { id: inviteeId },
                 data: { partnerId: invite.inviterId }
             });
-            return { couple, invite: updatedInvite };
+            return { couple, invite: updatedInvite, needDiagnosis };
         });
         return result;
     }

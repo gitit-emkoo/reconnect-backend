@@ -91,6 +91,13 @@ export class DiagnosisService {
     });
   }
 
+  async getMyHistory(userId: string) {
+    return this.prisma.diagnosisResult.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   findAll() {
     return `This action returns all diagnosis`;
   }

@@ -41,6 +41,12 @@ export class DiagnosisController {
     return this.diagnosisService.getMyLatestDiagnosis(user.id);
   }
 
+  @Get('my-history')
+  @UseGuards(JwtAuthGuard)
+  findMyHistory(@GetUser() user: User) {
+    return this.diagnosisService.getMyHistory(user.id);
+  }
+
   @Get()
   @UseGuards(JwtAuthGuard)
   findAll() {

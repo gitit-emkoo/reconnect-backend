@@ -62,6 +62,7 @@ export declare class PartnerInvitesService {
             inviterId: string;
             inviteeId: string | null;
         };
+        needDiagnosis: boolean;
     }>;
     acceptInvite(inviteId: string, inviterId: string): Promise<{
         couple: {
