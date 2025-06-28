@@ -70,7 +70,8 @@ export class AuthService {
           data: {
             userId: user.id,
             score: 61,
-            resultType: 'INITIAL' // 기본값으로 생성되었음을 명시
+            resultType: 'INITIAL', // 기본값으로 생성되었음을 명시
+            diagnosisType: 'INITIAL',
           }
         });
       }
@@ -184,7 +185,8 @@ export class AuthService {
             data: {
               userId: user.id,
               score: 61,
-              resultType: 'INITIAL'
+              resultType: 'INITIAL',
+              diagnosisType: 'INITIAL',
             }
           });
         }

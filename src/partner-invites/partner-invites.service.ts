@@ -113,6 +113,7 @@ export class PartnerInvitesService {
             userId,
             score: 61,
             resultType: 'INITIAL',
+            diagnosisType: 'INITIAL',
           },
         });
       };

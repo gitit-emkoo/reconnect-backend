@@ -18,9 +18,11 @@ import { SchedulesModule } from './schedules/schedules.module';
 import { ContentModule } from './content/content.module';
 import { DiagnosisModule } from './diagnosis/diagnosis.module';
 import { ReportsModule } from './reports/reports.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     UsersModule,
     ConfigModule.forRoot({
       isGlobal: true,

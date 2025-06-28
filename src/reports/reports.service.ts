@@ -58,10 +58,42 @@ export class ReportsService {
         },
       },
     });
+
+    let challengesFailedCount = await this.prisma.challenge.count({
+      where: {
+        coupleId: coupleId,
+        status: 'FAILED',
+        updatedAt: {
+          gte: weekStartDate,
+          lte: weekEndDate,
+        },
+      },
+    });
+
+    // 주간 챌린지 활동이 없었는지 확인
+    const challengesStartedCount = await this.prisma.challenge.count({
+      where: { coupleId, createdAt: { gte: weekStartDate, lte: weekEndDate } },
+    });
+    const noChallengeActivity = challengesStartedCount === 0;
     
-    // TODO: 추후 다른 활동 데이터 추가 (전문가 솔루션, 결혼 진단 등)
+    // 전문가 솔루션, 결혼 진단 데이터 집계
+    const coupleWithMembers = await this.prisma.couple.findUnique({
+      where: { id: coupleId },
+      include: { members: { select: { id: true } } },
+    });
+    const memberIds = coupleWithMembers ? coupleWithMembers.members.map(m => m.id) : [];
+
+    // '상담' 기능은 추후 구현 예정이므로, 현재는 0으로 처리합니다.
     const expertSolutionsCount = 0;
-    const marriageDiagnosisCount = 0;
+
+    // '진단'은 '자기이해진단'만 카운트합니다.
+    const marriageDiagnosisCount = await this.prisma.diagnosisResult.count({
+      where: {
+        userId: { in: memberIds },
+        diagnosisType: 'SELF_UNDERSTANDING',
+        createdAt: { gte: weekStartDate, lte: weekEndDate },
+      }
+    });
 
 
     // 2. 관계 온도 계산
@@ -75,7 +107,14 @@ export class ReportsService {
         },
     });
     const baseScore = previousReport ? previousReport.overallScore : 50; // 이전 주 리포트가 없으면 50점으로 시작
-    const { score: overallScore, reason } = this.calculateOverallScore(baseScore, { cardsSentCount, challengesCompletedCount });
+    const { score: overallScore, reason } = this.calculateOverallScore(baseScore, { 
+      cardsSentCount, 
+      challengesCompletedCount,
+      challengesFailedCount,
+      expertSolutionsCount, // 0으로 전달
+      marriageDiagnosisCount, // 자기이해진단 횟수만 전달
+      noChallengeActivity,
+    });
 
 
     // 3. 리포트 생성 또는 업데이트 (Upsert)
@@ -91,6 +130,7 @@ export class ReportsService {
         reason,
         cardsSentCount,
         challengesCompletedCount,
+        challengesFailedCount,
         expertSolutionsCount,
         marriageDiagnosisCount,
       },
@@ -101,6 +141,7 @@ export class ReportsService {
         reason,
         cardsSentCount,
         challengesCompletedCount,
+        challengesFailedCount,
         expertSolutionsCount,
         marriageDiagnosisCount,
       },
@@ -115,21 +156,55 @@ export class ReportsService {
    * @param baseScore 이전 주의 점수
    * @param activities 주간 활동 데이터
    */
-  private calculateOverallScore(baseScore: number, activities: { cardsSentCount: number; challengesCompletedCount: number; }): { score: number, reason: string } {
+  private calculateOverallScore(
+    baseScore: number, 
+    activities: { 
+      cardsSentCount: number; 
+      challengesCompletedCount: number; 
+      challengesFailedCount: number;
+      expertSolutionsCount: number;
+      marriageDiagnosisCount: number;
+      noChallengeActivity: boolean;
+    }
+  ): { score: number, reason: string } {
     let score = baseScore;
     let reason = "지난 주와 큰 변화가 없었어요.";
     const scoreChanges: string[] = [];
 
-    // 감정 카드: 개당 +2점
+    // 감정 카드: 개당 +0.005점
     if (activities.cardsSentCount > 0) {
-        score += activities.cardsSentCount * 2;
-        scoreChanges.push(`감정 카드 교환(${activities.cardsSentCount}회)`);
+        score += activities.cardsSentCount * 0.005;
+        scoreChanges.push(`마음 카드 교환(${activities.cardsSentCount}회)`);
     }
 
-    // 챌린지 완료: 개당 +5점
+    // 챌린지 완료: 개당 +0.1점
     if (activities.challengesCompletedCount > 0) {
-        score += activities.challengesCompletedCount * 5;
+        score += activities.challengesCompletedCount * 0.1;
         scoreChanges.push(`챌린지 완료(${activities.challengesCompletedCount}회)`);
+    }
+
+    // 챌린지 실패: 개당 -0.025점
+    if (activities.challengesFailedCount > 0) {
+      score -= activities.challengesFailedCount * 0.025;
+      scoreChanges.push(`챌린지 실패(${activities.challengesFailedCount}회)`);
+    }
+
+    // 챌린지 안 하기: -0.025점
+    if (activities.noChallengeActivity) {
+      score -= 0.025;
+      scoreChanges.push('주간 챌린지 미수행');
+    }
+
+    // 전문가 솔루션(상담)은 추후 구현 예정
+    if (activities.expertSolutionsCount > 0) {
+      // score += activities.expertSolutionsCount * 0.5;
+      // scoreChanges.push(`전문가 솔루션 확인(${activities.expertSolutionsCount}회)`);
+    }
+
+    // 자기이해진단: 회당 +0.5점
+    if (activities.marriageDiagnosisCount > 0) {
+      score += activities.marriageDiagnosisCount * 0.5;
+      scoreChanges.push(`자기이해진단(${activities.marriageDiagnosisCount}회)`);
     }
 
     // 최대/최소 점수 제한
@@ -139,7 +214,7 @@ export class ReportsService {
         reason = `${scoreChanges.join(', ')}으로 온도가 변동했어요.`;
     }
 
-    return { score: parseFloat(score.toFixed(1)), reason };
+    return { score: parseFloat(score.toFixed(3)), reason };
   }
 
   async findAvailableWeeks(coupleId: string) {

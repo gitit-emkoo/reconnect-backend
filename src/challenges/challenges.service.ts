@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateChallengeDto } from './dto/create-challenge.dto';
 import { ChallengeCategory } from '@prisma/client';
+import { Logger } from '@nestjs/common';
 
 export enum ChallengeStatus {
   IN_PROGRESS = 'IN_PROGRESS',
@@ -11,6 +12,8 @@ export enum ChallengeStatus {
 
 @Injectable()
 export class ChallengesService {
+  private readonly logger = new Logger(ChallengesService.name);
+
   constructor(private prisma: PrismaService) {}
 
   // 카테고리별 챌린지 템플릿 조회
@@ -212,5 +215,24 @@ export class ChallengesService {
     });
 
     return !!completedChallenge;
+  }
+
+  /**
+   * 매일 자정 실행: 만료된 챌린지를 'FAILED' 상태로 업데이트합니다.
+   */
+  async failExpiredChallenges(): Promise<void> {
+    const now = new Date();
+    const result = await this.prisma.challenge.updateMany({
+      where: {
+        status: 'IN_PROGRESS',
+        endDate: {
+          lt: now,
+        },
+      },
+      data: {
+        status: 'FAILED',
+      },
+    });
+    this.logger.log(`만료된 챌린지 ${result.count}개를 실패 처리했습니다.`);
   }
 } 
