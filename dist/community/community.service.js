@@ -222,18 +222,18 @@ let CommunityService = class CommunityService {
         }
         const existingVote = await this.prisma.communityPostVote.findUnique({
             where: {
-                userId_postId: {
-                    userId,
+                postId_userId: {
                     postId,
+                    userId,
                 },
             },
         });
         if (existingVote && existingVote.option === option) {
             await this.prisma.communityPostVote.delete({
                 where: {
-                    userId_postId: {
-                        userId,
+                    postId_userId: {
                         postId,
+                        userId,
                     },
                 },
             });
@@ -242,9 +242,9 @@ let CommunityService = class CommunityService {
         else {
             const data = await this.prisma.communityPostVote.upsert({
                 where: {
-                    userId_postId: {
-                        userId,
+                    postId_userId: {
                         postId,
+                        userId,
                     },
                 },
                 update: { option },

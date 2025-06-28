@@ -23,10 +23,9 @@ export class DiagnosisController {
   constructor(private readonly diagnosisService: DiagnosisService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createDiagnosisDto: CreateDiagnosisDto, @GetUser() user: User) {
-    return this.diagnosisService.create(user.id, createDiagnosisDto);
+  create(@Body() createDiagnosisDto: CreateDiagnosisDto) {
+    return this.diagnosisService.create(createDiagnosisDto);
   }
 
   @Post('unauth')

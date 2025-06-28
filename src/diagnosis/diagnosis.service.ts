@@ -9,13 +9,13 @@ import { startOfWeek, endOfWeek } from 'date-fns';
 export class DiagnosisService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: string, createDiagnosisDto: CreateDiagnosisDto) {
+  async create(createDiagnosisDto: CreateDiagnosisDto) {
     const { score, resultType, createdAt, diagnosisType } = createDiagnosisDto;
 
     // 1. DiagnosisResult 생성
     const newDiagnosis = await this.prisma.diagnosisResult.create({
       data: {
-        userId,
+        userId: null, // 비회원이므로 userId는 null
         score,
         resultType: resultType || 'USER_SUBMITTED', // 타입이 없으면 기본값
         diagnosisType: diagnosisType || 'USER_SUBMITTED',

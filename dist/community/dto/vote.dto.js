@@ -15,7 +15,7 @@ class VoteDto {
 }
 exports.VoteDto = VoteDto;
 __decorate([
-    (0, class_validator_1.IsNumber)(),
-    __metadata("design:type", Number)
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
 ], VoteDto.prototype, "choice", void 0);
 //# sourceMappingURL=vote.dto.js.map

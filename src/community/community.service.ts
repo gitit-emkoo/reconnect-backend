@@ -233,9 +233,9 @@ export class CommunityService {
 
     const existingVote = await this.prisma.communityPostVote.findUnique({
       where: {
-        userId_postId: {
-          userId,
+        postId_userId: {
           postId,
+          userId,
         },
       },
     });
@@ -244,9 +244,9 @@ export class CommunityService {
     if (existingVote && existingVote.option === option) {
       await this.prisma.communityPostVote.delete({
         where: {
-          userId_postId: {
-            userId,
+          postId_userId: {
             postId,
+            userId,
           },
         },
       });
@@ -255,9 +255,9 @@ export class CommunityService {
       // 다른 선택지로 변경 또는 신규 투표
       const data = await this.prisma.communityPostVote.upsert({
         where: {
-          userId_postId: {
-            userId,
+          postId_userId: {
             postId,
+            userId,
           },
         },
         update: { option },
