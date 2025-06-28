@@ -10,7 +10,7 @@ export class DiagnosisService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, createDiagnosisDto: CreateDiagnosisDto) {
-    const { score, resultType, createdAt } = createDiagnosisDto;
+    const { score, resultType, createdAt, diagnosisType } = createDiagnosisDto;
 
     // 1. DiagnosisResult 생성
     const newDiagnosis = await this.prisma.diagnosisResult.create({
@@ -18,6 +18,7 @@ export class DiagnosisService {
         userId,
         score,
         resultType: resultType || 'USER_SUBMITTED', // 타입이 없으면 기본값
+        diagnosisType: diagnosisType || 'USER_SUBMITTED',
         createdAt: createdAt ? new Date(createdAt) : new Date(),
       },
     });
@@ -32,7 +33,7 @@ export class DiagnosisService {
     const existingInitialDiagnosis = await this.prisma.diagnosisResult.findFirst({
       where: {
         userId,
-        resultType: 'INITIAL',
+        diagnosisType: 'INITIAL',
       },
     });
 
@@ -42,7 +43,8 @@ export class DiagnosisService {
         where: { id: existingInitialDiagnosis.id },
         data: {
           score,
-          resultType: 'UNAUTH_CONVERTED', // 비회원->회원 전환됨
+          resultType: '기초 관계온도', // 비회원->회원 전환됨
+          diagnosisType: 'BASELINE_TEMPERATURE',
           createdAt: createdAt ? new Date(createdAt) : new Date(),
         },
       });
@@ -52,7 +54,8 @@ export class DiagnosisService {
         data: {
           userId,
           score,
-          resultType: 'UNAUTH_CONVERTED',
+          resultType: '기초 관계온도',
+          diagnosisType: 'BASELINE_TEMPERATURE',
           createdAt: createdAt ? new Date(createdAt) : new Date(),
         },
       });
@@ -69,8 +72,8 @@ export class DiagnosisService {
     const baseline = await this.prisma.diagnosisResult.findFirst({
       where: {
         userId,
-        resultType: {
-          in: ['INITIAL', 'UNAUTH_CONVERTED'],
+        diagnosisType: {
+          in: ['INITIAL', 'BASELINE_TEMPERATURE'],
         },
       },
       orderBy: {

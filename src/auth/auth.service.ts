@@ -65,13 +65,13 @@ export class AuthService {
           });
         }
       } else {
-        // 연결할 진단 결과가 없으면 기본값 61점으로 새로 생성
+        // 연결할 진단 결과가 없으면 기본값으로 새로 생성
         await tx.diagnosisResult.create({
           data: {
             userId: user.id,
             score: 61,
-            resultType: 'INITIAL', // 기본값으로 생성되었음을 명시
-            diagnosisType: 'INITIAL',
+            resultType: '기초 관계온도',
+            diagnosisType: 'BASELINE_TEMPERATURE',
           }
         });
       }
@@ -185,8 +185,8 @@ export class AuthService {
             data: {
               userId: user.id,
               score: 61,
-              resultType: 'INITIAL',
-              diagnosisType: 'INITIAL',
+              resultType: '기초 관계온도',
+              diagnosisType: 'BASELINE_TEMPERATURE',
             }
           });
         }

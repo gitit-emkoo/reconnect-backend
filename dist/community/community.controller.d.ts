@@ -72,7 +72,7 @@ export declare class CommunityController {
             id: string;
             createdAt: Date;
             userId: string;
-            optionIndex: number;
+            option: string;
             postId: string;
         }[];
         author: {
@@ -147,8 +147,17 @@ export declare class CommunityController {
         authorId: string;
     }>;
     voteOnPost(postId: string, voteDto: VoteDto, user: any): Promise<{
-        userId: string;
-        choice: number;
-    }[]>;
-    getPollResult(postId: string): Promise<Record<number, number>>;
+        message: string;
+        data?: undefined;
+    } | {
+        message: string;
+        data: {
+            id: string;
+            createdAt: Date;
+            userId: string;
+            option: string;
+            postId: string;
+        };
+    }>;
+    getPollResult(postId: string): Promise<{}>;
 }

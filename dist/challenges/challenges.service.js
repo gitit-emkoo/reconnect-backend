@@ -8,19 +8,22 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var ChallengesService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChallengesService = exports.ChallengeStatus = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const common_2 = require("@nestjs/common");
 var ChallengeStatus;
 (function (ChallengeStatus) {
     ChallengeStatus["IN_PROGRESS"] = "IN_PROGRESS";
     ChallengeStatus["COMPLETED"] = "COMPLETED";
     ChallengeStatus["FAILED"] = "FAILED";
 })(ChallengeStatus || (exports.ChallengeStatus = ChallengeStatus = {}));
-let ChallengesService = class ChallengesService {
+let ChallengesService = ChallengesService_1 = class ChallengesService {
     constructor(prisma) {
         this.prisma = prisma;
+        this.logger = new common_2.Logger(ChallengesService_1.name);
     }
     async getChallengesByCategory(category) {
         return this.prisma.challengeTemplate.findMany({
@@ -182,9 +185,24 @@ let ChallengesService = class ChallengesService {
         });
         return !!completedChallenge;
     }
+    async failExpiredChallenges() {
+        const now = new Date();
+        const result = await this.prisma.challenge.updateMany({
+            where: {
+                status: 'IN_PROGRESS',
+                endDate: {
+                    lt: now,
+                },
+            },
+            data: {
+                status: 'FAILED',
+            },
+        });
+        this.logger.log(`만료된 챌린지 ${result.count}개를 실패 처리했습니다.`);
+    }
 };
 exports.ChallengesService = ChallengesService;
-exports.ChallengesService = ChallengesService = __decorate([
+exports.ChallengesService = ChallengesService = ChallengesService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService])
 ], ChallengesService);

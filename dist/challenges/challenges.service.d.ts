@@ -7,6 +7,7 @@ export declare enum ChallengeStatus {
 }
 export declare class ChallengesService {
     private prisma;
+    private readonly logger;
     constructor(prisma: PrismaService);
     getChallengesByCategory(category: ChallengeCategory): Promise<{
         category: import(".prisma/client").$Enums.ChallengeCategory;
@@ -124,4 +125,5 @@ export declare class ChallengesService {
     }>;
     processExpiredChallenges(): Promise<void>;
     checkWeeklyChallengeCompletion(coupleId: string): Promise<boolean>;
+    failExpiredChallenges(): Promise<void>;
 }

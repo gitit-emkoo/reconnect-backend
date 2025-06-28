@@ -112,8 +112,8 @@ export class PartnerInvitesService {
           data: {
             userId,
             score: 61,
-            resultType: 'INITIAL',
-            diagnosisType: 'INITIAL',
+            resultType: '기초 관계온도',
+            diagnosisType: 'BASELINE_TEMPERATURE',
           },
         });
       };

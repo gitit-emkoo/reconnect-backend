@@ -13,9 +13,11 @@ exports.PartnerInvitesService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const uuid_1 = require("uuid");
+const jwt_1 = require("@nestjs/jwt");
 let PartnerInvitesService = class PartnerInvitesService {
-    constructor(prisma) {
+    constructor(prisma, jwtService) {
         this.prisma = prisma;
+        this.jwtService = jwtService;
     }
     async createInviteCode(userId) {
         const user = await this.prisma.user.findUnique({
@@ -64,7 +66,7 @@ let PartnerInvitesService = class PartnerInvitesService {
         }
         const invitee = await this.prisma.user.findUnique({
             where: { id: inviteeId },
-            include: { couple: true }
+            include: { couple: true },
         });
         if (!invitee) {
             throw new common_1.NotFoundException('사용자를 찾을 수 없습니다.');
@@ -92,7 +94,8 @@ let PartnerInvitesService = class PartnerInvitesService {
                     data: {
                         userId,
                         score: 61,
-                        resultType: 'INITIAL',
+                        resultType: '기초 관계온도',
+                        diagnosisType: 'BASELINE_TEMPERATURE',
                     },
                 });
             };
@@ -137,15 +140,47 @@ let PartnerInvitesService = class PartnerInvitesService {
             });
             await this.prisma.user.update({
                 where: { id: invite.inviterId },
-                data: { partnerId: inviteeId }
+                data: { partnerId: inviteeId },
             });
             await this.prisma.user.update({
                 where: { id: inviteeId },
-                data: { partnerId: invite.inviterId }
+                data: { partnerId: invite.inviterId },
             });
-            return { couple, invite: updatedInvite, needDiagnosis };
+            const updatedInvitee = await this.prisma.user.findUnique({
+                where: { id: inviteeId },
+                include: { partner: true, couple: true },
+            });
+            return { couple, invite: updatedInvite, needDiagnosis, updatedInvitee };
         });
-        return result;
+        const { updatedInvitee } = result;
+        if (!updatedInvitee) {
+            throw new Error('파트너 연결 후 사용자 정보를 업데이트하지 못했습니다.');
+        }
+        let partnerId = null;
+        if (updatedInvitee.partnerId) {
+            partnerId = updatedInvitee.partnerId;
+        }
+        else if (updatedInvitee.partner && typeof updatedInvitee.partner === 'object' && updatedInvitee.partner.id) {
+            partnerId = updatedInvitee.partner.id;
+        }
+        else if (typeof updatedInvitee.partner === 'string') {
+            partnerId = updatedInvitee.partner;
+        }
+        const payload = {
+            userId: updatedInvitee.id,
+            email: updatedInvitee.email,
+            nickname: updatedInvitee.nickname,
+            role: updatedInvitee.role,
+            partnerId: partnerId ?? null,
+            couple: updatedInvitee.couple ? { id: updatedInvitee.couple.id } : null,
+        };
+        const accessToken = this.jwtService.sign(payload);
+        const { password, ...userWithoutPassword } = updatedInvitee;
+        return {
+            message: '파트너 연결에 성공했습니다.',
+            user: userWithoutPassword,
+            accessToken,
+        };
     }
     async acceptInvite(inviteId, inviterId) {
         const invite = await this.prisma.partnerInvite.findUnique({
@@ -241,6 +276,7 @@ let PartnerInvitesService = class PartnerInvitesService {
 exports.PartnerInvitesService = PartnerInvitesService;
 exports.PartnerInvitesService = PartnerInvitesService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        jwt_1.JwtService])
 ], PartnerInvitesService);
 //# sourceMappingURL=partner-invites.service.js.map

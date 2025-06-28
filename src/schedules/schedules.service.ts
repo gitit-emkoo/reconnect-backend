@@ -79,7 +79,7 @@ export class SchedulesService {
   /**
    * 매주 월요일 자정에 주간 리포트를 생성합니다.
    */
-  @Cron(CronExpression.MONDAY_AT_MIDNIGHT, {
+  @Cron('0 0 * * 1', {
     name: 'generateWeeklyReports',
     timeZone: 'Asia/Seoul',
   })

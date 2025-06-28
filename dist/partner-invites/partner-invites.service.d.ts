@@ -1,7 +1,9 @@
 import { PrismaService } from '../prisma/prisma.service';
+import { JwtService } from '@nestjs/jwt';
 export declare class PartnerInvitesService {
     private prisma;
-    constructor(prisma: PrismaService);
+    private jwtService;
+    constructor(prisma: PrismaService, jwtService: JwtService);
     createInviteCode(userId: string): Promise<{
         id: string;
         createdAt: Date;
@@ -13,30 +15,15 @@ export declare class PartnerInvitesService {
         inviteeId: string | null;
     }>;
     respondToInvite(code: string, inviteeId: string): Promise<{
-        couple: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            status: import(".prisma/client").$Enums.CoupleStatus;
-        };
-        invite: {
-            inviter: {
+        message: string;
+        user: {
+            couple: {
                 id: string;
-                email: string;
-                password: string;
-                resetPasswordToken: string | null;
-                resetPasswordTokenExpires: Date | null;
-                nickname: string;
-                profileImageUrl: string | null;
-                role: import(".prisma/client").$Enums.Role;
-                provider: string | null;
-                providerId: string | null;
                 createdAt: Date;
                 updatedAt: Date;
-                coupleId: string | null;
-                partnerId: string | null;
-            };
-            invitee: {
+                status: import(".prisma/client").$Enums.CoupleStatus;
+            } | null;
+            partner: {
                 id: string;
                 email: string;
                 password: string;
@@ -52,17 +39,21 @@ export declare class PartnerInvitesService {
                 coupleId: string | null;
                 partnerId: string | null;
             } | null;
-        } & {
             id: string;
+            email: string;
+            resetPasswordToken: string | null;
+            resetPasswordTokenExpires: Date | null;
+            nickname: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            provider: string | null;
+            providerId: string | null;
             createdAt: Date;
             updatedAt: Date;
             coupleId: string | null;
-            code: string;
-            status: import(".prisma/client").$Enums.InviteStatus;
-            inviterId: string;
-            inviteeId: string | null;
+            partnerId: string | null;
         };
-        needDiagnosis: boolean;
+        accessToken: string;
     }>;
     acceptInvite(inviteId: string, inviterId: string): Promise<{
         couple: {

@@ -27,12 +27,14 @@ const schedules_module_1 = require("./schedules/schedules.module");
 const content_module_1 = require("./content/content.module");
 const diagnosis_module_1 = require("./diagnosis/diagnosis.module");
 const reports_module_1 = require("./reports/reports.module");
+const schedule_1 = require("@nestjs/schedule");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            schedule_1.ScheduleModule.forRoot(),
             users_module_1.UsersModule,
             config_1.ConfigModule.forRoot({
                 isGlobal: true,

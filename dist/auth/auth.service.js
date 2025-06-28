@@ -56,7 +56,8 @@ let AuthService = class AuthService {
                     data: {
                         userId: user.id,
                         score: 61,
-                        resultType: 'INITIAL'
+                        resultType: '기초 관계온도',
+                        diagnosisType: 'BASELINE_TEMPERATURE',
                     }
                 });
             }
@@ -143,7 +144,8 @@ let AuthService = class AuthService {
                         data: {
                             userId: user.id,
                             score: 61,
-                            resultType: 'INITIAL'
+                            resultType: '기초 관계온도',
+                            diagnosisType: 'BASELINE_TEMPERATURE',
                         }
                     });
                 }
@@ -163,12 +165,22 @@ let AuthService = class AuthService {
         if (!userWithDetails) {
             throw new common_1.UnauthorizedException('사용자 정보를 찾는 데 실패했습니다.');
         }
+        let partnerId = null;
+        if (userWithDetails.partnerId) {
+            partnerId = userWithDetails.partnerId;
+        }
+        else if (userWithDetails.partner && typeof userWithDetails.partner === 'object' && userWithDetails.partner.id) {
+            partnerId = userWithDetails.partner.id;
+        }
+        else if (typeof userWithDetails.partner === 'string') {
+            partnerId = userWithDetails.partner;
+        }
         const payload = {
             userId: userWithDetails.id,
             email: userWithDetails.email,
             nickname: userWithDetails.nickname,
             role: userWithDetails.role,
-            partnerId: userWithDetails.partner?.id ?? null,
+            partnerId: partnerId ?? null,
             couple: userWithDetails.couple ? { id: userWithDetails.couple.id } : null,
         };
         const accessToken = this.jwtService.sign(payload);

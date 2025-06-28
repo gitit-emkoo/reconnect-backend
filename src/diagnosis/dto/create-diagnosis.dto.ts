@@ -1,14 +1,17 @@
-import { IsInt, IsString, IsNotEmpty, IsOptional, IsDateString } from 'class-validator';
+import { IsInt, IsString, IsNotEmpty, IsOptional, IsDateString, IsNumber } from 'class-validator';
 
 export class CreateDiagnosisDto {
   @IsInt()
   @IsNotEmpty()
   score: number;
 
-  @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsString()
   resultType?: string;
+
+  @IsOptional()
+  @IsString()
+  diagnosisType?: string;
 
   @IsDateString()
   @IsOptional()

@@ -86,11 +86,10 @@ export class ReportsService {
     // '상담' 기능은 추후 구현 예정이므로, 현재는 0으로 처리합니다.
     const expertSolutionsCount = 0;
 
-    // '진단'은 '자기이해진단'만 카운트합니다.
-    const marriageDiagnosisCount = await this.prisma.diagnosisResult.count({
+    // '진단'은 종류와 상관없이 모두 카운트합니다.
+    const diagnosisCount = await this.prisma.diagnosisResult.count({
       where: {
         userId: { in: memberIds },
-        diagnosisType: 'SELF_UNDERSTANDING',
         createdAt: { gte: weekStartDate, lte: weekEndDate },
       }
     });
@@ -112,7 +111,7 @@ export class ReportsService {
       challengesCompletedCount,
       challengesFailedCount,
       expertSolutionsCount, // 0으로 전달
-      marriageDiagnosisCount, // 자기이해진단 횟수만 전달
+      diagnosisCount, // 모든 진단 횟수 전달
       noChallengeActivity,
     });
 
@@ -132,7 +131,7 @@ export class ReportsService {
         challengesCompletedCount,
         challengesFailedCount,
         expertSolutionsCount,
-        marriageDiagnosisCount,
+        marriageDiagnosisCount: diagnosisCount,
       },
       create: {
         coupleId: coupleId,
@@ -143,7 +142,7 @@ export class ReportsService {
         challengesCompletedCount,
         challengesFailedCount,
         expertSolutionsCount,
-        marriageDiagnosisCount,
+        marriageDiagnosisCount: diagnosisCount,
       },
     });
 
@@ -163,7 +162,7 @@ export class ReportsService {
       challengesCompletedCount: number; 
       challengesFailedCount: number;
       expertSolutionsCount: number;
-      marriageDiagnosisCount: number;
+      diagnosisCount: number;
       noChallengeActivity: boolean;
     }
   ): { score: number, reason: string } {
@@ -202,9 +201,9 @@ export class ReportsService {
     }
 
     // 자기이해진단: 회당 +0.5점
-    if (activities.marriageDiagnosisCount > 0) {
-      score += activities.marriageDiagnosisCount * 0.5;
-      scoreChanges.push(`자기이해진단(${activities.marriageDiagnosisCount}회)`);
+    if (activities.diagnosisCount > 0) {
+      score += activities.diagnosisCount * 0.5;
+      scoreChanges.push(`진단 참여(${activities.diagnosisCount}회)`);
     }
 
     // 최대/최소 점수 제한

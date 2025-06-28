@@ -15,30 +15,15 @@ export declare class PartnerInvitesController {
     respondToInvite(body: {
         code: string;
     }, req: any): Promise<{
-        couple: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            status: import(".prisma/client").$Enums.CoupleStatus;
-        };
-        invite: {
-            inviter: {
+        message: string;
+        user: {
+            couple: {
                 id: string;
-                email: string;
-                password: string;
-                resetPasswordToken: string | null;
-                resetPasswordTokenExpires: Date | null;
-                nickname: string;
-                profileImageUrl: string | null;
-                role: import(".prisma/client").$Enums.Role;
-                provider: string | null;
-                providerId: string | null;
                 createdAt: Date;
                 updatedAt: Date;
-                coupleId: string | null;
-                partnerId: string | null;
-            };
-            invitee: {
+                status: import(".prisma/client").$Enums.CoupleStatus;
+            } | null;
+            partner: {
                 id: string;
                 email: string;
                 password: string;
@@ -54,17 +39,21 @@ export declare class PartnerInvitesController {
                 coupleId: string | null;
                 partnerId: string | null;
             } | null;
-        } & {
             id: string;
+            email: string;
+            resetPasswordToken: string | null;
+            resetPasswordTokenExpires: Date | null;
+            nickname: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            provider: string | null;
+            providerId: string | null;
             createdAt: Date;
             updatedAt: Date;
             coupleId: string | null;
-            code: string;
-            status: import(".prisma/client").$Enums.InviteStatus;
-            inviterId: string;
-            inviteeId: string | null;
+            partnerId: string | null;
         };
-        needDiagnosis: boolean;
+        accessToken: string;
     }>;
     acceptInvite(inviteId: string, req: any): Promise<{
         couple: {

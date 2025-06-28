@@ -11,12 +11,19 @@ const common_1 = require("@nestjs/common");
 const partner_invites_controller_1 = require("./partner-invites.controller");
 const partner_invites_service_1 = require("./partner-invites.service");
 const prisma_module_1 = require("../prisma/prisma.module");
+const jwt_1 = require("@nestjs/jwt");
 let PartnerInvitesModule = class PartnerInvitesModule {
 };
 exports.PartnerInvitesModule = PartnerInvitesModule;
 exports.PartnerInvitesModule = PartnerInvitesModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule],
+        imports: [
+            prisma_module_1.PrismaModule,
+            jwt_1.JwtModule.register({
+                secret: process.env.JWT_SECRET,
+                signOptions: { expiresIn: '1d' },
+            }),
+        ],
         controllers: [partner_invites_controller_1.PartnerInvitesController],
         providers: [partner_invites_service_1.PartnerInvitesService],
         exports: [partner_invites_service_1.PartnerInvitesService],

@@ -88,7 +88,7 @@ export declare class CommunityService {
             id: string;
             createdAt: Date;
             userId: string;
-            optionIndex: number;
+            option: string;
             postId: string;
         }[];
         author: {
@@ -162,9 +162,18 @@ export declare class CommunityService {
         disagreeVotes: number;
         authorId: string;
     }>;
-    voteOnPost(postId: string, userId: string, optionIndex: number): Promise<{
-        userId: string;
-        choice: number;
-    }[]>;
-    getPollResult(postId: string): Promise<Record<number, number>>;
+    voteOnPost(postId: string, userId: string, option: string): Promise<{
+        message: string;
+        data?: undefined;
+    } | {
+        message: string;
+        data: {
+            id: string;
+            createdAt: Date;
+            userId: string;
+            option: string;
+            postId: string;
+        };
+    }>;
+    getPollResult(postId: string): Promise<{}>;
 }
