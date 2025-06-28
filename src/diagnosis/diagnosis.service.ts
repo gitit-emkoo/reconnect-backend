@@ -64,34 +64,33 @@ export class DiagnosisService {
 
   async getMyLatestDiagnosis(userId: string) {
     if (!userId) {
-      throw new Error("User ID is required");
+      throw new Error('User ID is required');
     }
 
-    // 1) 우선 사용자의 초기(베이스라인) 진단 결과를 찾습니다.
-    //    INITIAL 또는 비회원→회원 전환된 UNAUTH_CONVERTED 타입 중 가장 오래된(첫 번째) 진단을 반환합니다.
-    const baseline = await this.prisma.diagnosisResult.findFirst({
+    // 가장 최근의 진단 결과를 찾도록 `desc`로 변경
+    const latestDiagnosis = await this.prisma.diagnosisResult.findFirst({
       where: {
         userId,
-        diagnosisType: {
-          in: ['INITIAL', 'BASELINE_TEMPERATURE'],
-        },
       },
       orderBy: {
-        createdAt: 'asc',
+        createdAt: 'desc',
       },
     });
 
-    if (baseline) {
-      return baseline;
+    // 진단 결과가 있으면 바로 반환
+    if (latestDiagnosis) {
+      return latestDiagnosis;
     }
 
-    // 2) 위 타입이 없을 경우, 사용자의 가장 첫 번째 진단 결과(최초 기록)를 반환합니다.
-    return this.prisma.diagnosisResult.findFirst({
-      where: { userId },
-      orderBy: {
-        createdAt: 'asc',
-      },
-    });
+    // 진단 결과가 전혀 없으면 기본값을 생성하여 반환
+    return {
+      id: 'default',
+      score: 61,
+      resultType: '기초 관계온도',
+      diagnosisType: 'BASELINE_TEMPERATURE',
+      createdAt: new Date(),
+      userId: userId,
+    };
   }
 
   async getMyHistory(userId: string) {
