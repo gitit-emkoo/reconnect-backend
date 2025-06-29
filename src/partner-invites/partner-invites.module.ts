@@ -4,6 +4,7 @@ import { PartnerInvitesService } from './partner-invites.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       signOptions: { expiresIn: '1d' },
     }),
     NotificationsModule,
+    AuthModule,
   ],
   controllers: [PartnerInvitesController],
   providers: [PartnerInvitesService],
