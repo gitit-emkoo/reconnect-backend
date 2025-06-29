@@ -44,7 +44,8 @@ export class PartnerInvitesService {
     });
 
     if (existingInvite) {
-      throw new BadRequestException('이미 진행 중인 초대가 있습니다.');
+      // 이미 유효한 초대 코드가 있다면, 에러 대신 기존 코드를 반환합니다.
+      return existingInvite;
     }
 
     // 새로운 초대 코드 생성
