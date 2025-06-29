@@ -1,14 +1,18 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { v4 as uuidv4 } from 'uuid';
 import type { User } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
+import { NotificationsService } from '../notifications/notifications.service';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class PartnerInvitesService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private notificationsService: NotificationsService,
+    private authService: AuthService,
   ) {}
 
   // 초대 코드 생성
@@ -74,16 +78,16 @@ export class PartnerInvitesService {
     }
 
     // 이미 파트너가 있는지 확인
-    const invitee = await this.prisma.user.findUnique({
+    const inviteeUser = await this.prisma.user.findUnique({
       where: { id: inviteeId },
       include: { couple: true },
     });
 
-    if (!invitee) {
+    if (!inviteeUser) {
       throw new NotFoundException('사용자를 찾을 수 없습니다.');
     }
 
-    if (invitee.couple) {
+    if (inviteeUser.couple) {
       throw new BadRequestException('이미 파트너와 연결되어 있습니다.');
     }
 
@@ -180,6 +184,22 @@ export class PartnerInvitesService {
         data: { partnerId: invite.inviterId },
       });
 
+      if (updatedInvite.invitee && updatedInvite.inviter) {
+        // 두 멤버 모두에게 파트너 연결 알림 생성
+        await this.notificationsService.createNotification({
+          userId: invite.inviterId,
+          message: `${updatedInvite.invitee.nickname}님과 파트너로 연결되었어요!`,
+          type: 'PARTNER_CONNECTED',
+          url: '/dashboard',
+        });
+        await this.notificationsService.createNotification({
+          userId: inviteeId,
+          message: `${updatedInvite.inviter.nickname}님과 파트너로 연결되었어요!`,
+          type: 'PARTNER_CONNECTED',
+          url: '/dashboard',
+        });
+      }
+
       // 최신 유저 정보 다시 불러오기 (partner, couple 포함)
       const updatedInvitee = await this.prisma.user.findUnique({
         where: { id: inviteeId },
@@ -190,91 +210,126 @@ export class PartnerInvitesService {
     });
     
     // 트랜잭션 성공 후 토큰 생성
-    const { updatedInvitee } = result;
-    if (!updatedInvitee) {
+    const { updatedInvitee, invite: updatedInvite } = result;
+    if (!updatedInvitee || !updatedInvite.inviter || !updatedInvite.invitee) {
       throw new Error('파트너 연결 후 사용자 정보를 업데이트하지 못했습니다.');
     }
 
-    // partnerId, couple 정보 포함 (auth.service.ts와 동일한 로직)
-    let partnerId: string | null = null;
-    if (updatedInvitee.partnerId) {
-      partnerId = updatedInvitee.partnerId;
-    } else if (updatedInvitee.partner && typeof updatedInvitee.partner === 'object' && updatedInvitee.partner.id) {
-      partnerId = updatedInvitee.partner.id;
-    } else if (typeof updatedInvitee.partner === 'string') {
-      partnerId = updatedInvitee.partner as any;
+    const inviter = updatedInvite.inviter;
+    const invitee = updatedInvite.invitee;
+
+    // inviter와 invitee의 전체 사용자 정보 조회 (couple 정보 포함)
+    const [inviterFull, inviteeFull] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: inviter.id }, include: { couple: true } }),
+      this.prisma.user.findUnique({ where: { id: invitee.id }, include: { couple: true } }),
+    ]);
+
+    if (!inviterFull || !inviteeFull) {
+        throw new InternalServerErrorException('Failed to retrieve full user data.');
     }
 
-    const payload = {
-      userId: updatedInvitee.id,
-      email: updatedInvitee.email,
-      nickname: updatedInvitee.nickname,
-      role: updatedInvitee.role,
-      partnerId: partnerId ?? null,
-      couple: updatedInvitee.couple ? { id: updatedInvitee.couple.id } : null,
+    const inviterPayload = {
+        userId: inviterFull.id,
+        email: inviterFull.email,
+        nickname: inviterFull.nickname,
+        role: inviterFull.role,
+        partnerId: inviteeFull.id,
+        couple: inviterFull.couple ? { id: inviterFull.couple.id } : null,
     };
-    const accessToken = this.jwtService.sign(payload);
+    const inviterToken = this.jwtService.sign(inviterPayload);
 
-    // 응답에서 비밀번호 제외
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userWithoutPassword } = updatedInvitee;
+    const inviteePayload = {
+        userId: inviteeFull.id,
+        email: inviteeFull.email,
+        nickname: inviteeFull.nickname,
+        role: inviteeFull.role,
+        partnerId: inviterFull.id,
+        couple: inviteeFull.couple ? { id: inviteeFull.couple.id } : null,
+    };
+    const inviteeToken = this.jwtService.sign(inviteePayload);
 
-    return { 
-      message: '파트너 연결에 성공했습니다.',
-      user: userWithoutPassword,
-      accessToken,
+
+    return {
+        inviter: { ...inviterFull, partnerId: inviteeFull.id },
+        invitee: { ...inviteeFull, partnerId: inviterFull.id },
+        inviterToken,
+        inviteeToken,
     };
   }
 
   // 초대 수락
-  async acceptInvite(inviteId: string, inviterId: string) {
+  async acceptInvite(code: string, inviteeId: string) {
     const invite = await this.prisma.partnerInvite.findUnique({
-      where: { id: inviteId },
-      include: {
-        inviter: true,
-        invitee: true
-      }
+      where: { code },
     });
 
-    if (!invite) {
-      throw new NotFoundException('초대를 찾을 수 없습니다.');
+    if (!invite || invite.status !== 'PENDING') {
+      throw new NotFoundException('유효하지 않거나 만료된 초대 코드입니다.');
+    }
+    
+    if (invite.inviterId === inviteeId) {
+        throw new BadRequestException('자기 자신을 초대할 수 없습니다.');
     }
 
-    if (invite.inviterId !== inviterId) {
-      throw new BadRequestException('초대를 수락할 권한이 없습니다.');
-    }
-
-    if (invite.status !== 'RESPONDED') {
-      throw new BadRequestException('이미 처리된 초대입니다.');
-    }
-
-    // 트랜잭션으로 커플 생성 및 초대 상태 업데이트
-    const result = await this.prisma.$transaction(async (prisma) => {
-      // 새로운 커플 생성
-      const couple = await prisma.couple.create({
+    return this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: invite.inviterId },
+        data: { partnerId: inviteeId },
+      });
+      await tx.user.update({
+        where: { id: inviteeId },
+        data: { partnerId: invite.inviterId },
+      });
+      
+      const couple = await tx.couple.create({
         data: {
           members: {
-            connect: [
-              { id: invite.inviterId },
-              ...(invite.inviteeId ? [{ id: invite.inviteeId }] : [])
-            ]
-          }
-        }
+            connect: [{ id: invite.inviterId }, { id: inviteeId }],
+          },
+        },
       });
 
-      // 초대 상태 업데이트
-      const updatedInvite = await prisma.partnerInvite.update({
+      await tx.partnerInvite.update({
         where: { id: invite.id },
         data: {
+          inviteeId,
           status: 'CONFIRMED',
-          coupleId: couple.id
-        }
+          coupleId: couple.id,
+        },
       });
 
-      return { couple, invite: updatedInvite };
-    });
+      const [inviter, invitee] = await Promise.all([
+        tx.user.findUnique({ where: { id: invite.inviterId } }),
+        tx.user.findUnique({ where: { id: inviteeId } }),
+      ]);
+      
+      if(!inviter || !invitee) {
+          throw new InternalServerErrorException("Failed to retrieve user data after update.");
+      }
 
-    return result;
+      await this.notificationsService.createNotification({
+        userId: inviter.id,
+        message: `${invitee.nickname}님과 파트너로 연결되었어요!`,
+        type: 'PARTNER_CONNECTED',
+        url: '/dashboard',
+      });
+      await this.notificationsService.createNotification({
+        userId: invitee.id,
+        message: `${inviter.nickname}님과 파트너로 연결되었어요!`,
+        type: 'PARTNER_CONNECTED',
+        url: '/dashboard',
+      });
+
+      const inviterToken = this.jwtService.sign({ userId: inviter.id, partnerId: invitee.id });
+      const inviteeToken = this.jwtService.sign({ userId: invitee.id, partnerId: inviter.id });
+
+      return {
+        inviter,
+        invitee,
+        inviterToken,
+        inviteeToken,
+      };
+    });
   }
 
   // 초대 거절

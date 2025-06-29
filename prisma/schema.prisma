@@ -68,6 +68,24 @@ model User {
   // 파트너 초대 관련 관계 추가
   sentInvites     PartnerInvite[] @relation("SentInvites")
   receivedInvites PartnerInvite[] @relation("ReceivedInvites")
+
+  // 알림
+  notifications   Notification[]
+}
+
+model Notification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  message   String // "새로운 챌린지가 시작되었어요."
+  url       String? // 클릭 시 이동할 경로 (예: /challenge)
+  isRead    Boolean  @default(false)
+  type      String // "CHALLENGE_STARTED", "PARTNER_CONNECTED" 등
+  createdAt DateTime @default(now())
+
+  // 관계
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model DiagnosisResult {

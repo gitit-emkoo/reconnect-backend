@@ -19,6 +19,7 @@ import { ContentModule } from './content/content.module';
 import { DiagnosisModule } from './diagnosis/diagnosis.module';
 import { ReportsModule } from './reports/reports.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ContentModule,
     DiagnosisModule,
     ReportsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

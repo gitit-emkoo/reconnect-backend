@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateChallengeDto } from './dto/create-challenge.dto';
 import { ChallengeCategory } from '@prisma/client';
 import { Logger } from '@nestjs/common';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export enum ChallengeStatus {
   IN_PROGRESS = 'IN_PROGRESS',
@@ -14,7 +15,10 @@ export enum ChallengeStatus {
 export class ChallengesService {
   private readonly logger = new Logger(ChallengesService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   // 카테고리별 챌린지 템플릿 조회
   async getChallengesByCategory(category: ChallengeCategory) {
@@ -53,6 +57,15 @@ export class ChallengesService {
       throw new BadRequestException('이미 진행중인 챌린지가 있습니다.');
     }
 
+    // 커플 정보 조회 (멤버 ID 확인용)
+    const couple = await this.prisma.couple.findUnique({
+      where: { id: coupleId },
+      include: { members: true },
+    });
+    if (!couple || couple.members.length < 2) {
+      throw new NotFoundException('유효한 커플 정보를 찾을 수 없습니다.');
+    }
+
     // 챌린지 템플릿 조회
     const template = await this.prisma.challengeTemplate.findUnique({
       where: { id: templateId },
@@ -75,7 +88,7 @@ export class ChallengesService {
     endDate.setDate(startDate.getDate() + 6);
     endDate.setHours(23, 59, 59, 999); // 일요일 자정 직전으로 설정
 
-    return this.prisma.challenge.create({
+    const newChallenge = await this.prisma.challenge.create({
       data: {
         coupleId,
         startDate,
@@ -89,6 +102,18 @@ export class ChallengesService {
         points: template.points,
       },
     });
+
+    // 두 멤버 모두에게 챌린지 시작 알림 생성
+    for (const member of couple.members) {
+      await this.notificationsService.createNotification({
+        userId: member.id,
+        message: `새로운 챌린지 '${template.title}'가 시작되었어요.`,
+        type: 'CHALLENGE_STARTED',
+        url: '/challenge',
+      });
+    }
+
+    return newChallenge;
   }
 
   // 챌린지 완료 처리
@@ -129,13 +154,25 @@ export class ChallengesService {
 
     // 두 멤버 모두 완료했는지 확인
     if (updatedChallenge.isCompletedByMember1 && updatedChallenge.isCompletedByMember2) {
-      return this.prisma.challenge.update({
+      const finalChallenge = await this.prisma.challenge.update({
         where: { id: challengeId },
         data: {
           status: ChallengeStatus.COMPLETED,
           completedAt: new Date(),
         },
       });
+
+      // 두 멤버 모두에게 챌린지 완료 알림 생성
+      for (const member of challenge.couple.members) {
+        await this.notificationsService.createNotification({
+          userId: member.id,
+          message: `챌린지 '${finalChallenge.title}'를 성공적으로 완료했어요! 🎉`,
+          type: 'CHALLENGE_COMPLETED',
+          url: '/challenge',
+        });
+      }
+
+      return finalChallenge;
     }
 
     return updatedChallenge;
