@@ -16,6 +16,10 @@ export declare class AuthController {
         accessToken: string;
         user: Omit<User, 'password'>;
     }>;
+    googleRegister(googleAuthDto: GoogleAuthDto): Promise<{
+        accessToken: string;
+        user: Omit<User, 'password'>;
+    }>;
     kakaoRegister(code: string): Promise<{
         message: string;
     } | undefined>;

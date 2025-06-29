@@ -12,6 +12,9 @@ const partner_invites_controller_1 = require("./partner-invites.controller");
 const partner_invites_service_1 = require("./partner-invites.service");
 const prisma_module_1 = require("../prisma/prisma.module");
 const jwt_1 = require("@nestjs/jwt");
+const notifications_module_1 = require("../notifications/notifications.module");
+const auth_module_1 = require("../auth/auth.module");
+const diagnosis_module_1 = require("../diagnosis/diagnosis.module");
 let PartnerInvitesModule = class PartnerInvitesModule {
 };
 exports.PartnerInvitesModule = PartnerInvitesModule;
@@ -23,6 +26,9 @@ exports.PartnerInvitesModule = PartnerInvitesModule = __decorate([
                 secret: process.env.JWT_SECRET,
                 signOptions: { expiresIn: '1d' },
             }),
+            notifications_module_1.NotificationsModule,
+            auth_module_1.AuthModule,
+            diagnosis_module_1.DiagnosisModule,
         ],
         controllers: [partner_invites_controller_1.PartnerInvitesController],
         providers: [partner_invites_service_1.PartnerInvitesService],

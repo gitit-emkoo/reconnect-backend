@@ -1,9 +1,15 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { NotificationsService } from '../notifications/notifications.service';
+import { AuthService } from '../auth/auth.service';
+import { DiagnosisService } from '../diagnosis/diagnosis.service';
 export declare class PartnerInvitesService {
     private prisma;
     private jwtService;
-    constructor(prisma: PrismaService, jwtService: JwtService);
+    private notificationsService;
+    private authService;
+    private diagnosisService;
+    constructor(prisma: PrismaService, jwtService: JwtService, notificationsService: NotificationsService, authService: AuthService, diagnosisService: DiagnosisService);
     createInviteCode(userId: string): Promise<{
         id: string;
         createdAt: Date;
@@ -15,32 +21,58 @@ export declare class PartnerInvitesService {
         inviteeId: string | null;
     }>;
     respondToInvite(code: string, inviteeId: string): Promise<{
-        message: string;
-        user: {
+        inviter: {
+            partnerId: string;
             couple: {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 status: import(".prisma/client").$Enums.CoupleStatus;
             } | null;
-            partner: {
+            id: string;
+            email: string;
+            password: string;
+            resetPasswordToken: string | null;
+            resetPasswordTokenExpires: Date | null;
+            nickname: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            provider: string | null;
+            providerId: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            coupleId: string | null;
+        };
+        invitee: {
+            partnerId: string;
+            couple: {
                 id: string;
-                email: string;
-                password: string;
-                resetPasswordToken: string | null;
-                resetPasswordTokenExpires: Date | null;
-                nickname: string;
-                profileImageUrl: string | null;
-                role: import(".prisma/client").$Enums.Role;
-                provider: string | null;
-                providerId: string | null;
                 createdAt: Date;
                 updatedAt: Date;
-                coupleId: string | null;
-                partnerId: string | null;
+                status: import(".prisma/client").$Enums.CoupleStatus;
             } | null;
             id: string;
             email: string;
+            password: string;
+            resetPasswordToken: string | null;
+            resetPasswordTokenExpires: Date | null;
+            nickname: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            provider: string | null;
+            providerId: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            coupleId: string | null;
+        };
+        inviterToken: string;
+        inviteeToken: string;
+    }>;
+    acceptInvite(code: string, inviteeId: string): Promise<{
+        inviter: {
+            id: string;
+            email: string;
+            password: string;
             resetPasswordToken: string | null;
             resetPasswordTokenExpires: Date | null;
             nickname: string;
@@ -53,25 +85,24 @@ export declare class PartnerInvitesService {
             coupleId: string | null;
             partnerId: string | null;
         };
-        accessToken: string;
-    }>;
-    acceptInvite(inviteId: string, inviterId: string): Promise<{
-        couple: {
+        invitee: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            status: import(".prisma/client").$Enums.CoupleStatus;
-        };
-        invite: {
-            id: string;
+            email: string;
+            password: string;
+            resetPasswordToken: string | null;
+            resetPasswordTokenExpires: Date | null;
+            nickname: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            provider: string | null;
+            providerId: string | null;
             createdAt: Date;
             updatedAt: Date;
             coupleId: string | null;
-            code: string;
-            status: import(".prisma/client").$Enums.InviteStatus;
-            inviterId: string;
-            inviteeId: string | null;
+            partnerId: string | null;
         };
+        inviterToken: string;
+        inviteeToken: string;
     }>;
     rejectInvite(inviteId: string, inviterId: string): Promise<{
         id: string;

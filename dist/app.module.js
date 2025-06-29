@@ -28,6 +28,7 @@ const content_module_1 = require("./content/content.module");
 const diagnosis_module_1 = require("./diagnosis/diagnosis.module");
 const reports_module_1 = require("./reports/reports.module");
 const schedule_1 = require("@nestjs/schedule");
+const notifications_module_1 = require("./notifications/notifications.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -56,6 +57,7 @@ exports.AppModule = AppModule = __decorate([
             content_module_1.ContentModule,
             diagnosis_module_1.DiagnosisModule,
             reports_module_1.ReportsModule,
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

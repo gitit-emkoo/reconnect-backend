@@ -32,6 +32,9 @@ let AuthController = class AuthController {
     async googleLogin(googleAuthDto) {
         return this.authService.googleLogin(googleAuthDto);
     }
+    async googleRegister(googleAuthDto) {
+        return this.authService.googleLogin(googleAuthDto);
+    }
     async kakaoRegister(code) {
         if (!code) {
             console.log('카카오 회원가입 요청 받음');
@@ -73,6 +76,14 @@ __decorate([
     __metadata("design:paramtypes", [social_auth_dto_2.GoogleAuthDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "googleLogin", null);
+__decorate([
+    (0, common_1.Post)('google/register'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [social_auth_dto_2.GoogleAuthDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "googleRegister", null);
 __decorate([
     (0, common_1.Post)('kakao/register'),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),

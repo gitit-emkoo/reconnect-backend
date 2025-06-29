@@ -1,5 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { ChallengeCategory } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 export declare enum ChallengeStatus {
     IN_PROGRESS = "IN_PROGRESS",
     COMPLETED = "COMPLETED",
@@ -7,8 +8,9 @@ export declare enum ChallengeStatus {
 }
 export declare class ChallengesService {
     private prisma;
+    private notificationsService;
     private readonly logger;
-    constructor(prisma: PrismaService);
+    constructor(prisma: PrismaService, notificationsService: NotificationsService);
     getChallengesByCategory(category: ChallengeCategory): Promise<{
         category: import(".prisma/client").$Enums.ChallengeCategory;
         id: string;

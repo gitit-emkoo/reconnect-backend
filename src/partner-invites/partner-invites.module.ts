@@ -5,6 +5,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthModule } from '../auth/auth.module';
+import { DiagnosisModule } from '../diagnosis/diagnosis.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { AuthModule } from '../auth/auth.module';
     }),
     NotificationsModule,
     AuthModule,
+    DiagnosisModule,
   ],
   controllers: [PartnerInvitesController],
   providers: [PartnerInvitesService],

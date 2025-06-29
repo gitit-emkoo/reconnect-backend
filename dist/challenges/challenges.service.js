@@ -14,6 +14,7 @@ exports.ChallengesService = exports.ChallengeStatus = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const common_2 = require("@nestjs/common");
+const notifications_service_1 = require("../notifications/notifications.service");
 var ChallengeStatus;
 (function (ChallengeStatus) {
     ChallengeStatus["IN_PROGRESS"] = "IN_PROGRESS";
@@ -21,8 +22,9 @@ var ChallengeStatus;
     ChallengeStatus["FAILED"] = "FAILED";
 })(ChallengeStatus || (exports.ChallengeStatus = ChallengeStatus = {}));
 let ChallengesService = ChallengesService_1 = class ChallengesService {
-    constructor(prisma) {
+    constructor(prisma, notificationsService) {
         this.prisma = prisma;
+        this.notificationsService = notificationsService;
         this.logger = new common_2.Logger(ChallengesService_1.name);
     }
     async getChallengesByCategory(category) {
@@ -53,6 +55,13 @@ let ChallengesService = ChallengesService_1 = class ChallengesService {
         if (activeChallenge) {
             throw new common_1.BadRequestException('이미 진행중인 챌린지가 있습니다.');
         }
+        const couple = await this.prisma.couple.findUnique({
+            where: { id: coupleId },
+            include: { members: true },
+        });
+        if (!couple || couple.members.length < 2) {
+            throw new common_1.NotFoundException('유효한 커플 정보를 찾을 수 없습니다.');
+        }
         const template = await this.prisma.challengeTemplate.findUnique({
             where: { id: templateId },
         });
@@ -68,7 +77,7 @@ let ChallengesService = ChallengesService_1 = class ChallengesService {
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + 6);
         endDate.setHours(23, 59, 59, 999);
-        return this.prisma.challenge.create({
+        const newChallenge = await this.prisma.challenge.create({
             data: {
                 coupleId,
                 startDate,
@@ -82,6 +91,15 @@ let ChallengesService = ChallengesService_1 = class ChallengesService {
                 points: template.points,
             },
         });
+        for (const member of couple.members) {
+            await this.notificationsService.createNotification({
+                userId: member.id,
+                message: `새로운 챌린지 '${template.title}'가 시작되었어요.`,
+                type: 'CHALLENGE_STARTED',
+                url: '/challenge',
+            });
+        }
+        return newChallenge;
     }
     async completeChallenge(challengeId, userId) {
         const challenge = await this.prisma.challenge.findUnique({
@@ -110,13 +128,22 @@ let ChallengesService = ChallengesService_1 = class ChallengesService {
             data: updateData,
         });
         if (updatedChallenge.isCompletedByMember1 && updatedChallenge.isCompletedByMember2) {
-            return this.prisma.challenge.update({
+            const finalChallenge = await this.prisma.challenge.update({
                 where: { id: challengeId },
                 data: {
                     status: ChallengeStatus.COMPLETED,
                     completedAt: new Date(),
                 },
             });
+            for (const member of challenge.couple.members) {
+                await this.notificationsService.createNotification({
+                    userId: member.id,
+                    message: `챌린지 '${finalChallenge.title}'를 성공적으로 완료했어요! 🎉`,
+                    type: 'CHALLENGE_COMPLETED',
+                    url: '/challenge',
+                });
+            }
+            return finalChallenge;
         }
         return updatedChallenge;
     }
@@ -204,6 +231,7 @@ let ChallengesService = ChallengesService_1 = class ChallengesService {
 exports.ChallengesService = ChallengesService;
 exports.ChallengesService = ChallengesService = ChallengesService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        notifications_service_1.NotificationsService])
 ], ChallengesService);
 //# sourceMappingURL=challenges.service.js.map

@@ -15,32 +15,58 @@ export declare class PartnerInvitesController {
     respondToInvite(body: {
         code: string;
     }, req: any): Promise<{
-        message: string;
-        user: {
+        inviter: {
+            partnerId: string;
             couple: {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 status: import(".prisma/client").$Enums.CoupleStatus;
             } | null;
-            partner: {
+            id: string;
+            email: string;
+            password: string;
+            resetPasswordToken: string | null;
+            resetPasswordTokenExpires: Date | null;
+            nickname: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            provider: string | null;
+            providerId: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            coupleId: string | null;
+        };
+        invitee: {
+            partnerId: string;
+            couple: {
                 id: string;
-                email: string;
-                password: string;
-                resetPasswordToken: string | null;
-                resetPasswordTokenExpires: Date | null;
-                nickname: string;
-                profileImageUrl: string | null;
-                role: import(".prisma/client").$Enums.Role;
-                provider: string | null;
-                providerId: string | null;
                 createdAt: Date;
                 updatedAt: Date;
-                coupleId: string | null;
-                partnerId: string | null;
+                status: import(".prisma/client").$Enums.CoupleStatus;
             } | null;
             id: string;
             email: string;
+            password: string;
+            resetPasswordToken: string | null;
+            resetPasswordTokenExpires: Date | null;
+            nickname: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            provider: string | null;
+            providerId: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            coupleId: string | null;
+        };
+        inviterToken: string;
+        inviteeToken: string;
+    }>;
+    acceptInvite(inviteId: string, req: any): Promise<{
+        inviter: {
+            id: string;
+            email: string;
+            password: string;
             resetPasswordToken: string | null;
             resetPasswordTokenExpires: Date | null;
             nickname: string;
@@ -53,25 +79,24 @@ export declare class PartnerInvitesController {
             coupleId: string | null;
             partnerId: string | null;
         };
-        accessToken: string;
-    }>;
-    acceptInvite(inviteId: string, req: any): Promise<{
-        couple: {
+        invitee: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            status: import(".prisma/client").$Enums.CoupleStatus;
-        };
-        invite: {
-            id: string;
+            email: string;
+            password: string;
+            resetPasswordToken: string | null;
+            resetPasswordTokenExpires: Date | null;
+            nickname: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            provider: string | null;
+            providerId: string | null;
             createdAt: Date;
             updatedAt: Date;
             coupleId: string | null;
-            code: string;
-            status: import(".prisma/client").$Enums.InviteStatus;
-            inviterId: string;
-            inviteeId: string | null;
+            partnerId: string | null;
         };
+        inviterToken: string;
+        inviteeToken: string;
     }>;
     rejectInvite(inviteId: string, req: any): Promise<{
         id: string;

@@ -14,10 +14,16 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const uuid_1 = require("uuid");
 const jwt_1 = require("@nestjs/jwt");
+const notifications_service_1 = require("../notifications/notifications.service");
+const auth_service_1 = require("../auth/auth.service");
+const diagnosis_service_1 = require("../diagnosis/diagnosis.service");
 let PartnerInvitesService = class PartnerInvitesService {
-    constructor(prisma, jwtService) {
+    constructor(prisma, jwtService, notificationsService, authService, diagnosisService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
+        this.notificationsService = notificationsService;
+        this.authService = authService;
+        this.diagnosisService = diagnosisService;
     }
     async createInviteCode(userId) {
         const user = await this.prisma.user.findUnique({
@@ -64,162 +70,185 @@ let PartnerInvitesService = class PartnerInvitesService {
         if (invite.inviterId === inviteeId) {
             throw new common_1.BadRequestException('자기 자신을 초대할 수 없습니다.');
         }
-        const invitee = await this.prisma.user.findUnique({
+        const inviteeUser = await this.prisma.user.findUnique({
             where: { id: inviteeId },
             include: { couple: true },
         });
-        if (!invitee) {
+        if (!inviteeUser) {
             throw new common_1.NotFoundException('사용자를 찾을 수 없습니다.');
         }
-        if (invitee.couple) {
+        if (inviteeUser.couple) {
             throw new common_1.BadRequestException('이미 파트너와 연결되어 있습니다.');
         }
-        const result = await this.prisma.$transaction(async (_tx) => {
-            const inviterDiagnosis = await this.prisma.diagnosisResult.findFirst({
-                where: {
-                    userId: invite.inviterId,
-                    resultType: { in: ['INITIAL', 'UNAUTH_CONVERTED'] },
-                },
-                orderBy: { createdAt: 'asc' },
-            });
-            const inviteeDiagnosis = await this.prisma.diagnosisResult.findFirst({
-                where: {
-                    userId: inviteeId,
-                    resultType: { in: ['INITIAL', 'UNAUTH_CONVERTED'] },
-                },
-                orderBy: { createdAt: 'asc' },
-            });
-            const ensureBaseline = async (userId) => {
-                return this.prisma.diagnosisResult.create({
-                    data: {
-                        userId,
-                        score: 61,
-                        resultType: '기초 관계온도',
-                        diagnosisType: 'BASELINE_TEMPERATURE',
+        const result = await this.prisma.$transaction(async (tx) => {
+            const inviterDiagnosis = await this.diagnosisService.getMyLatestDiagnosis(invite.inviterId);
+            const inviteeDiagnosis = await this.diagnosisService.getMyLatestDiagnosis(inviteeId);
+            const inviterScore = inviterDiagnosis?.score ?? 61;
+            const inviteeScore = inviteeDiagnosis?.score ?? 61;
+            const synchronizedScore = Math.min(inviterScore, inviteeScore);
+            await tx.diagnosisResult.createMany({
+                data: [
+                    {
+                        userId: invite.inviterId,
+                        score: synchronizedScore,
+                        resultType: '파트너 연결',
+                        diagnosisType: 'COUPLE_SYNC',
                     },
-                });
-            };
-            const inviterBase = inviterDiagnosis ?? await ensureBaseline(invite.inviterId);
-            const inviteeBase = inviteeDiagnosis ?? await ensureBaseline(inviteeId);
-            const lowerScore = Math.min(inviterBase.score, inviteeBase.score);
-            await this.prisma.diagnosisResult.update({ where: { id: inviterBase.id }, data: { score: lowerScore } });
-            await this.prisma.diagnosisResult.update({ where: { id: inviteeBase.id }, data: { score: lowerScore } });
-            const needDiagnosis = false;
-            if (!needDiagnosis && inviterDiagnosis && inviteeDiagnosis) {
-                const lowerScore = Math.min(inviterDiagnosis.score, inviteeDiagnosis.score);
-                await this.prisma.diagnosisResult.update({
-                    where: { id: inviterDiagnosis.id },
-                    data: { score: lowerScore },
-                });
-                await this.prisma.diagnosisResult.update({
-                    where: { id: inviteeDiagnosis.id },
-                    data: { score: lowerScore },
-                });
-            }
-            const couple = await this.prisma.couple.create({
+                    {
+                        userId: inviteeId,
+                        score: synchronizedScore,
+                        resultType: '파트너 연결',
+                        diagnosisType: 'COUPLE_SYNC',
+                    },
+                ],
+            });
+            const couple = await tx.couple.create({
                 data: {
                     members: {
-                        connect: [
-                            { id: invite.inviterId },
-                            { id: inviteeId }
-                        ]
-                    }
-                }
+                        connect: [{ id: invite.inviterId }, { id: inviteeId }],
+                    },
+                },
             });
-            const updatedInvite = await this.prisma.partnerInvite.update({
+            const updatedInvite = await tx.partnerInvite.update({
                 where: { id: invite.id },
                 data: {
                     inviteeId,
                     status: 'CONFIRMED',
-                    coupleId: couple.id
+                    coupleId: couple.id,
                 },
                 include: {
                     inviter: true,
-                    invitee: true
-                }
+                    invitee: true,
+                },
             });
-            await this.prisma.user.update({
+            await tx.user.update({
                 where: { id: invite.inviterId },
                 data: { partnerId: inviteeId },
             });
-            await this.prisma.user.update({
+            await tx.user.update({
                 where: { id: inviteeId },
                 data: { partnerId: invite.inviterId },
             });
-            const updatedInvitee = await this.prisma.user.findUnique({
+            if (updatedInvite.invitee && updatedInvite.inviter) {
+                await this.notificationsService.createNotification({
+                    userId: invite.inviterId,
+                    message: `${updatedInvite.invitee.nickname}님과 파트너로 연결되었어요!`,
+                    type: 'PARTNER_CONNECTED',
+                    url: '/dashboard',
+                });
+                await this.notificationsService.createNotification({
+                    userId: inviteeId,
+                    message: `${updatedInvite.inviter.nickname}님과 파트너로 연결되었어요!`,
+                    type: 'PARTNER_CONNECTED',
+                    url: '/dashboard',
+                });
+            }
+            const updatedInvitee = await tx.user.findUnique({
                 where: { id: inviteeId },
                 include: { partner: true, couple: true },
             });
-            return { couple, invite: updatedInvite, needDiagnosis, updatedInvitee };
+            return { updatedInvitee, invite: updatedInvite };
         });
-        const { updatedInvitee } = result;
-        if (!updatedInvitee) {
+        const { updatedInvitee, invite: updatedInvite } = result;
+        if (!updatedInvitee || !updatedInvite.inviter || !updatedInvite.invitee) {
             throw new Error('파트너 연결 후 사용자 정보를 업데이트하지 못했습니다.');
         }
-        let partnerId = null;
-        if (updatedInvitee.partnerId) {
-            partnerId = updatedInvitee.partnerId;
+        const inviter = updatedInvite.inviter;
+        const invitee = updatedInvite.invitee;
+        const [inviterFull, inviteeFull] = await Promise.all([
+            this.prisma.user.findUnique({ where: { id: inviter.id }, include: { couple: true } }),
+            this.prisma.user.findUnique({ where: { id: invitee.id }, include: { couple: true } }),
+        ]);
+        if (!inviterFull || !inviteeFull) {
+            throw new common_1.InternalServerErrorException('Failed to retrieve full user data.');
         }
-        else if (updatedInvitee.partner && typeof updatedInvitee.partner === 'object' && updatedInvitee.partner.id) {
-            partnerId = updatedInvitee.partner.id;
-        }
-        else if (typeof updatedInvitee.partner === 'string') {
-            partnerId = updatedInvitee.partner;
-        }
-        const payload = {
-            userId: updatedInvitee.id,
-            email: updatedInvitee.email,
-            nickname: updatedInvitee.nickname,
-            role: updatedInvitee.role,
-            partnerId: partnerId ?? null,
-            couple: updatedInvitee.couple ? { id: updatedInvitee.couple.id } : null,
+        const inviterPayload = {
+            userId: inviterFull.id,
+            email: inviterFull.email,
+            nickname: inviterFull.nickname,
+            role: inviterFull.role,
+            partnerId: inviteeFull.id,
+            couple: inviterFull.couple ? { id: inviterFull.couple.id } : null,
         };
-        const accessToken = this.jwtService.sign(payload);
-        const { password, ...userWithoutPassword } = updatedInvitee;
+        const inviterToken = this.jwtService.sign(inviterPayload);
+        const inviteePayload = {
+            userId: inviteeFull.id,
+            email: inviteeFull.email,
+            nickname: inviteeFull.nickname,
+            role: inviteeFull.role,
+            partnerId: inviterFull.id,
+            couple: inviteeFull.couple ? { id: inviteeFull.couple.id } : null,
+        };
+        const inviteeToken = this.jwtService.sign(inviteePayload);
         return {
-            message: '파트너 연결에 성공했습니다.',
-            user: userWithoutPassword,
-            accessToken,
+            inviter: { ...inviterFull, partnerId: inviteeFull.id },
+            invitee: { ...inviteeFull, partnerId: inviterFull.id },
+            inviterToken,
+            inviteeToken,
         };
     }
-    async acceptInvite(inviteId, inviterId) {
+    async acceptInvite(code, inviteeId) {
         const invite = await this.prisma.partnerInvite.findUnique({
-            where: { id: inviteId },
-            include: {
-                inviter: true,
-                invitee: true
-            }
+            where: { code },
         });
-        if (!invite) {
-            throw new common_1.NotFoundException('초대를 찾을 수 없습니다.');
+        if (!invite || invite.status !== 'PENDING') {
+            throw new common_1.NotFoundException('유효하지 않거나 만료된 초대 코드입니다.');
         }
-        if (invite.inviterId !== inviterId) {
-            throw new common_1.BadRequestException('초대를 수락할 권한이 없습니다.');
+        if (invite.inviterId === inviteeId) {
+            throw new common_1.BadRequestException('자기 자신을 초대할 수 없습니다.');
         }
-        if (invite.status !== 'RESPONDED') {
-            throw new common_1.BadRequestException('이미 처리된 초대입니다.');
-        }
-        const result = await this.prisma.$transaction(async (prisma) => {
-            const couple = await prisma.couple.create({
+        return this.prisma.$transaction(async (tx) => {
+            await tx.user.update({
+                where: { id: invite.inviterId },
+                data: { partnerId: inviteeId },
+            });
+            await tx.user.update({
+                where: { id: inviteeId },
+                data: { partnerId: invite.inviterId },
+            });
+            const couple = await tx.couple.create({
                 data: {
                     members: {
-                        connect: [
-                            { id: invite.inviterId },
-                            ...(invite.inviteeId ? [{ id: invite.inviteeId }] : [])
-                        ]
-                    }
-                }
+                        connect: [{ id: invite.inviterId }, { id: inviteeId }],
+                    },
+                },
             });
-            const updatedInvite = await prisma.partnerInvite.update({
+            await tx.partnerInvite.update({
                 where: { id: invite.id },
                 data: {
+                    inviteeId,
                     status: 'CONFIRMED',
-                    coupleId: couple.id
-                }
+                    coupleId: couple.id,
+                },
             });
-            return { couple, invite: updatedInvite };
+            const [inviter, invitee] = await Promise.all([
+                tx.user.findUnique({ where: { id: invite.inviterId } }),
+                tx.user.findUnique({ where: { id: inviteeId } }),
+            ]);
+            if (!inviter || !invitee) {
+                throw new common_1.InternalServerErrorException("Failed to retrieve user data after update.");
+            }
+            await this.notificationsService.createNotification({
+                userId: inviter.id,
+                message: `${invitee.nickname}님과 파트너로 연결되었어요!`,
+                type: 'PARTNER_CONNECTED',
+                url: '/dashboard',
+            });
+            await this.notificationsService.createNotification({
+                userId: invitee.id,
+                message: `${inviter.nickname}님과 파트너로 연결되었어요!`,
+                type: 'PARTNER_CONNECTED',
+                url: '/dashboard',
+            });
+            const inviterToken = this.jwtService.sign({ userId: inviter.id, partnerId: invitee.id });
+            const inviteeToken = this.jwtService.sign({ userId: invitee.id, partnerId: inviter.id });
+            return {
+                inviter,
+                invitee,
+                inviterToken,
+                inviteeToken,
+            };
         });
-        return result;
     }
     async rejectInvite(inviteId, inviterId) {
         const invite = await this.prisma.partnerInvite.findUnique({
@@ -277,6 +306,9 @@ exports.PartnerInvitesService = PartnerInvitesService;
 exports.PartnerInvitesService = PartnerInvitesService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        jwt_1.JwtService])
+        jwt_1.JwtService,
+        notifications_service_1.NotificationsService,
+        auth_service_1.AuthService,
+        diagnosis_service_1.DiagnosisService])
 ], PartnerInvitesService);
 //# sourceMappingURL=partner-invites.service.js.map

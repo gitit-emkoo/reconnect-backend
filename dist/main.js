@@ -11,7 +11,7 @@ async function bootstrap() {
     app.setGlobalPrefix('api');
     app.enableCors({
         origin: [
-            'https://reconnect-ivory.vercel.app',
+            /^https:\/\/reconnect-.*\.vercel\.app$/,
             'http://localhost:5173',
             'http://localhost:5174',
         ],
