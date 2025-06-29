@@ -22,14 +22,15 @@ import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 export class DiagnosisController {
   constructor(private readonly diagnosisService: DiagnosisService) {}
 
-  @Post()
+  @Post('unauth')
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createDiagnosisDto: CreateDiagnosisDto) {
+  createUnauthorizedDiagnosis(@Body() createDiagnosisDto: CreateDiagnosisDto) {
     return this.diagnosisService.create(createDiagnosisDto);
   }
 
-  @Post('unauth')
+  @Post()
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
   createFromUnauth(@Body() createDiagnosisDto: CreateDiagnosisDto, @GetUser() user: User) {
     return this.diagnosisService.createOrUpdateFromUnauth(user.id, createDiagnosisDto);
   }

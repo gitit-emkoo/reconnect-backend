@@ -5,6 +5,7 @@ import type { User } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AuthService } from '../auth/auth.service';
+import { DiagnosisService } from '../diagnosis/diagnosis.service';
 
 @Injectable()
 export class PartnerInvitesService {
@@ -13,6 +14,7 @@ export class PartnerInvitesService {
     private jwtService: JwtService,
     private notificationsService: NotificationsService,
     private authService: AuthService,
+    private diagnosisService: DiagnosisService,
   ) {}
 
   // 초대 코드 생성
@@ -91,95 +93,66 @@ export class PartnerInvitesService {
       throw new BadRequestException('이미 파트너와 연결되어 있습니다.');
     }
 
-    // 트랜잭션으로 커플 생성 및 초대 상태 업데이트 (바로 CONFIRMED)
-    const result = await this.prisma.$transaction(async (_tx) => {
+    // 트랜잭션으로 커플 생성 및 초대 상태 업데이트
+    const result = await this.prisma.$transaction(async (tx) => {
+      // 1. 각 사용자의 가장 최근 진단 결과 점수 가져오기
+      const inviterDiagnosis = await this.diagnosisService.getMyLatestDiagnosis(invite.inviterId);
+      const inviteeDiagnosis = await this.diagnosisService.getMyLatestDiagnosis(inviteeId);
 
-      // 1. 두 사용자의 '베이스라인(INITIAL/UNAUTH_CONVERTED)' 진단 결과 조회 (가장 오래된 것)
-      const inviterDiagnosis = await this.prisma.diagnosisResult.findFirst({
-        where: {
-          userId: invite.inviterId,
-          resultType: { in: ['INITIAL', 'UNAUTH_CONVERTED'] },
-        },
-        orderBy: { createdAt: 'asc' },
-      });
-      const inviteeDiagnosis = await this.prisma.diagnosisResult.findFirst({
-        where: {
-          userId: inviteeId,
-          resultType: { in: ['INITIAL', 'UNAUTH_CONVERTED'] },
-        },
-        orderBy: { createdAt: 'asc' },
-      });
+      const inviterScore = inviterDiagnosis?.score ?? 61;
+      const inviteeScore = inviteeDiagnosis?.score ?? 61;
 
-      // 없으면 새로운 베이스라인 레코드 생성 (기본 61점)
-      const ensureBaseline = async (userId: string) => {
-        return this.prisma.diagnosisResult.create({
-          data: {
-            userId,
-            score: 61,
-            resultType: '기초 관계온도',
-            diagnosisType: 'BASELINE_TEMPERATURE',
+      // 2. 두 점수 중 낮은 점수를 동기화된 온도로 설정
+      const synchronizedScore = Math.min(inviterScore, inviteeScore);
+
+      // 3. 동기화된 온도로 새로운 진단 결과를 두 사용자 모두에게 생성
+      //    이렇게 하면 개인 진단 기록과 별개로 커플 동기화 시점의 기록이 남음
+      await tx.diagnosisResult.createMany({
+        data: [
+          {
+            userId: invite.inviterId,
+            score: synchronizedScore,
+            resultType: '파트너 연결',
+            diagnosisType: 'COUPLE_SYNC',
           },
-        });
-      };
+          {
+            userId: inviteeId,
+            score: synchronizedScore,
+            resultType: '파트너 연결',
+            diagnosisType: 'COUPLE_SYNC',
+          },
+        ],
+      });
 
-      const inviterBase = inviterDiagnosis ?? await ensureBaseline(invite.inviterId);
-      const inviteeBase = inviteeDiagnosis ?? await ensureBaseline(inviteeId);
-
-      // 두 사람의 낮은 점수 계산
-      const lowerScore = Math.min(inviterBase.score, inviteeBase.score);
-
-      await this.prisma.diagnosisResult.update({ where: { id: inviterBase.id }, data: { score: lowerScore } });
-      await this.prisma.diagnosisResult.update({ where: { id: inviteeBase.id }, data: { score: lowerScore } });
-
-      const needDiagnosis = false; // 이미 베이스라인 확보됨
-
-      // 2. 두 사람 모두 결과가 있으면 점수를 비교하여 낮은 점수로 동기화
-      if (!needDiagnosis && inviterDiagnosis && inviteeDiagnosis) {
-        const lowerScore = Math.min(inviterDiagnosis.score, inviteeDiagnosis.score);
-
-        // 두 사용자의 진단 점수를 낮은 점수로 업데이트
-        await this.prisma.diagnosisResult.update({
-          where: { id: inviterDiagnosis.id },
-          data: { score: lowerScore },
-        });
-        await this.prisma.diagnosisResult.update({
-          where: { id: inviteeDiagnosis.id },
-          data: { score: lowerScore },
-        });
-      }
-
-      // 새로운 커플 생성
-      const couple = await this.prisma.couple.create({
+      // 4. 새로운 커플 생성
+      const couple = await tx.couple.create({
         data: {
           members: {
-            connect: [
-              { id: invite.inviterId },
-              { id: inviteeId }
-            ]
-          }
-        }
+            connect: [{ id: invite.inviterId }, { id: inviteeId }],
+          },
+        },
       });
 
-      // 초대 상태 업데이트 (바로 CONFIRMED)
-      const updatedInvite = await this.prisma.partnerInvite.update({
+      // 5. 초대 상태 업데이트 (CONFIRMED)
+      const updatedInvite = await tx.partnerInvite.update({
         where: { id: invite.id },
         data: {
           inviteeId,
           status: 'CONFIRMED',
-          coupleId: couple.id
+          coupleId: couple.id,
         },
         include: {
           inviter: true,
-          invitee: true
-        }
+          invitee: true,
+        },
       });
 
-      // 서로의 partnerId 업데이트
-      await this.prisma.user.update({
+      // 6. 서로의 partnerId 업데이트
+      await tx.user.update({
         where: { id: invite.inviterId },
         data: { partnerId: inviteeId },
       });
-      await this.prisma.user.update({
+      await tx.user.update({
         where: { id: inviteeId },
         data: { partnerId: invite.inviterId },
       });
@@ -201,12 +174,12 @@ export class PartnerInvitesService {
       }
 
       // 최신 유저 정보 다시 불러오기 (partner, couple 포함)
-      const updatedInvitee = await this.prisma.user.findUnique({
+      const updatedInvitee = await tx.user.findUnique({
         where: { id: inviteeId },
         include: { partner: true, couple: true },
       });
 
-      return { couple, invite: updatedInvite, needDiagnosis, updatedInvitee };
+      return { updatedInvitee, invite: updatedInvite };
     });
     
     // 트랜잭션 성공 후 토큰 생성

@@ -94,27 +94,43 @@ export class ReportsService {
       }
     });
 
-
-    // 2. 관계 온도 계산
+    // 2. 관계 온도 계산을 위한 기준 점수(baseScore) 설정
     const previousWeekStartDate = subWeeks(weekStartDate, 1);
-    const previousReport = await this.prisma.report.findUnique({
-        where: {
-            coupleId_weekStartDate: {
-                coupleId,
-                weekStartDate: previousWeekStartDate,
-            },
-        },
+    const previousReport = await this.prisma.report.findFirst({
+        where: { coupleId, weekStartDate: previousWeekStartDate },
+        orderBy: { createdAt: 'desc' },
     });
-    const baseScore = previousReport ? previousReport.overallScore : 50; // 이전 주 리포트가 없으면 50점으로 시작
-    const { score: overallScore, reason } = this.calculateOverallScore(baseScore, { 
-      cardsSentCount, 
+
+    let baseScore: number;
+    if (previousReport) {
+      baseScore = previousReport.overallScore;
+    } else {
+      // 이전 리포트가 없으면, 커플의 가장 최신 진단 점수(동기화된 점수)를 가져옴
+      const couple = await this.prisma.couple.findUnique({
+        where: { id: coupleId },
+        select: { members: { select: { id: true }, take: 1 } },
+      });
+
+      if (couple && couple.members.length > 0) {
+        const latestDiagnosis = await this.prisma.diagnosisResult.findFirst({
+          where: { userId: couple.members[0].id },
+          orderBy: { createdAt: 'desc' },
+        });
+        baseScore = latestDiagnosis?.score ?? 61; // 진단 기록도 없으면 최종적으로 61점
+      } else {
+        baseScore = 61; // 커플 정보를 찾지 못한 경우 최종적으로 61점
+      }
+    }
+    
+    // 3. 활동량 기반으로 최종 점수 계산
+    const { score: overallScore, reason } = this.calculateOverallScore(baseScore, {
+      cardsSentCount,
       challengesCompletedCount,
       challengesFailedCount,
-      expertSolutionsCount, // 0으로 전달
-      diagnosisCount, // 모든 진단 횟수 전달
+      expertSolutionsCount,
+      diagnosisCount,
       noChallengeActivity,
     });
-
 
     // 3. 리포트 생성 또는 업데이트 (Upsert)
     const report = await this.prisma.report.upsert({
