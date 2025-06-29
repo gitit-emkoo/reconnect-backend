@@ -1,6 +1,7 @@
 import { Controller, Get, Post, UseGuards, Query, BadRequestException } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '@prisma/client';
 
@@ -47,5 +48,27 @@ export class ReportsController {
       throw new BadRequestException('Couple not found for this user.');
     }
     return this.reportsService.getMyLatestReport(user.coupleId);
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+  async getMyReports(@GetUser() user: User) {
+    return this.reportsService.getMyReports(user.id);
+  }
+
+  @Get('week')
+  @UseGuards(AuthGuard('jwt'))
+  async getReportByWeek(
+    @GetUser() user: User,
+    @Query('year') year: string,
+    @Query('week') week: string,
+  ) {
+    if (!user.coupleId) {
+      throw new BadRequestException('Couple not found for this user.');
+    }
+    if (!year || !week) {
+      throw new BadRequestException('Year and week are required.');
+    }
+    return this.reportsService.findReportByWeek(user.coupleId, parseInt(year), parseInt(week));
   }
 } 

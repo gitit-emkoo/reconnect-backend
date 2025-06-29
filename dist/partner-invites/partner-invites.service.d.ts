@@ -41,6 +41,8 @@ export declare class PartnerInvitesService {
             providerId: string | null;
             createdAt: Date;
             updatedAt: Date;
+            temperature: number;
+            fcmToken: string | null;
             coupleId: string | null;
         };
         invitee: {
@@ -63,6 +65,8 @@ export declare class PartnerInvitesService {
             providerId: string | null;
             createdAt: Date;
             updatedAt: Date;
+            temperature: number;
+            fcmToken: string | null;
             coupleId: string | null;
         };
         inviterToken: string;
@@ -82,6 +86,8 @@ export declare class PartnerInvitesService {
             providerId: string | null;
             createdAt: Date;
             updatedAt: Date;
+            temperature: number;
+            fcmToken: string | null;
             coupleId: string | null;
             partnerId: string | null;
         };
@@ -98,6 +104,8 @@ export declare class PartnerInvitesService {
             providerId: string | null;
             createdAt: Date;
             updatedAt: Date;
+            temperature: number;
+            fcmToken: string | null;
             coupleId: string | null;
             partnerId: string | null;
         };

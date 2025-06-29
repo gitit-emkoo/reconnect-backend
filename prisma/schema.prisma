@@ -37,6 +37,10 @@ model User {
   providerId           String? // 소셜 로그인 제공자의 고유 ID
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
+  
+  temperature          Int       @default(61) // 관계 온도
+  fcmToken             String?   // FCM 토큰
+
   schedules            Schedule[]
 
   // 진단 결과와의 관계

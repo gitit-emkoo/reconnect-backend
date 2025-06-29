@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { getYear, getMonth, getWeek, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
+import { getPartnerId } from 'src/utils/getPartnerId';
 
 @Injectable()
 export class ReportsService {
@@ -265,12 +266,12 @@ export class ReportsService {
   }
 
   async findReportByWeek(coupleId: string, year: number, week: number) {
-    const start = this.getWeekStartDate(year, week);
+    const weekStartDate = new Date(year, 0, 1 + (week - 1) * 7);
 
     const report = await this.prisma.report.findFirst({
       where: {
         coupleId: coupleId,
-        weekStartDate: start,
+        weekStartDate: weekStartDate,
       },
     });
 
@@ -296,5 +297,23 @@ export class ReportsService {
     const mondayOfFirstWeek = new Date(year, 0, 4 - (dayOfWeekOfJanFourth === 0 ? 6 : dayOfWeekOfJanFourth - 1));
     
     return new Date(mondayOfFirstWeek.setDate(mondayOfFirstWeek.getDate() + (week - 1) * 7));
+  }
+
+  async getMyReports(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { coupleId: true },
+    });
+
+    if (!user || !user.coupleId) {
+      throw new NotFoundException('사용자 또는 커플 정보를 찾을 수 없습니다.');
+    }
+
+    return this.prisma.report.findMany({
+      where: { coupleId: user.coupleId },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   }
 } 

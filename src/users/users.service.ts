@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { MailService } from '../mail.service';
+import { getPartnerId } from '../utils/getPartnerId';
 
 @Injectable()
 export class UsersService {
@@ -119,5 +120,42 @@ export class UsersService {
     });
 
     return { success: true, message: '비밀번호가 성공적으로 변경되었습니다.' };
+  }
+
+  async me(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        partner: true,
+        couple: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const { password, ...result } = user;
+    return result;
+  }
+
+  async getMyTemperature(userId: string): Promise<{ temperature: number }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { temperature: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    return { temperature: user.temperature };
+  }
+
+  async updateFcmToken(userId: string, fcmToken: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { fcmToken },
+    });
   }
 } 
