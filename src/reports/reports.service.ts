@@ -1,7 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { getYear, getMonth, getWeek, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
+import { getYear, getMonth, getWeek, startOfWeek, endOfWeek, subWeeks, subHours } from 'date-fns';
 import { getPartnerId } from 'src/utils/getPartnerId';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class ReportsService {
@@ -10,8 +11,10 @@ export class ReportsService {
 
   /**
    * 모든 활성 커플에 대한 주간 리포트를 생성합니다.
-   * 보통 스케줄러에 의해 매주 초에 실행됩니다.
+   * 매주 월요일 새벽 2시(KST)에 실행됩니다.
    */
+  // [테스트용] KST 기준 월요일 새벽 2시. 테스트 종료 후 '0 2 * * 1' (UTC 기준)으로 복원 필요.
+  @Cron('0 17 * * 0')
   async generateWeeklyReports() {
     this.logger.log('주간 리포트 생성을 시작합니다.');
     const activeCouples = await this.prisma.couple.findMany({
@@ -33,10 +36,12 @@ export class ReportsService {
    * @param date 해당 주의 아무 날짜
    */
   async generateWeeklyReportForCouple(coupleId: string, date: Date) {
-    const weekStartDate = startOfWeek(date, { weekStartsOn: 1 }); // 주의 시작은 월요일
-    const weekEndDate = endOfWeek(date, { weekStartsOn: 1 });   // 주의 끝은 일요일
+    // KST 기준 (UTC+9)으로 날짜를 보정합니다.
+    const kstDate = subHours(date, 9);
+    const weekStartDate = startOfWeek(kstDate, { weekStartsOn: 1 }); // 주의 시작은 월요일
+    const weekEndDate = endOfWeek(kstDate, { weekStartsOn: 1 });   // 주의 끝은 일요일
 
-    this.logger.log(`${coupleId} 커플의 ${weekStartDate.toLocaleDateString()} ~ ${weekEndDate.toLocaleDateString()} 리포트를 생성합니다.`);
+    this.logger.log(`${coupleId} 커플의 ${weekStartDate.toLocaleDateString()} ~ ${weekEndDate.toLocaleDateString()} (KST 기준) 리포트를 생성합니다.`);
 
     // 1. 주간 활동 데이터 집계
     const cardsSentCount = await this.prisma.emotionCard.count({
