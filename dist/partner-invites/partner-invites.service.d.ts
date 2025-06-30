@@ -22,13 +22,31 @@ export declare class PartnerInvitesService {
     }>;
     respondToInvite(code: string, inviteeId: string): Promise<{
         inviter: {
-            partnerId: string;
             couple: {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 status: import(".prisma/client").$Enums.CoupleStatus;
             } | null;
+            partner: {
+                id: string;
+                email: string;
+                password: string;
+                resetPasswordToken: string | null;
+                resetPasswordTokenExpires: Date | null;
+                nickname: string;
+                profileImageUrl: string | null;
+                role: import(".prisma/client").$Enums.Role;
+                provider: string | null;
+                providerId: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+                temperature: number;
+                fcmToken: string | null;
+                coupleId: string | null;
+                partnerId: string | null;
+            } | null;
+        } & {
             id: string;
             email: string;
             password: string;
@@ -44,15 +62,34 @@ export declare class PartnerInvitesService {
             temperature: number;
             fcmToken: string | null;
             coupleId: string | null;
+            partnerId: string | null;
         };
         invitee: {
-            partnerId: string;
             couple: {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 status: import(".prisma/client").$Enums.CoupleStatus;
             } | null;
+            partner: {
+                id: string;
+                email: string;
+                password: string;
+                resetPasswordToken: string | null;
+                resetPasswordTokenExpires: Date | null;
+                nickname: string;
+                profileImageUrl: string | null;
+                role: import(".prisma/client").$Enums.Role;
+                provider: string | null;
+                providerId: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+                temperature: number;
+                fcmToken: string | null;
+                coupleId: string | null;
+                partnerId: string | null;
+            } | null;
+        } & {
             id: string;
             email: string;
             password: string;
@@ -68,9 +105,11 @@ export declare class PartnerInvitesService {
             temperature: number;
             fcmToken: string | null;
             coupleId: string | null;
+            partnerId: string | null;
         };
         inviterToken: string;
         inviteeToken: string;
+        synchronizedTemperature: number;
     }>;
     acceptInvite(code: string, inviteeId: string): Promise<{
         inviter: {

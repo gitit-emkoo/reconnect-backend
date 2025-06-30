@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsObject } from 'class-validator';
 
 export class SocialAuthDto {
   @IsString()
@@ -6,12 +6,26 @@ export class SocialAuthDto {
   code: string;
 }
 
+class UnauthDiagnosisDto {
+  @IsString()
+  id: string;
+
+  @IsString()
+  score: number;
+
+  @IsString()
+  resultType: string;
+
+  @IsString()
+  createdAt: string;
+}
+
 export class GoogleAuthDto {
   @IsString()
   @IsNotEmpty({ message: '액세스 토큰은 필수입니다.' })
   accessToken: string;
 
-  @IsString()
   @IsOptional()
-  unauthDiagnosisId?: string;
+  @IsObject()
+  unauthDiagnosis?: UnauthDiagnosisDto;
 } 

@@ -19,6 +19,24 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)({ message: '인증 코드는 필수입니다.' }),
     __metadata("design:type", String)
 ], SocialAuthDto.prototype, "code", void 0);
+class UnauthDiagnosisDto {
+}
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UnauthDiagnosisDto.prototype, "id", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", Number)
+], UnauthDiagnosisDto.prototype, "score", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UnauthDiagnosisDto.prototype, "resultType", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UnauthDiagnosisDto.prototype, "createdAt", void 0);
 class GoogleAuthDto {
 }
 exports.GoogleAuthDto = GoogleAuthDto;
@@ -28,8 +46,8 @@ __decorate([
     __metadata("design:type", String)
 ], GoogleAuthDto.prototype, "accessToken", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], GoogleAuthDto.prototype, "unauthDiagnosisId", void 0);
+    (0, class_validator_1.IsObject)(),
+    __metadata("design:type", UnauthDiagnosisDto)
+], GoogleAuthDto.prototype, "unauthDiagnosis", void 0);
 //# sourceMappingURL=social-auth.dto.js.map

@@ -1,5 +1,19 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsEnum, IsOptional, IsArray, IsNumber } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsEnum, IsOptional, IsArray, IsNumber, IsObject } from 'class-validator';
 import { Provider } from '@prisma/client';
+
+class UnauthDiagnosisDto {
+  @IsString()
+  id: string;
+
+  @IsString()
+  score: number;
+
+  @IsString()
+  resultType: string;
+
+  @IsString()
+  createdAt: string;
+}
 
 export class RegisterDto {
   @IsEmail({}, { message: '유효한 이메일 형식이 아닙니다.' })
@@ -33,6 +47,6 @@ export class RegisterDto {
   answers?: number[];
 
   @IsOptional()
-  @IsString()
-  unauthDiagnosisId?: string;
+  @IsObject()
+  unauthDiagnosis?: UnauthDiagnosisDto;
 }

@@ -15,13 +15,15 @@ const prisma_service_1 = require("../prisma/prisma.service");
 const jwt_1 = require("@nestjs/jwt");
 const bcrypt = require("bcryptjs");
 const axios_1 = require("axios");
+const diagnosis_service_1 = require("../diagnosis/diagnosis.service");
 let AuthService = class AuthService {
-    constructor(prisma, jwtService) {
+    constructor(prisma, jwtService, diagnosisService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
+        this.diagnosisService = diagnosisService;
     }
     async register(registerDto) {
-        const { email, password, nickname, unauthDiagnosisId } = registerDto;
+        const { email, password, nickname, unauthDiagnosis } = registerDto;
         const existingUserByEmail = await this.prisma.user.findUnique({ where: { email } });
         if (existingUserByEmail) {
             throw new common_1.ConflictException('이미 사용중인 이메일입니다.');
@@ -31,6 +33,7 @@ let AuthService = class AuthService {
             throw new common_1.ConflictException('이미 사용중인 닉네임입니다.');
         }
         const hashedPassword = await bcrypt.hash(password, 10);
+        const initialTemperature = unauthDiagnosis ? unauthDiagnosis.score : 61;
         const newUser = await this.prisma.$transaction(async (tx) => {
             const user = await tx.user.create({
                 data: {
@@ -38,33 +41,35 @@ let AuthService = class AuthService {
                     password: hashedPassword,
                     nickname,
                     provider: 'EMAIL',
+                    temperature: initialTemperature,
                 },
             });
-            if (unauthDiagnosisId) {
-                const diagnosis = await tx.diagnosisResult.findFirst({
-                    where: { id: unauthDiagnosisId, userId: null },
+            if (unauthDiagnosis) {
+                await this.diagnosisService.createOrUpdateFromUnauth(user.id, {
+                    ...unauthDiagnosis,
+                    diagnosisType: 'BASELINE_TEMPERATURE',
                 });
-                if (diagnosis) {
-                    await tx.diagnosisResult.update({
-                        where: { id: unauthDiagnosisId },
-                        data: { userId: user.id },
-                    });
-                }
             }
             else {
-                await tx.diagnosisResult.create({
-                    data: {
-                        userId: user.id,
-                        score: 61,
-                        resultType: '기초 관계온도',
-                        diagnosisType: 'BASELINE_TEMPERATURE',
-                    }
-                });
+                await this.diagnosisService.create({
+                    score: initialTemperature,
+                    resultType: '기초 관계온도',
+                    diagnosisType: 'BASELINE_TEMPERATURE',
+                }, user.id);
             }
             return user;
         });
-        const { password: userPassword, ...result } = newUser;
-        return result;
+        const payload = {
+            userId: newUser.id,
+            email: newUser.email,
+            nickname: newUser.nickname,
+            role: newUser.role,
+            partnerId: null,
+            couple: null,
+        };
+        const accessToken = this.jwtService.sign(payload);
+        const { password: _, ...result } = newUser;
+        return { user: result, accessToken };
     }
     async login(loginDto) {
         const { email, password } = loginDto;
@@ -104,8 +109,26 @@ let AuthService = class AuthService {
             user: result
         };
     }
+    createJwtToken(user) {
+        let partnerId = null;
+        if (user.partnerId) {
+            partnerId = user.partnerId;
+        }
+        else if (user.partner && typeof user.partner === 'object' && user.partner.id) {
+            partnerId = user.partner.id;
+        }
+        const payload = {
+            userId: user.id,
+            email: user.email,
+            nickname: user.nickname,
+            role: user.role,
+            partnerId: partnerId ?? null,
+            couple: user.couple ? { id: user.couple.id } : null,
+        };
+        return this.jwtService.sign(payload);
+    }
     async googleLogin(googleAuthDto) {
-        const { accessToken: googleAccessToken, unauthDiagnosisId } = googleAuthDto;
+        const { accessToken: googleAccessToken, unauthDiagnosis } = googleAuthDto;
         const googleUserInfo = await this.getGoogleUserInfo(googleAccessToken);
         const { email, name, sub: providerId } = googleUserInfo;
         if (!email) {
@@ -119,6 +142,7 @@ let AuthService = class AuthService {
             if (!existingUser) {
                 const randomPassword = Math.random().toString(36).slice(-10);
                 const hashedPassword = await bcrypt.hash(randomPassword, 10);
+                const initialTemperature = unauthDiagnosis ? unauthDiagnosis.score : 61;
                 user = await tx.user.create({
                     data: {
                         email,
@@ -126,28 +150,21 @@ let AuthService = class AuthService {
                         nickname: name || email.split('@')[0],
                         provider: 'GOOGLE',
                         providerId,
+                        temperature: initialTemperature,
                     },
                 });
-                if (unauthDiagnosisId) {
-                    const diagnosis = await tx.diagnosisResult.findFirst({
-                        where: { id: unauthDiagnosisId, userId: null },
+                if (unauthDiagnosis) {
+                    await this.diagnosisService.createOrUpdateFromUnauth(user.id, {
+                        ...unauthDiagnosis,
+                        diagnosisType: 'BASELINE_TEMPERATURE',
                     });
-                    if (diagnosis) {
-                        await tx.diagnosisResult.update({
-                            where: { id: unauthDiagnosisId },
-                            data: { userId: user.id },
-                        });
-                    }
                 }
                 else {
-                    await tx.diagnosisResult.create({
-                        data: {
-                            userId: user.id,
-                            score: 61,
-                            resultType: '기초 관계온도',
-                            diagnosisType: 'BASELINE_TEMPERATURE',
-                        }
-                    });
+                    await this.diagnosisService.create({
+                        score: initialTemperature,
+                        resultType: '기초 관계온도',
+                        diagnosisType: 'BASELINE_TEMPERATURE',
+                    }, user.id);
                 }
             }
             else if (existingUser.provider !== 'GOOGLE') {
@@ -329,6 +346,7 @@ exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        jwt_1.JwtService])
+        jwt_1.JwtService,
+        diagnosis_service_1.DiagnosisService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

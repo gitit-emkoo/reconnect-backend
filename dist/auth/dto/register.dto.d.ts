@@ -1,4 +1,10 @@
 import { Provider } from '@prisma/client';
+declare class UnauthDiagnosisDto {
+    id: string;
+    score: number;
+    resultType: string;
+    createdAt: string;
+}
 export declare class RegisterDto {
     email: string;
     password: string;
@@ -7,5 +13,6 @@ export declare class RegisterDto {
     socialId?: string;
     diagnosisId?: string;
     answers?: number[];
-    unauthDiagnosisId?: string;
+    unauthDiagnosis?: UnauthDiagnosisDto;
 }
+export {};

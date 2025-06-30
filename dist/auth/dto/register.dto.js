@@ -12,6 +12,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RegisterDto = void 0;
 const class_validator_1 = require("class-validator");
 const client_1 = require("@prisma/client");
+class UnauthDiagnosisDto {
+}
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UnauthDiagnosisDto.prototype, "id", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", Number)
+], UnauthDiagnosisDto.prototype, "score", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UnauthDiagnosisDto.prototype, "resultType", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UnauthDiagnosisDto.prototype, "createdAt", void 0);
 class RegisterDto {
 }
 exports.RegisterDto = RegisterDto;
@@ -54,7 +72,7 @@ __decorate([
 ], RegisterDto.prototype, "answers", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], RegisterDto.prototype, "unauthDiagnosisId", void 0);
+    (0, class_validator_1.IsObject)(),
+    __metadata("design:type", UnauthDiagnosisDto)
+], RegisterDto.prototype, "unauthDiagnosis", void 0);
 //# sourceMappingURL=register.dto.js.map

@@ -60,12 +60,11 @@ export class PartnerInvitesService {
     return invite;
   }
 
-  // 초대 코드로 응답
+  // 초대 코드로 응답 (파트너 연결 최종 수락)
   async respondToInvite(code: string, inviteeId: string) {
-    // 초대 코드로 초대 찾기
     const invite = await this.prisma.partnerInvite.findUnique({
       where: { code },
-      include: { inviter: true }
+      include: { inviter: true },
     });
 
     if (!invite) {
@@ -80,154 +79,90 @@ export class PartnerInvitesService {
       throw new BadRequestException('자기 자신을 초대할 수 없습니다.');
     }
 
-    // 이미 파트너가 있는지 확인
-    const inviteeUser = await this.prisma.user.findUnique({
-      where: { id: inviteeId },
-      include: { couple: true },
-    });
+    const inviteeUser = await this.prisma.user.findUnique({ where: { id: inviteeId } });
+    if (!inviteeUser) { throw new NotFoundException('사용자를 찾을 수 없습니다.'); }
+    if (inviteeUser.coupleId) { throw new BadRequestException('이미 파트너와 연결되어 있습니다.'); }
 
-    if (!inviteeUser) {
-      throw new NotFoundException('사용자를 찾을 수 없습니다.');
-    }
-
-    if (inviteeUser.couple) {
-      throw new BadRequestException('이미 파트너와 연결되어 있습니다.');
-    }
-
-    // 트랜잭션으로 커플 생성 및 초대 상태 업데이트
+    // 트랜잭션으로 커플 생성 및 모든 정보 업데이트
     const result = await this.prisma.$transaction(async (tx) => {
-      // 1. 각 사용자의 가장 최근 진단 결과 점수 가져오기
-      const inviterDiagnosis = await this.diagnosisService.getMyLatestDiagnosis(invite.inviterId);
-      const inviteeDiagnosis = await this.diagnosisService.getMyLatestDiagnosis(inviteeId);
-
-      const inviterScore = inviterDiagnosis?.score ?? 61;
-      const inviteeScore = inviteeDiagnosis?.score ?? 61;
-
+      // 1. 두 사용자의 최신 `User.temperature` 값을 직접 사용
+      const inviter = invite.inviter;
+      const invitee = inviteeUser;
+      
       // 2. 두 점수 중 낮은 점수를 동기화된 온도로 설정
-      const synchronizedScore = Math.min(inviterScore, inviteeScore);
+      const synchronizedTemperature = Math.min(inviter.temperature, invitee.temperature);
 
-      // 3. 동기화된 온도로 새로운 진단 결과를 두 사용자 모두에게 생성
-      //    이렇게 하면 개인 진단 기록과 별개로 커플 동기화 시점의 기록이 남음
-      await tx.diagnosisResult.createMany({
-        data: [
-          {
-            userId: invite.inviterId,
-            score: synchronizedScore,
-            resultType: '파트너 연결',
-            diagnosisType: 'COUPLE_SYNC',
-          },
-          {
-            userId: inviteeId,
-            score: synchronizedScore,
-            resultType: '파트너 연결',
-            diagnosisType: 'COUPLE_SYNC',
-          },
-        ],
-      });
-
-      // 4. 새로운 커플 생성
+      // 3. 새로운 커플 생성
       const couple = await tx.couple.create({
         data: {
           members: {
-            connect: [{ id: invite.inviterId }, { id: inviteeId }],
+            connect: [{ id: inviter.id }, { id: invitee.id }],
           },
         },
       });
 
-      // 5. 초대 상태 업데이트 (CONFIRMED)
-      const updatedInvite = await tx.partnerInvite.update({
-        where: { id: invite.id },
-        data: {
-          inviteeId,
-          status: 'CONFIRMED',
+      // 4. 두 사용자의 실제 온도를 동기화하고, coupleId를 연결
+      await tx.user.updateMany({
+        where: { id: { in: [inviter.id, invitee.id] } },
+        data: { 
+          temperature: synchronizedTemperature,
           coupleId: couple.id,
         },
-        include: {
-          inviter: true,
-          invitee: true,
-        },
       });
 
-      // 6. 서로의 partnerId 업데이트
-      await tx.user.update({
-        where: { id: invite.inviterId },
-        data: { partnerId: inviteeId },
-      });
-      await tx.user.update({
-        where: { id: inviteeId },
-        data: { partnerId: invite.inviterId },
-      });
-
-      if (updatedInvite.invitee && updatedInvite.inviter) {
-        // 두 멤버 모두에게 파트너 연결 알림 생성
-        await this.notificationsService.createNotification({
-          userId: invite.inviterId,
-          message: `${updatedInvite.invitee.nickname}님과 파트너로 연결되었어요!`,
-          type: 'PARTNER_CONNECTED',
-          url: '/dashboard',
-        });
-        await this.notificationsService.createNotification({
-          userId: inviteeId,
-          message: `${updatedInvite.inviter.nickname}님과 파트너로 연결되었어요!`,
-          type: 'PARTNER_CONNECTED',
-          url: '/dashboard',
-        });
-      }
-
-      // 최신 유저 정보 다시 불러오기 (partner, couple 포함)
-      const updatedInvitee = await tx.user.findUnique({
-        where: { id: inviteeId },
-        include: { partner: true, couple: true },
+      // 5. 서로의 partnerId 업데이트
+      await tx.user.update({ where: { id: inviter.id }, data: { partnerId: invitee.id } });
+      await tx.user.update({ where: { id: invitee.id }, data: { partnerId: inviter.id } });
+      
+      // 6. 초대 상태 업데이트 (CONFIRMED)
+      const updatedInvite = await tx.partnerInvite.update({
+        where: { id: invite.id },
+        data: { inviteeId, status: 'CONFIRMED', coupleId: couple.id },
       });
 
-      return { updatedInvitee, invite: updatedInvite };
+      // 7. 파트너 연결 알림 생성
+      await this.notificationsService.createNotification({
+        userId: inviter.id,
+        message: `${invitee.nickname}님과 파트너로 연결되었어요!`,
+        type: 'PARTNER_CONNECTED', url: '/dashboard',
+      });
+      await this.notificationsService.createNotification({
+        userId: invitee.id,
+        message: `${inviter.nickname}님과 파트너로 연결되었어요!`,
+        type: 'PARTNER_CONNECTED', url: '/dashboard',
+      });
+
+      // 8. 이력 관리를 위해 DiagnosisResult에도 기록
+      await tx.diagnosisResult.createMany({
+        data: [
+          { userId: inviter.id, score: synchronizedTemperature, resultType: '파트너 연결', diagnosisType: 'COUPLE_SYNC' },
+          { userId: invitee.id, score: synchronizedTemperature, resultType: '파트너 연결', diagnosisType: 'COUPLE_SYNC' },
+        ],
+      });
+      
+      // 트랜잭션 결과 반환
+      return { synchronizedTemperature };
     });
     
-    // 트랜잭션 성공 후 토큰 생성
-    const { updatedInvitee, invite: updatedInvite } = result;
-    if (!updatedInvitee || !updatedInvite.inviter || !updatedInvite.invitee) {
-      throw new Error('파트너 연결 후 사용자 정보를 업데이트하지 못했습니다.');
-    }
-
-    const inviter = updatedInvite.inviter;
-    const invitee = updatedInvite.invitee;
-
-    // inviter와 invitee의 전체 사용자 정보 조회 (couple 정보 포함)
+    // 트랜잭션 성공 후, 최신 정보로 토큰 재발급 및 최종 응답 구성
     const [inviterFull, inviteeFull] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: inviter.id }, include: { couple: true } }),
-      this.prisma.user.findUnique({ where: { id: invitee.id }, include: { couple: true } }),
+      this.prisma.user.findUnique({ where: { id: invite.inviterId }, include: { couple: true, partner: true } }),
+      this.prisma.user.findUnique({ where: { id: inviteeId }, include: { couple: true, partner: true } }),
     ]);
 
     if (!inviterFull || !inviteeFull) {
-        throw new InternalServerErrorException('Failed to retrieve full user data.');
+      throw new InternalServerErrorException('Failed to retrieve full user data for token creation.');
     }
 
-    const inviterPayload = {
-        userId: inviterFull.id,
-        email: inviterFull.email,
-        nickname: inviterFull.nickname,
-        role: inviterFull.role,
-        partnerId: inviteeFull.id,
-        couple: inviterFull.couple ? { id: inviterFull.couple.id } : null,
-    };
-    const inviterToken = this.jwtService.sign(inviterPayload);
-
-    const inviteePayload = {
-        userId: inviteeFull.id,
-        email: inviteeFull.email,
-        nickname: inviteeFull.nickname,
-        role: inviteeFull.role,
-        partnerId: inviterFull.id,
-        couple: inviteeFull.couple ? { id: inviteeFull.couple.id } : null,
-    };
-    const inviteeToken = this.jwtService.sign(inviteePayload);
-
+    const inviterToken = this.authService.createJwtToken(inviterFull);
+    const inviteeToken = this.authService.createJwtToken(inviteeFull);
 
     return {
-        inviter: { ...inviterFull, partnerId: inviteeFull.id },
-        invitee: { ...inviteeFull, partnerId: inviterFull.id },
+        inviter: inviterFull,
+        invitee: inviteeFull,
         inviterToken,
         inviteeToken,
+        synchronizedTemperature: result.synchronizedTemperature,
     };
   }
 

@@ -4,15 +4,24 @@ import { JwtService } from '@nestjs/jwt';
 import { GoogleAuthDto } from './dto/social-auth.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { DiagnosisService } from '../diagnosis/diagnosis.service';
 export declare class AuthService {
     private prisma;
     private jwtService;
-    constructor(prisma: PrismaService, jwtService: JwtService);
-    register(registerDto: RegisterDto): Promise<Omit<User, 'password'>>;
+    private diagnosisService;
+    constructor(prisma: PrismaService, jwtService: JwtService, diagnosisService: DiagnosisService);
+    register(registerDto: RegisterDto): Promise<{
+        user: Omit<User, 'password'>;
+        accessToken: string;
+    }>;
     login(loginDto: LoginDto): Promise<{
         accessToken: string;
         user: Omit<User, 'password'>;
     }>;
+    createJwtToken(user: User & {
+        partner?: User | null;
+        couple?: any | null;
+    }): string;
     googleLogin(googleAuthDto: GoogleAuthDto): Promise<{
         accessToken: string;
         user: Omit<User, 'password'>;

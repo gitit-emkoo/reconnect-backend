@@ -13,7 +13,9 @@ export class AuthController {
 
   @Post('register') // POST /auth/register
   @HttpCode(HttpStatus.CREATED) // 성공 시 201 Created 반환
-  async register(@Body() registerDto: RegisterDto): Promise<Omit<User, 'password'>> {
+  async register(
+    @Body() registerDto: RegisterDto,
+  ): Promise<{ user: Omit<User, 'password'>; accessToken: string }> {
     // 이제 AuthService.register는 RegisterDto 전체를 인자로 받습니다.
     return this.authService.register(registerDto);
   }

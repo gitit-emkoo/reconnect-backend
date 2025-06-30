@@ -10,21 +10,25 @@ import { GoogleAuthDto } from './dto/social-auth.dto';
 // DTO(Data Transfer Object) 임포트 (이전에 정의했었던 dto 파일들)
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { DiagnosisService } from '../diagnosis/diagnosis.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService // JwtService 주입 유지
+    private jwtService: JwtService, // JwtService 주입 유지
+    private diagnosisService: DiagnosisService, // DiagnosisService 주입
   ) {}
 
   /**
    * 새로운 사용자를 등록합니다.
-   * @param registerDto 이메일, 비밀번호, 닉네임 정보를 포함하는 DTO
+   * @param registerDto 이메일, 비밀번호, 닉네임, 비회원 진단결과 정보를 포함하는 DTO
    * @returns 생성된 사용자 정보 (비밀번호 제외)
    */
-  async register(registerDto: RegisterDto): Promise<Omit<User, 'password'>> {
-    const { email, password, nickname, unauthDiagnosisId } = registerDto;
+  async register(
+    registerDto: RegisterDto,
+  ): Promise<{ user: Omit<User, 'password'>; accessToken: string }> {
+    const { email, password, nickname, unauthDiagnosis } = registerDto;
 
     // 1. 이메일 중복 확인
     const existingUserByEmail = await this.prisma.user.findUnique({ where: { email } });
@@ -39,50 +43,56 @@ export class AuthService {
     }
 
     // 3. 비밀번호 해싱
-    const hashedPassword = await bcrypt.hash(password, 10); // 솔트 라운드 10
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 4. 비회원 진단 결과에 따른 초기 온도 설정
+    const initialTemperature = unauthDiagnosis ? unauthDiagnosis.score : 61;
 
     const newUser = await this.prisma.$transaction(async (tx) => {
-      // 1. 새로운 사용자 생성
+      // 5. 새로운 사용자 생성 (temperature 필드 추가)
       const user = await tx.user.create({
         data: {
           email,
-          password: hashedPassword, // 해싱된 비밀번호 저장
+          password: hashedPassword,
           nickname,
           provider: 'EMAIL',
+          temperature: initialTemperature, // 초기 온도 설정
         },
       });
 
-      // 2. unauthDiagnosisId가 있으면 진단 결과와 연결, 없으면 기본값으로 생성
-      if (unauthDiagnosisId) {
-        const diagnosis = await tx.diagnosisResult.findFirst({
-          where: { id: unauthDiagnosisId, userId: null },
+      // 6. 진단 결과 처리
+      if (unauthDiagnosis) {
+        // 비회원 진단 결과를 회원 진단 결과로 전환
+        await this.diagnosisService.createOrUpdateFromUnauth(user.id, {
+          ...unauthDiagnosis,
+          diagnosisType: 'BASELINE_TEMPERATURE', // 타입 명확화
         });
-
-        if (diagnosis) {
-          await tx.diagnosisResult.update({
-            where: { id: unauthDiagnosisId },
-            data: { userId: user.id },
-          });
-        }
       } else {
         // 연결할 진단 결과가 없으면 기본값으로 새로 생성
-        await tx.diagnosisResult.create({
-          data: {
-            userId: user.id,
-            score: 61,
-            resultType: '기초 관계온도',
-            diagnosisType: 'BASELINE_TEMPERATURE',
-          }
-        });
+        await this.diagnosisService.create({
+          score: initialTemperature,
+          resultType: '기초 관계온도',
+          diagnosisType: 'BASELINE_TEMPERATURE', // [추가] 타입 명시
+        }, user.id);
       }
 
       return user;
     });
 
-    // 민감 정보(비밀번호)는 응답에서 제외하고 반환
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: userPassword, ...result } = newUser;
-    return result; // 'as User' 캐스팅 제거, Omit<User, 'password'> 타입으로 반환
+    // 7. JWT 토큰 생성
+    const payload = {
+      userId: newUser.id,
+      email: newUser.email,
+      nickname: newUser.nickname,
+      role: newUser.role,
+      partnerId: null,
+      couple: null,
+    };
+    const accessToken = this.jwtService.sign(payload);
+
+    // 8. 민감 정보(비밀번호) 제외하고 반환
+    const { password: _, ...result } = newUser;
+    return { user: result, accessToken };
   }
 
   /**
@@ -130,12 +140,38 @@ export class AuthService {
   }
 
   /**
+   * 사용자 정보를 기반으로 JWT 페이로드를 생성하고 토큰을 발급합니다.
+   * @param user User 객체 (partner, couple 정보 포함 가능)
+   * @returns JWT 액세스 토큰
+   */
+  createJwtToken(user: User & { partner?: User | null; couple?: any | null }): string {
+    let partnerId: string | null = null;
+    if (user.partnerId) {
+      partnerId = user.partnerId;
+    } else if (user.partner && typeof user.partner === 'object' && user.partner.id) {
+      partnerId = user.partner.id;
+    }
+
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      nickname: user.nickname,
+      role: user.role,
+      partnerId: partnerId ?? null,
+      couple: user.couple ? { id: user.couple.id } : null,
+    };
+    return this.jwtService.sign(payload);
+  }
+
+  /**
    * Google OAuth 토큰으로 로그인을 처리합니다.
    * 사용자가 없으면 자동으로 회원가입을 진행하고, 비회원 진단 결과가 있으면 연결합니다.
    * @param googleAuthDto Google 액세스 토큰과 비회원 진단 ID를 포함하는 DTO
    */
-  async googleLogin(googleAuthDto: GoogleAuthDto): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
-    const { accessToken: googleAccessToken, unauthDiagnosisId } = googleAuthDto;
+  async googleLogin(
+    googleAuthDto: GoogleAuthDto,
+  ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
+    const { accessToken: googleAccessToken, unauthDiagnosis } = googleAuthDto;
 
     // 1. 구글에서 사용자 정보 가져오기
     const googleUserInfo = await this.getGoogleUserInfo(googleAccessToken);
@@ -157,6 +193,7 @@ export class AuthService {
       if (!existingUser) {
         const randomPassword = Math.random().toString(36).slice(-10);
         const hashedPassword = await bcrypt.hash(randomPassword, 10);
+        const initialTemperature = unauthDiagnosis ? unauthDiagnosis.score : 61;
 
         user = await tx.user.create({
           data: {
@@ -165,30 +202,22 @@ export class AuthService {
             nickname: name || email.split('@')[0],
             provider: 'GOOGLE',
             providerId,
+            temperature: initialTemperature, // 초기 온도 설정
           },
         });
 
-        // 3-1. 비회원 진단 결과 연결 또는 기본값 생성
-        if (unauthDiagnosisId) {
-          const diagnosis = await tx.diagnosisResult.findFirst({
-            where: { id: unauthDiagnosisId, userId: null },
+        // 3-1. 진단 결과 처리
+        if (unauthDiagnosis) {
+          await this.diagnosisService.createOrUpdateFromUnauth(user.id, {
+            ...unauthDiagnosis,
+            diagnosisType: 'BASELINE_TEMPERATURE',
           });
-          if (diagnosis) {
-            await tx.diagnosisResult.update({
-              where: { id: unauthDiagnosisId },
-              data: { userId: user.id },
-            });
-          }
         } else {
-          // 기본값 61점 생성
-          await tx.diagnosisResult.create({
-            data: {
-              userId: user.id,
-              score: 61,
-              resultType: '기초 관계온도',
-              diagnosisType: 'BASELINE_TEMPERATURE',
-            }
-          });
+          await this.diagnosisService.create({
+            score: initialTemperature,
+            resultType: '기초 관계온도',
+            diagnosisType: 'BASELINE_TEMPERATURE', // [추가] 타입 명시
+          }, user.id);
         }
       }
       // 4. 사용자가 존재하지만, 구글 연동이 안된 경우 -> 에러 발생

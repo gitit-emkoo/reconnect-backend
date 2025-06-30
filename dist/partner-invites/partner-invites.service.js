@@ -45,7 +45,7 @@ let PartnerInvitesService = class PartnerInvitesService {
             }
         });
         if (existingInvite) {
-            throw new common_1.BadRequestException('이미 진행 중인 초대가 있습니다.');
+            return existingInvite;
         }
         const invite = await this.prisma.partnerInvite.create({
             data: {
@@ -59,7 +59,7 @@ let PartnerInvitesService = class PartnerInvitesService {
     async respondToInvite(code, inviteeId) {
         const invite = await this.prisma.partnerInvite.findUnique({
             where: { code },
-            include: { inviter: true }
+            include: { inviter: true },
         });
         if (!invite) {
             throw new common_1.NotFoundException('유효하지 않은 초대 코드입니다.');
@@ -70,121 +70,70 @@ let PartnerInvitesService = class PartnerInvitesService {
         if (invite.inviterId === inviteeId) {
             throw new common_1.BadRequestException('자기 자신을 초대할 수 없습니다.');
         }
-        const inviteeUser = await this.prisma.user.findUnique({
-            where: { id: inviteeId },
-            include: { couple: true },
-        });
+        const inviteeUser = await this.prisma.user.findUnique({ where: { id: inviteeId } });
         if (!inviteeUser) {
             throw new common_1.NotFoundException('사용자를 찾을 수 없습니다.');
         }
-        if (inviteeUser.couple) {
+        if (inviteeUser.coupleId) {
             throw new common_1.BadRequestException('이미 파트너와 연결되어 있습니다.');
         }
         const result = await this.prisma.$transaction(async (tx) => {
-            const inviterDiagnosis = await this.diagnosisService.getMyLatestDiagnosis(invite.inviterId);
-            const inviteeDiagnosis = await this.diagnosisService.getMyLatestDiagnosis(inviteeId);
-            const inviterScore = inviterDiagnosis?.score ?? 61;
-            const inviteeScore = inviteeDiagnosis?.score ?? 61;
-            const synchronizedScore = Math.min(inviterScore, inviteeScore);
-            await tx.diagnosisResult.createMany({
-                data: [
-                    {
-                        userId: invite.inviterId,
-                        score: synchronizedScore,
-                        resultType: '파트너 연결',
-                        diagnosisType: 'COUPLE_SYNC',
-                    },
-                    {
-                        userId: inviteeId,
-                        score: synchronizedScore,
-                        resultType: '파트너 연결',
-                        diagnosisType: 'COUPLE_SYNC',
-                    },
-                ],
-            });
+            const inviter = invite.inviter;
+            const invitee = inviteeUser;
+            const synchronizedTemperature = Math.min(inviter.temperature, invitee.temperature);
             const couple = await tx.couple.create({
                 data: {
                     members: {
-                        connect: [{ id: invite.inviterId }, { id: inviteeId }],
+                        connect: [{ id: inviter.id }, { id: invitee.id }],
                     },
                 },
             });
-            const updatedInvite = await tx.partnerInvite.update({
-                where: { id: invite.id },
+            await tx.user.updateMany({
+                where: { id: { in: [inviter.id, invitee.id] } },
                 data: {
-                    inviteeId,
-                    status: 'CONFIRMED',
+                    temperature: synchronizedTemperature,
                     coupleId: couple.id,
                 },
-                include: {
-                    inviter: true,
-                    invitee: true,
-                },
             });
-            await tx.user.update({
-                where: { id: invite.inviterId },
-                data: { partnerId: inviteeId },
+            await tx.user.update({ where: { id: inviter.id }, data: { partnerId: invitee.id } });
+            await tx.user.update({ where: { id: invitee.id }, data: { partnerId: inviter.id } });
+            const updatedInvite = await tx.partnerInvite.update({
+                where: { id: invite.id },
+                data: { inviteeId, status: 'CONFIRMED', coupleId: couple.id },
             });
-            await tx.user.update({
-                where: { id: inviteeId },
-                data: { partnerId: invite.inviterId },
+            await this.notificationsService.createNotification({
+                userId: inviter.id,
+                message: `${invitee.nickname}님과 파트너로 연결되었어요!`,
+                type: 'PARTNER_CONNECTED', url: '/dashboard',
             });
-            if (updatedInvite.invitee && updatedInvite.inviter) {
-                await this.notificationsService.createNotification({
-                    userId: invite.inviterId,
-                    message: `${updatedInvite.invitee.nickname}님과 파트너로 연결되었어요!`,
-                    type: 'PARTNER_CONNECTED',
-                    url: '/dashboard',
-                });
-                await this.notificationsService.createNotification({
-                    userId: inviteeId,
-                    message: `${updatedInvite.inviter.nickname}님과 파트너로 연결되었어요!`,
-                    type: 'PARTNER_CONNECTED',
-                    url: '/dashboard',
-                });
-            }
-            const updatedInvitee = await tx.user.findUnique({
-                where: { id: inviteeId },
-                include: { partner: true, couple: true },
+            await this.notificationsService.createNotification({
+                userId: invitee.id,
+                message: `${inviter.nickname}님과 파트너로 연결되었어요!`,
+                type: 'PARTNER_CONNECTED', url: '/dashboard',
             });
-            return { updatedInvitee, invite: updatedInvite };
+            await tx.diagnosisResult.createMany({
+                data: [
+                    { userId: inviter.id, score: synchronizedTemperature, resultType: '파트너 연결', diagnosisType: 'COUPLE_SYNC' },
+                    { userId: invitee.id, score: synchronizedTemperature, resultType: '파트너 연결', diagnosisType: 'COUPLE_SYNC' },
+                ],
+            });
+            return { synchronizedTemperature };
         });
-        const { updatedInvitee, invite: updatedInvite } = result;
-        if (!updatedInvitee || !updatedInvite.inviter || !updatedInvite.invitee) {
-            throw new Error('파트너 연결 후 사용자 정보를 업데이트하지 못했습니다.');
-        }
-        const inviter = updatedInvite.inviter;
-        const invitee = updatedInvite.invitee;
         const [inviterFull, inviteeFull] = await Promise.all([
-            this.prisma.user.findUnique({ where: { id: inviter.id }, include: { couple: true } }),
-            this.prisma.user.findUnique({ where: { id: invitee.id }, include: { couple: true } }),
+            this.prisma.user.findUnique({ where: { id: invite.inviterId }, include: { couple: true, partner: true } }),
+            this.prisma.user.findUnique({ where: { id: inviteeId }, include: { couple: true, partner: true } }),
         ]);
         if (!inviterFull || !inviteeFull) {
-            throw new common_1.InternalServerErrorException('Failed to retrieve full user data.');
+            throw new common_1.InternalServerErrorException('Failed to retrieve full user data for token creation.');
         }
-        const inviterPayload = {
-            userId: inviterFull.id,
-            email: inviterFull.email,
-            nickname: inviterFull.nickname,
-            role: inviterFull.role,
-            partnerId: inviteeFull.id,
-            couple: inviterFull.couple ? { id: inviterFull.couple.id } : null,
-        };
-        const inviterToken = this.jwtService.sign(inviterPayload);
-        const inviteePayload = {
-            userId: inviteeFull.id,
-            email: inviteeFull.email,
-            nickname: inviteeFull.nickname,
-            role: inviteeFull.role,
-            partnerId: inviterFull.id,
-            couple: inviteeFull.couple ? { id: inviteeFull.couple.id } : null,
-        };
-        const inviteeToken = this.jwtService.sign(inviteePayload);
+        const inviterToken = this.authService.createJwtToken(inviterFull);
+        const inviteeToken = this.authService.createJwtToken(inviteeFull);
         return {
-            inviter: { ...inviterFull, partnerId: inviteeFull.id },
-            invitee: { ...inviteeFull, partnerId: inviterFull.id },
+            inviter: inviterFull,
+            invitee: inviteeFull,
             inviterToken,
             inviteeToken,
+            synchronizedTemperature: result.synchronizedTemperature,
         };
     }
     async acceptInvite(code, inviteeId) {

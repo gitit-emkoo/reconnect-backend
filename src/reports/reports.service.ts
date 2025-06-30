@@ -1,8 +1,6 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { getYear, getMonth, getWeek, startOfWeek, endOfWeek, subWeeks, subHours } from 'date-fns';
-import { getPartnerId } from 'src/utils/getPartnerId';
-import { Cron } from '@nestjs/schedule';
+import { getYear, getMonth, getWeek, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 
 @Injectable()
 export class ReportsService {
@@ -11,10 +9,8 @@ export class ReportsService {
 
   /**
    * 모든 활성 커플에 대한 주간 리포트를 생성합니다.
-   * 매주 월요일 새벽 2시(KST)에 실행됩니다.
+   * 보통 스케줄러에 의해 매주 초에 실행됩니다.
    */
-  // [테스트용] KST 기준 월요일 새벽 2시. 테스트 종료 후 '0 2 * * 1' (UTC 기준)으로 복원 필요.
-  @Cron('0 17 * * 0')
   async generateWeeklyReports() {
     this.logger.log('주간 리포트 생성을 시작합니다.');
     const activeCouples = await this.prisma.couple.findMany({
@@ -36,12 +32,10 @@ export class ReportsService {
    * @param date 해당 주의 아무 날짜
    */
   async generateWeeklyReportForCouple(coupleId: string, date: Date) {
-    // KST 기준 (UTC+9)으로 날짜를 보정합니다.
-    const kstDate = subHours(date, 9);
-    const weekStartDate = startOfWeek(kstDate, { weekStartsOn: 1 }); // 주의 시작은 월요일
-    const weekEndDate = endOfWeek(kstDate, { weekStartsOn: 1 });   // 주의 끝은 일요일
+    const weekStartDate = startOfWeek(date, { weekStartsOn: 1 }); // 주의 시작은 월요일
+    const weekEndDate = endOfWeek(date, { weekStartsOn: 1 });   // 주의 끝은 일요일
 
-    this.logger.log(`${coupleId} 커플의 ${weekStartDate.toLocaleDateString()} ~ ${weekEndDate.toLocaleDateString()} (KST 기준) 리포트를 생성합니다.`);
+    this.logger.log(`${coupleId} 커플의 ${weekStartDate.toLocaleDateString()} ~ ${weekEndDate.toLocaleDateString()} 리포트를 생성합니다.`);
 
     // 1. 주간 활동 데이터 집계
     const cardsSentCount = await this.prisma.emotionCard.count({
@@ -100,43 +94,27 @@ export class ReportsService {
       }
     });
 
-    // 2. 관계 온도 계산을 위한 기준 점수(baseScore) 설정
+
+    // 2. 관계 온도 계산
     const previousWeekStartDate = subWeeks(weekStartDate, 1);
-    const previousReport = await this.prisma.report.findFirst({
-        where: { coupleId, weekStartDate: previousWeekStartDate },
-        orderBy: { createdAt: 'desc' },
+    const previousReport = await this.prisma.report.findUnique({
+        where: {
+            coupleId_weekStartDate: {
+                coupleId,
+                weekStartDate: previousWeekStartDate,
+            },
+        },
     });
-
-    let baseScore: number;
-    if (previousReport) {
-      baseScore = previousReport.overallScore;
-    } else {
-      // 이전 리포트가 없으면, 커플의 가장 최신 진단 점수(동기화된 점수)를 가져옴
-      const couple = await this.prisma.couple.findUnique({
-        where: { id: coupleId },
-        select: { members: { select: { id: true }, take: 1 } },
-      });
-
-      if (couple && couple.members.length > 0) {
-        const latestDiagnosis = await this.prisma.diagnosisResult.findFirst({
-          where: { userId: couple.members[0].id },
-          orderBy: { createdAt: 'desc' },
-        });
-        baseScore = latestDiagnosis?.score ?? 61; // 진단 기록도 없으면 최종적으로 61점
-      } else {
-        baseScore = 61; // 커플 정보를 찾지 못한 경우 최종적으로 61점
-      }
-    }
-    
-    // 3. 활동량 기반으로 최종 점수 계산
-    const { score: overallScore, reason } = this.calculateOverallScore(baseScore, {
-      cardsSentCount,
+    const baseScore = previousReport ? previousReport.overallScore : 50; // 이전 주 리포트가 없으면 50점으로 시작
+    const { score: overallScore, reason } = this.calculateOverallScore(baseScore, { 
+      cardsSentCount, 
       challengesCompletedCount,
       challengesFailedCount,
-      expertSolutionsCount,
-      diagnosisCount,
+      expertSolutionsCount, // 0으로 전달
+      diagnosisCount, // 모든 진단 횟수 전달
       noChallengeActivity,
     });
+
 
     // 3. 리포트 생성 또는 업데이트 (Upsert)
     const report = await this.prisma.report.upsert({
@@ -169,6 +147,22 @@ export class ReportsService {
     });
 
     this.logger.log(`${coupleId} 커플의 리포트가 저장되었습니다. 점수: ${report.overallScore}`);
+
+    // [추가] 리포트 점수를 커플 멤버들의 temperature에 반영
+    const coupleMembers = await this.prisma.couple.findUnique({
+      where: { id: coupleId },
+      select: { members: { select: { id: true } } },
+    });
+
+    if (coupleMembers && coupleMembers.members.length > 0) {
+      const memberIds = coupleMembers.members.map(m => m.id);
+      await this.prisma.user.updateMany({
+        where: { id: { in: memberIds } },
+        data: { temperature: report.overallScore },
+      });
+      this.logger.log(`${coupleId} 커플 멤버(${memberIds.join(', ')})의 관계 온도를 ${report.overallScore}로 업데이트했습니다.`);
+    }
+
     return report;
   }
 
@@ -271,12 +265,12 @@ export class ReportsService {
   }
 
   async findReportByWeek(coupleId: string, year: number, week: number) {
-    const weekStartDate = new Date(year, 0, 1 + (week - 1) * 7);
+    const start = this.getWeekStartDate(year, week);
 
     const report = await this.prisma.report.findFirst({
       where: {
         coupleId: coupleId,
-        weekStartDate: weekStartDate,
+        weekStartDate: start,
       },
     });
 
@@ -284,8 +278,22 @@ export class ReportsService {
   }
 
   async getMyLatestReport(coupleId: string) {
+    if (!coupleId) {
+      throw new BadRequestException('Couple ID is required.');
+    }
     return this.prisma.report.findFirst({
       where: { coupleId },
+      orderBy: { weekStartDate: 'desc' },
+    });
+  }
+
+  async getMyReports(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.coupleId) {
+      return []; // 파트너가 없으면 빈 배열 반환
+    }
+    return this.prisma.report.findMany({
+      where: { coupleId: user.coupleId },
       orderBy: { weekStartDate: 'desc' },
     });
   }
@@ -296,29 +304,8 @@ export class ReportsService {
    * @param week 주차 (1-53)
    */
   private getWeekStartDate(year: number, week: number): Date {
-    // 1월 4일을 기준으로 계산해야 ISO 8601 주차 정의와 일관성을 유지하기 쉽습니다.
-    const januaryFourth = new Date(year, 0, 4);
-    const dayOfWeekOfJanFourth = januaryFourth.getDay(); // 0(일) - 6(토)
-    const mondayOfFirstWeek = new Date(year, 0, 4 - (dayOfWeekOfJanFourth === 0 ? 6 : dayOfWeekOfJanFourth - 1));
-    
-    return new Date(mondayOfFirstWeek.setDate(mondayOfFirstWeek.getDate() + (week - 1) * 7));
-  }
-
-  async getMyReports(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { coupleId: true },
-    });
-
-    if (!user || !user.coupleId) {
-      throw new NotFoundException('사용자 또는 커플 정보를 찾을 수 없습니다.');
-    }
-
-    return this.prisma.report.findMany({
-      where: { coupleId: user.coupleId },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const date = new Date(year, 0, 1 + (week - 1) * 7);
+    date.setDate(date.getDate() + (1 - date.getDay())); // 월요일 시작
+    return date;
   }
 } 

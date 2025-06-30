@@ -7,7 +7,10 @@ import { User } from '@prisma/client';
 export declare class AuthController {
     private authService;
     constructor(authService: AuthService);
-    register(registerDto: RegisterDto): Promise<Omit<User, 'password'>>;
+    register(registerDto: RegisterDto): Promise<{
+        user: Omit<User, 'password'>;
+        accessToken: string;
+    }>;
     login(loginDto: LoginDto): Promise<{
         accessToken: string;
         user: Omit<User, 'password'>;
