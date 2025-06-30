@@ -6,6 +6,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt'; // JwtModule 임포트
 import { PassportModule } from '@nestjs/passport'; // PassportModule 임포트
 import { JwtStrategy } from './jwt.strategy'; // JwtStrategy 임포트
+import { DiagnosisModule } from '../diagnosis/diagnosis.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { JwtStrategy } from './jwt.strategy'; // JwtStrategy 임포트
       secret: process.env.JWT_SECRET || 'superSecretKey', // JWT 서명에 사용할 secret 키 (환경 변수에서 가져옴)
       signOptions: { expiresIn: '30d' }, // 토큰 만료 시간 (예: 1시간)
     }),
+    DiagnosisModule, // [추가]
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy], // JwtStrategy를 providers에 추가
