@@ -208,4 +208,17 @@ export class UsersService {
       data: { fcmToken },
     });
   }
+
+  async updateProfile(userId: string, nickname: string) {
+    if (!nickname || nickname.length < 1 || nickname.length > 8) {
+      throw new BadRequestException('닉네임은 1~8글자여야 합니다.');
+    }
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { nickname },
+    });
+    if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
 } 

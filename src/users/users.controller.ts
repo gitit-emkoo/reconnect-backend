@@ -49,4 +49,10 @@ export class UsersController {
   ) {
     return this.usersService.updateFcmToken(user.id, fcmToken);
   }
+
+  @Patch('/me')
+  @UseGuards(AuthGuard('jwt'))
+  async updateProfile(@GetUser() user: User, @Body('nickname') nickname: string) {
+    return this.usersService.updateProfile(user.id, nickname);
+  }
 } 
