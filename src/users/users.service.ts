@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
-import { MailService } from '../mail.service';
+import { MailService } from '../mail/mail.service';
 import { getPartnerId } from '../utils/getPartnerId';
 
 @Injectable()
@@ -71,17 +71,39 @@ export class UsersService {
       },
     });
 
-    // 이메일 발송 (mailService는 추후 구현)
+    // 이메일 발송
     const resetUrl = `https://reconnect-ivory.vercel.app/reset-password?token=${token}`;
-    if (this.mailService && this.mailService.sendMail) {
-      await this.mailService.sendMail({
-        to: email,
-        subject: '비밀번호 재설정 안내',
-        html: `<a href="${resetUrl}">여기를 클릭해 비밀번호를 재설정하세요.</a>`,
-      });
-    } else {
-      console.log(`메일 발송: ${email}, 제목: 비밀번호 재설정 안내, 내용: ${resetUrl}`);
-    }
+    await this.mailService.sendMail({
+      to: email,
+      subject: '[Reconnect] 비밀번호 재설정 안내',
+      html: `
+      <div style="font-family: 'Apple SD Gothic Neo', 'sans-serif'; width: 100%; max-width: 600px; margin: 0 auto; padding: 40px; box-sizing: border-box; background-color: #f9f9f9; border-radius: 12px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #333; font-size: 28px; font-weight: 600;">Reconnect</h1>
+        </div>
+        <div style="background-color: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+          <h2 style="color: #444; font-size: 22px; margin-top: 0; margin-bottom: 20px;">비밀번호 재설정 요청</h2>
+          <p style="color: #666; font-size: 16px; line-height: 1.6;">
+            안녕하세요! Reconnect입니다.<br>
+            계정의 비밀번호 재설정을 요청하셨습니다.
+          </p>
+          <p style="color: #666; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+            아래 버튼을 클릭하여 새로운 비밀번호를 설정해주세요.
+          </p>
+          <a href="${resetUrl}" target="_blank" style="display: inline-block; width: 100%; padding: 15px 0; text-align: center; background: linear-gradient(to right, #FF69B4, #785ce2); color: white; font-size: 16px; font-weight: 500; text-decoration: none; border-radius: 8px; box-sizing: border-box;">
+            비밀번호 재설정하기
+          </a>
+          <p style="color: #888; font-size: 14px; margin-top: 30px; line-height: 1.5;">
+            이 링크는 1시간 동안만 유효합니다.<br>
+            만약 본인이 요청한 것이 아니라면, 이 이메일을 무시하셔도 안전합니다.
+          </p>
+        </div>
+        <div style="text-align: center; margin-top: 30px;">
+          <p style="color: #aaa; font-size: 12px;">© 2025 Reconnect. All rights reserved.</p>
+        </div>
+      </div>
+      `,
+    });
 
     return { message: '비밀번호 재설정 링크가 이메일로 전송되었습니다.' };
   }

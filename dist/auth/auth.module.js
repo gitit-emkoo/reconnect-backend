@@ -14,6 +14,7 @@ const prisma_module_1 = require("../prisma/prisma.module");
 const jwt_1 = require("@nestjs/jwt");
 const passport_1 = require("@nestjs/passport");
 const jwt_strategy_1 = require("./jwt.strategy");
+const diagnosis_module_1 = require("../diagnosis/diagnosis.module");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -26,6 +27,7 @@ exports.AuthModule = AuthModule = __decorate([
                 secret: process.env.JWT_SECRET || 'superSecretKey',
                 signOptions: { expiresIn: '30d' },
             }),
+            diagnosis_module_1.DiagnosisModule,
         ],
         controllers: [auth_controller_1.AuthController],
         providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy],
