@@ -26,8 +26,6 @@ export declare class PartnerInvitesController {
                 id: string;
                 email: string;
                 password: string;
-                resetPasswordToken: string | null;
-                resetPasswordTokenExpires: Date | null;
                 nickname: string;
                 profileImageUrl: string | null;
                 role: import(".prisma/client").$Enums.Role;
@@ -44,8 +42,6 @@ export declare class PartnerInvitesController {
             id: string;
             email: string;
             password: string;
-            resetPasswordToken: string | null;
-            resetPasswordTokenExpires: Date | null;
             nickname: string;
             profileImageUrl: string | null;
             role: import(".prisma/client").$Enums.Role;
@@ -69,8 +65,6 @@ export declare class PartnerInvitesController {
                 id: string;
                 email: string;
                 password: string;
-                resetPasswordToken: string | null;
-                resetPasswordTokenExpires: Date | null;
                 nickname: string;
                 profileImageUrl: string | null;
                 role: import(".prisma/client").$Enums.Role;
@@ -87,8 +81,6 @@ export declare class PartnerInvitesController {
             id: string;
             email: string;
             password: string;
-            resetPasswordToken: string | null;
-            resetPasswordTokenExpires: Date | null;
             nickname: string;
             profileImageUrl: string | null;
             role: import(".prisma/client").$Enums.Role;
@@ -110,8 +102,6 @@ export declare class PartnerInvitesController {
             id: string;
             email: string;
             password: string;
-            resetPasswordToken: string | null;
-            resetPasswordTokenExpires: Date | null;
             nickname: string;
             profileImageUrl: string | null;
             role: import(".prisma/client").$Enums.Role;
@@ -128,8 +118,6 @@ export declare class PartnerInvitesController {
             id: string;
             email: string;
             password: string;
-            resetPasswordToken: string | null;
-            resetPasswordTokenExpires: Date | null;
             nickname: string;
             profileImageUrl: string | null;
             role: import(".prisma/client").$Enums.Role;

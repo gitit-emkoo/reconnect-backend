@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { MailService } from '../mail/mail.service';
 import { getPartnerId } from '../utils/getPartnerId';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class UsersService {
@@ -56,27 +57,40 @@ export class UsersService {
     return { success: true };
   }
 
-  async sendPasswordResetEmail(email: string) {
+  async sendPasswordResetEmail(
+    email: string,
+  ): Promise<{ message: string; user?: any }> {
+    console.log(`[sendPasswordResetEmail] Start for email: ${email}`);
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) throw new NotFoundException('해당 이메일의 사용자가 없습니다.');
 
-    const token = crypto.randomBytes(32).toString('hex');
-    const expires = new Date(Date.now() + 1000 * 60 * 60); // 1시간 유효
+    if (!user) {
+      console.error(`[sendPasswordResetEmail] User not found: ${email}`);
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+    console.log(`[sendPasswordResetEmail] Found user:`, user);
 
-    await this.prisma.user.update({
-      where: { email },
+    // 임시 토큰 생성 (여기서는 간단히 UUID 사용, 실제 프로덕션에서는 더 안전한 방법 사용)
+    const token = uuidv4();
+    const expires = new Date(new Date().getTime() + 3600 * 1000); // 1시간 후 만료
+    console.log(`[sendPasswordResetEmail] Generated token: ${token}`);
+
+    await this.prisma.passwordReset.create({
       data: {
-        resetPasswordToken: token,
-        resetPasswordTokenExpires: expires,
+        email,
+        token,
+        expires,
       },
     });
+    console.log(`[sendPasswordResetEmail] Saved token to DB`);
 
     // 이메일 발송
     const resetUrl = `https://reconnect-ivory.vercel.app/reset-password?token=${token}`;
-    await this.mailService.sendMail({
-      to: email,
-      subject: '[Reconnect] 비밀번호 재설정 안내',
-      html: `
+    try {
+      console.log(`[sendPasswordResetEmail] Attempting to send email to: ${email}`);
+      await this.mailService.sendMail({
+        to: email,
+        subject: '[Reconnect] 비밀번호 재설정 안내',
+        html: `
       <div style="font-family: 'Apple SD Gothic Neo', 'sans-serif'; width: 100%; max-width: 600px; margin: 0 auto; padding: 40px; box-sizing: border-box; background-color: #f9f9f9; border-radius: 12px;">
         <div style="text-align: center; margin-bottom: 30px;">
           <h1 style="color: #333; font-size: 28px; font-weight: 600;">Reconnect</h1>
@@ -103,43 +117,57 @@ export class UsersService {
         </div>
       </div>
       `,
-    });
+      });
+      console.log(`[sendPasswordResetEmail] Email sent successfully to: ${email}`);
+    } catch (error) {
+      console.error('[sendPasswordResetEmail] Failed to send email:', error);
+      throw new InternalServerErrorException(
+        '이메일 발송 중 오류가 발생했습니다.',
+      );
+    }
 
     return { message: '비밀번호 재설정 링크가 이메일로 전송되었습니다.' };
   }
 
   async resetPassword(token: string, newPassword: string) {
-    const user = await this.prisma.user.findFirst({
-      where: {
-        resetPasswordToken: token,
-        resetPasswordTokenExpires: {
-          gte: new Date(),
-        },
-      },
+    const passwordReset = await this.prisma.passwordReset.findUnique({
+      where: { token },
+    });
+
+    if (!passwordReset || passwordReset.expires < new Date()) {
+      throw new NotFoundException('유효하지 않은 토큰이거나 토큰이 만료되었습니다.');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { email: passwordReset.email },
     });
 
     if (!user) {
-      throw new NotFoundException('유효하지 않은 토큰이거나 토큰이 만료되었습니다.');
+      // This should not happen if the reset token was created correctly
+      throw new NotFoundException('해당 이메일의 사용자를 찾을 수 없습니다.');
     }
 
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
     if (!passwordRegex.test(newPassword)) {
       throw new BadRequestException('비밀번호는 8자 이상, 영문/숫자/특수문자를 포함해야 합니다.');
     }
-    
+
     if (await bcrypt.compare(newPassword, user.password)) {
-        throw new BadRequestException('새 비밀번호는 기존 비밀번호와 달라야 합니다.');
+      throw new BadRequestException('새 비밀번호는 기존 비밀번호와 달라야 합니다.');
     }
 
     const hashed = await bcrypt.hash(newPassword, 10);
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashed,
-        resetPasswordToken: null,
-        resetPasswordTokenExpires: null,
-      },
-    });
+
+    // Use a transaction to update the user's password and delete the reset token
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { password: hashed },
+      }),
+      this.prisma.passwordReset.delete({
+        where: { id: passwordReset.id },
+      }),
+    ]);
 
     return { success: true, message: '비밀번호가 성공적으로 변경되었습니다.' };
   }
