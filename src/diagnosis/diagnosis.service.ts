@@ -116,3 +116,5 @@ export class DiagnosisService {
     return `This action removes a #${id} diagnosis`;
   }
 }
+
+
