@@ -250,6 +250,7 @@ export class CommunityService {
           },
         },
       });
+      console.log(`[투표취소] postId=${postId}, userId=${userId}, option=${option}`);
       return { message: '투표가 취소되었습니다.' };
     } else {
       // 다른 선택지로 변경 또는 신규 투표
@@ -267,6 +268,7 @@ export class CommunityService {
           option,
         },
       });
+      console.log(`[투표저장] postId=${postId}, userId=${userId}, option=${option}, data=`, data);
       return { message: '투표가 반영되었습니다.', data };
     }
   }
