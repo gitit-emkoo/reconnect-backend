@@ -158,7 +158,7 @@ export class CommunityService {
       where: { id },
       data: { viewCount: { increment: 1 } },
     });
-    return this.prisma.communityPost.findUnique({
+    const post = await this.prisma.communityPost.findUnique({
       where: { id },
       include: {
         author: { select: { nickname: true } },
@@ -169,6 +169,8 @@ export class CommunityService {
         votes: true
       }
     });
+    console.log('[getPostById] id:', id, 'votes:', post?.votes);
+    return post;
   }
 
   async createComment(postId: string, content: string, authorId: string) {
@@ -210,6 +212,7 @@ export class CommunityService {
   }
 
   async voteOnPost(postId: string, userId: string, option: string) {
+    console.log('[voteOnPost] postId:', postId, 'userId:', userId, 'option:', option);
     const post = await this.prisma.communityPost.findUnique({
       where: { id: postId },
       select: { poll: true },
