@@ -1,3 +1,9 @@
+/**
+ * [백엔드] users.service.ts
+ * - 이 파일은 "실제 비즈니스 로직(DB 처리, 검증, 암호화 등)"을 담당합니다.
+ * - 컨트롤러에서 호출되어 실제 데이터 변경/조회가 이루어집니다.
+ * - 예: 비밀번호 변경, 프로필 수정, 유저 정보 조회 등
+ */
 import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
