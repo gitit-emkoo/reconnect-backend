@@ -45,7 +45,7 @@ export class UsersService {
   }
 
   async changePassword(userId: string, currentPassword: string, newPassword: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, include: { partner: true, couple: true } });
     if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
@@ -67,7 +67,7 @@ export class UsersService {
     email: string,
   ): Promise<{ message: string; user?: any }> {
     console.log(`[sendPasswordResetEmail] Start for email: ${email}`);
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findUnique({ where: { email }, include: { partner: true, couple: true } });
 
     if (!user) {
       console.error(`[sendPasswordResetEmail] User not found: ${email}`);
@@ -146,6 +146,7 @@ export class UsersService {
 
     const user = await this.prisma.user.findUnique({
       where: { email: passwordReset.email },
+      include: { partner: true, couple: true },
     });
 
     if (!user) {
@@ -222,6 +223,7 @@ export class UsersService {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { nickname },
+      include: { partner: true, couple: true },
     });
     if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
     const { password, ...userWithoutPassword } = user;
