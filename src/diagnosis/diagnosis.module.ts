@@ -123,4 +123,8 @@ export class DiagnosisService {
   providers: [DiagnosisService],
   exports: [DiagnosisService],
 })
-export class DiagnosisModule {}
+export class DiagnosisModule {
+  constructor() {
+    console.log('diagnosis module loaded!');
+  }
+}
