@@ -198,6 +198,15 @@ export class PartnerInvitesService {
         },
       });
 
+      await tx.user.update({
+        where: { id: invite.inviterId },
+        data: { coupleId: couple.id },
+      });
+      await tx.user.update({
+        where: { id: inviteeId },
+        data: { coupleId: couple.id },
+      });
+
       await tx.partnerInvite.update({
         where: { id: invite.id },
         data: {
