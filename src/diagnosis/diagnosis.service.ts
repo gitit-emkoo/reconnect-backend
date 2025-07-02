@@ -2,8 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { CreateDiagnosisDto } from './dto/create-diagnosis.dto';
 import { UpdateDiagnosisDto } from './dto/update-diagnosis.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import type { User } from '@prisma/client';
-import { startOfWeek, endOfWeek } from 'date-fns';
 
 @Injectable()
 export class DiagnosisService {
@@ -116,7 +114,3 @@ export class DiagnosisService {
     return `This action removes a #${id} diagnosis`;
   }
 }
-
-
-
-  
