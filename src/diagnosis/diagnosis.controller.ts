@@ -10,7 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { DiagnosisService } from './diagnosis.service';
+import { DiagnosisService } from './diagnosis.module';
 import { CreateDiagnosisDto } from './dto/create-diagnosis.dto';
 import { UpdateDiagnosisDto } from './dto/update-diagnosis.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
