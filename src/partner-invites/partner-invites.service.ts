@@ -5,7 +5,7 @@ import type { User } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AuthService } from '../auth/auth.service';
-import { DiagnosisService } from '../diagnosis/diagnosis.module';
+import { DiagnosisService } from '../diagnosis/diagnosis.service';
 
 @Injectable()
 export class PartnerInvitesService {

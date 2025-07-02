@@ -10,7 +10,7 @@ import { GoogleAuthDto } from './dto/social-auth.dto';
 // DTO(Data Transfer Object) 임포트 (이전에 정의했었던 dto 파일들)
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { DiagnosisService } from '../diagnosis/diagnosis.module';
+import { DiagnosisService } from '../diagnosis/diagnosis.service';
 
 @Injectable()
 export class AuthService {
