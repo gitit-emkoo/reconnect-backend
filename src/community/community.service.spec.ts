@@ -12,6 +12,7 @@ type MockPrismaClient = {
     delete: jest.Mock;
   };
   communityPost: {
+    findUnique: jest.Mock;
     update: jest.Mock;
   };
   $transaction: jest.Mock;
@@ -26,6 +27,7 @@ const prismaMock: MockPrismaClient = {
     delete: jest.fn(),
   },
   communityPost: {
+    findUnique: jest.fn(),
     update: jest.fn(),
   },
   $transaction: jest.fn().mockImplementation(async (callback) => {
@@ -73,7 +75,7 @@ describe('CommunityService', () => {
     it('찬성(1): 사용자가 처음 투표하는 경우', async () => {
       prismaMock.communityPostVote.findUnique.mockResolvedValue(null); // 기존 투표 없음
 
-      await service.voteOnPost(postId, userId, 1);
+      await service.voteOnPost(postId, userId, '1');
 
       // 트랜잭션이 한 번 호출되었는지 확인
       expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
@@ -93,7 +95,7 @@ describe('CommunityService', () => {
       // 사용자는 이미 '1'(찬성)에 투표한 상태
       prismaMock.communityPostVote.findUnique.mockResolvedValue({ id: 'vote-id', postId, userId, option: '1' });
 
-      await service.voteOnPost(postId, userId, 2); // '2'(반대)로 변경
+      await service.voteOnPost(postId, userId, '2'); // '2'(반대)로 변경
 
       expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
       
@@ -116,7 +118,7 @@ describe('CommunityService', () => {
       // 사용자는 이미 '1'(찬성)에 투표한 상태
       prismaMock.communityPostVote.findUnique.mockResolvedValue({ id: 'vote-id', postId, userId, option: '1' });
       
-      await service.voteOnPost(postId, userId, 1); // 다시 '1'(찬성)을 누름
+      await service.voteOnPost(postId, userId, '1'); // 다시 '1'(찬성)을 누름
 
       expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
 
@@ -135,7 +137,7 @@ describe('CommunityService', () => {
     });
 
     it('choice가 1 또는 2가 아닌 경우 에러를 던져야 합니다', async () => {
-      await expect(service.voteOnPost(postId, userId, 3)).rejects.toThrow(
+      await expect(service.voteOnPost(postId, userId, '3')).rejects.toThrow(
         new BadRequestException('투표 선택지는 1(찬성) 또는 2(반대)여야 합니다.')
       );
     });
