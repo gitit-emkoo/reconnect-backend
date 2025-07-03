@@ -113,4 +113,4 @@ export class DiagnosisService {
   remove(id: number) {
     return `This action removes a #${id} diagnosis`;
   }
-} 
+}

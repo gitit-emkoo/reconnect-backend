@@ -73,6 +73,9 @@ model User {
 
   // 알림
   notifications   Notification[]
+
+  agreementsAuthored Agreement[] @relation("AgreementAuthor")
+  agreementsPartner  Agreement[] @relation("AgreementPartner")
 }
 
 model PasswordReset {
@@ -123,6 +126,7 @@ model Couple {
   emotionCards   EmotionCard[]
   partnerInvites PartnerInvite[] // 파트너 초대 정보와 1:N 관계
   reports        Report[]
+  agreements     Agreement[]
 }
 
 model PartnerInvite {
@@ -425,4 +429,28 @@ model ContentBookmark {
   content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
   @@unique([userId, contentId])
+}
+
+model Agreement {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  title             String
+  content           String
+  condition         String
+  authorId          String   @db.ObjectId
+  author            User     @relation("AgreementAuthor", fields: [authorId], references: [id])
+  partnerId         String   @db.ObjectId
+  partner           User     @relation("AgreementPartner", fields: [partnerId], references: [id])
+  coupleId          String?  @db.ObjectId
+  couple            Couple?  @relation(fields: [coupleId], references: [id])
+  authorSignature   String
+  partnerSignature  String?
+  status            String   @default("pending") // 'pending' | 'completed'
+  agreementHash     String?
+  qrCodeData        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([authorId])
+  @@index([partnerId])
+  @@index([coupleId])
 }
