@@ -8,12 +8,19 @@ import { UpdateAgreementStatusDto } from './dto/update-agreement-status.dto';
 export class AgreementService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createAgreementDto: CreateAgreementDto) {
+  async create(createAgreementDto: CreateAgreementDto & { authorId: string }) {
+    const data: any = {
+      ...createAgreementDto,
+      status: 'pending',
+    };
+    
+    // authorSignature가 없으면 빈 문자열로 설정
+    if (!data.authorSignature) {
+      data.authorSignature = '';
+    }
+    
     return this.prisma.agreement.create({
-      data: {
-        ...createAgreementDto,
-        status: 'pending',
-      },
+      data,
       include: {
         author: {
           select: {

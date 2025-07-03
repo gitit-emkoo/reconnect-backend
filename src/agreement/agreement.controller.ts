@@ -25,7 +25,8 @@ export class AgreementController {
 
   @Get('my')
   async findMyAgreements(@Request() req) {
-    return this.agreementService.findByUser(req.user.id);
+    const result = await this.agreementService.findByUser(req.user.id);
+    return Array.isArray(result) ? result : [];
   }
 
   @Get(':id')

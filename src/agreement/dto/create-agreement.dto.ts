@@ -14,16 +14,16 @@ export class CreateAgreementDto {
   condition: string;
 
   @IsString()
-  @IsNotEmpty()
-  authorId: string;
+  @IsOptional()
+  authorId?: string;
 
   @IsString()
   @IsNotEmpty()
   partnerId: string;
 
   @IsString()
-  @IsNotEmpty()
-  authorSignature: string;
+  @IsOptional()
+  authorSignature?: string;
 
   @IsString()
   @IsOptional()
