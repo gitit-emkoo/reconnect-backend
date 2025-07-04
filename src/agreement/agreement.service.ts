@@ -3,10 +3,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateAgreementDto } from './dto/create-agreement.dto';
 import { SignAgreementDto } from './dto/sign-agreement.dto';
 import { UpdateAgreementStatusDto } from './dto/update-agreement-status.dto';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AgreementService {
   constructor(private readonly prisma: PrismaService) {}
+
+  // 해시 생성 함수
+  private generateAgreementHash(agreement: any): string {
+    const content = `${agreement.title}${agreement.content}${agreement.authorId}${agreement.partnerId}${agreement.createdAt}`;
+    return crypto.createHash('sha256').update(content).digest('hex');
+  }
 
   async create(createAgreementDto: CreateAgreementDto & { authorId: string }) {
     const data: any = {
@@ -109,20 +116,36 @@ export class AgreementService {
     }
 
     // 이미 서명된 상태인지 확인
-    if (agreement.status === 'signed' || agreement.status === 'completed') {
-      throw new BadRequestException('이미 서명된 합의서입니다.');
+    if (agreement.status === 'completed') {
+      throw new BadRequestException('이미 완료된 합의서입니다.');
     }
 
     // 서명 정보 업데이트
-    const updateData: any = {
-      status: 'signed',
-    };
+    const updateData: any = {};
 
     // 서명자에 따라 해당 필드 업데이트
     if (agreement.authorId === userId) {
+      if (agreement.authorSignature) {
+        throw new BadRequestException('이미 작성자 서명이 완료되었습니다.');
+      }
       updateData.authorSignature = signAgreementDto.signature;
     } else if (agreement.partnerId === userId) {
+      if (agreement.partnerSignature) {
+        throw new BadRequestException('이미 파트너 서명이 완료되었습니다.');
+      }
       updateData.partnerSignature = signAgreementDto.signature;
+    }
+
+    // 양쪽 모두 서명이 완료되면 상태를 'completed'로 변경하고 해시 생성
+    const willHaveAuthorSignature = agreement.authorSignature || updateData.authorSignature;
+    const willHavePartnerSignature = agreement.partnerSignature || updateData.partnerSignature;
+    
+    if (willHaveAuthorSignature && willHavePartnerSignature) {
+      updateData.status = 'completed';
+      // 합의서 완료 시 해시 생성
+      updateData.agreementHash = this.generateAgreementHash(agreement);
+    } else {
+      updateData.status = 'signed';
     }
 
     return this.prisma.agreement.update({
