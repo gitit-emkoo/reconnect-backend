@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Put, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Put, Delete, UseGuards, Request } from '@nestjs/common';
 import { AgreementService } from './agreement.service';
 import { CreateAgreementDto } from './dto/create-agreement.dto';
 import { SignAgreementDto } from './dto/sign-agreement.dto';
@@ -52,5 +52,8 @@ export class AgreementController {
     return this.agreementService.updateStatus(id, req.user.id, updateStatusDto);
   }
 
-  // 추후 엔드포인트 추가 예정
+  @Delete(':id')
+  async deleteAgreement(@Param('id') id: string, @Request() req) {
+    return this.agreementService.deleteAgreement(id, req.user.id);
+  }
 } 

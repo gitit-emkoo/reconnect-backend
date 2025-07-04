@@ -184,6 +184,19 @@ export class AgreementService {
       throw new BadRequestException('상태 변경 권한이 없습니다.');
     }
 
+    // PDF 발행('issued') 상태로 변경 시 검증
+    if (updateStatusDto.status === 'issued') {
+      // completed 상태에서만 issued로 변경 가능
+      if (agreement.status !== 'completed') {
+        throw new BadRequestException('완료된 합의서만 PDF 발행할 수 있습니다.');
+      }
+      
+      // 양쪽 모두 서명이 완료되어야 함
+      if (!agreement.authorSignature || !agreement.partnerSignature) {
+        throw new BadRequestException('양쪽 모두 서명이 완료되어야 PDF를 발행할 수 있습니다.');
+      }
+    }
+
     return this.prisma.agreement.update({
       where: { id },
       data: {
@@ -236,5 +249,34 @@ export class AgreementService {
     });
   }
 
-  // 추후 CRUD 메서드 추가 예정
+  async deleteAgreement(id: string, userId: string) {
+    const agreement = await this.prisma.agreement.findUnique({
+      where: { id },
+    });
+
+    if (!agreement) {
+      throw new NotFoundException('합의서를 찾을 수 없습니다.');
+    }
+
+    // 삭제 권한 확인 (작성자만 삭제 가능)
+    if (agreement.authorId !== userId) {
+      throw new BadRequestException('삭제 권한이 없습니다.');
+    }
+
+    // PDF 발행된 합의서는 삭제 불가
+    if (agreement.status === 'issued') {
+      throw new BadRequestException('PDF가 발행된 합의서는 삭제할 수 없습니다.');
+    }
+
+    // pending 또는 completed 상태의 합의서만 삭제 가능
+    if (agreement.status !== 'pending' && agreement.status !== 'completed') {
+      throw new BadRequestException('삭제할 수 없는 상태의 합의서입니다.');
+    }
+
+    await this.prisma.agreement.delete({
+      where: { id },
+    });
+
+    return { message: '합의서가 삭제되었습니다.' };
+  }
 } 
