@@ -44,6 +44,7 @@ model User {
   temperature          Int       @default(61) // 관계 온도
   fcmToken             String?   // FCM 토큰
   subscriptionStatus   SubscriptionStatus @default(FREE) // 구독 상태
+  subscriptionStartedAt DateTime? // 구독 시작일
 
   schedules            Schedule[]
 

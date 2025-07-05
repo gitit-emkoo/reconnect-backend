@@ -247,7 +247,10 @@ export class UsersService {
     // 구독 상태를 SUBSCRIBED로 변경
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
-      data: { subscriptionStatus: 'SUBSCRIBED' },
+      data: {
+        subscriptionStatus: 'SUBSCRIBED',
+        subscriptionStartedAt: new Date(), // 구독 시작일 저장
+      },
       include: { partner: true, couple: true },
     });
 
