@@ -229,4 +229,32 @@ export class UsersService {
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
+
+  async startSubscription(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { partner: true, couple: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    if (user.subscriptionStatus === 'SUBSCRIBED') {
+      throw new BadRequestException('이미 구독 중인 사용자입니다.');
+    }
+
+    // 구독 상태를 SUBSCRIBED로 변경
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { subscriptionStatus: 'SUBSCRIBED' },
+      include: { partner: true, couple: true },
+    });
+
+    const { password, ...userWithoutPassword } = updatedUser;
+    return {
+      ...userWithoutPassword,
+      message: '구독이 성공적으로 시작되었습니다.',
+    };
+  }
 } 

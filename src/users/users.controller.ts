@@ -89,4 +89,13 @@ export class UsersController {
   async updateProfile(@GetUser() user: User, @Body('nickname') nickname: string) {
     return this.usersService.updateProfile(user.id, nickname);
   }
+
+  /**
+   * 구독 시작 (로그인 필요)
+   */
+  @Post('/me/subscribe')
+  @UseGuards(AuthGuard('jwt'))
+  async startSubscription(@GetUser() user: User) {
+    return this.usersService.startSubscription(user.id);
+  }
 } 
