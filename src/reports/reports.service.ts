@@ -244,23 +244,34 @@ export class ReportsService {
       },
     });
 
-    // 중복을 제거하고 년/월/주차 정보로 변환
+    // 월 기준 n번째 주차 계산 함수 (월요일 시작)
+    function getWeekOfMonth(date: Date) {
+      const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+      // firstDayOfMonth.getDay(): 0(일)~6(토), 월요일=1
+      // 월요일 시작 보정: (getDay() + 6) % 7
+      const offset = (firstDayOfMonth.getDay() + 6) % 7;
+      return Math.floor((date.getDate() + offset - 1) / 7) + 1;
+    }
+
     const availableWeeks = reports.map(report => {
       const date = report.weekStartDate;
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const weekOfMonth = getWeekOfMonth(date);
       return {
         id: report.id,
-        year: getYear(date),
-        month: getMonth(date) + 1, // 0-11을 1-12로 변환
-        week: getWeek(date, { weekStartsOn: 1 }), // 월요일 시작 기준
-        label: `${getYear(date)}년 ${getMonth(date) + 1}월 ${getWeek(date, { weekStartsOn: 1 })}주차`,
-        value: report.id, // 리포트 ID를 value로 사용
+        year,
+        month,
+        week: weekOfMonth,
+        label: `${month}월 ${weekOfMonth}주차`,
+        value: report.id,
       };
     });
 
-    // 중복 제거 (같은 주차의 리포트가 여러 개 있을 경우)
+    // 같은 달, 같은 주차에 여러 리포트가 있을 경우 중복 제거
     const uniqueWeeks = availableWeeks.filter(
       (week, index, self) =>
-        index === self.findIndex(t => t.value === week.value)
+        index === self.findIndex(t => t.month === week.month && t.week === week.week)
     );
 
     return uniqueWeeks;
