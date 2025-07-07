@@ -236,6 +236,7 @@ export class ReportsService {
     const reports = await this.prisma.report.findMany({
       where: { coupleId },
       select: {
+        id: true,
         weekStartDate: true,
       },
       orderBy: {
@@ -247,15 +248,16 @@ export class ReportsService {
     const availableWeeks = reports.map(report => {
       const date = report.weekStartDate;
       return {
+        id: report.id,
         year: getYear(date),
         month: getMonth(date) + 1, // 0-11을 1-12로 변환
         week: getWeek(date, { weekStartsOn: 1 }), // 월요일 시작 기준
         label: `${getYear(date)}년 ${getMonth(date) + 1}월 ${getWeek(date, { weekStartsOn: 1 })}주차`,
-        value: `${getYear(date)}-${getWeek(date, { weekStartsOn: 1 })}`,
+        value: report.id, // 리포트 ID를 value로 사용
       };
     });
 
-    // 중복 제거
+    // 중복 제거 (같은 주차의 리포트가 여러 개 있을 경우)
     const uniqueWeeks = availableWeeks.filter(
       (week, index, self) =>
         index === self.findIndex(t => t.value === week.value)
