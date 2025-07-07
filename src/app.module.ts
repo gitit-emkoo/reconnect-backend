@@ -21,6 +21,7 @@ import { ReportsModule } from './reports/reports.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AgreementModule } from './agreement/agreement.module';
+import { TrackReportsModule } from './track-reports/track-reports.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { AgreementModule } from './agreement/agreement.module';
     ReportsModule,
     NotificationsModule,
     AgreementModule,
+    TrackReportsModule,
   ],
   controllers: [AppController],
   providers: [

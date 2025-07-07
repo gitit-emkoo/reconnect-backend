@@ -83,6 +83,9 @@ model User {
 
   agreementsAuthored Agreement[] @relation("AgreementAuthor")
   agreementsPartner  Agreement[] @relation("AgreementPartner")
+  
+  // 트랙 리포트
+  trackReports       TrackReport[]
 }
 
 model PasswordReset {
@@ -276,6 +279,22 @@ model Report {
   couple                     Couple   @relation(fields: [coupleId], references: [id])
   
   @@unique([coupleId, weekStartDate])
+}
+
+model TrackReport {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  monthStartDate        DateTime // 월 시작일 (예: 2024-06-01)
+  emotionStats          Json     // 감정 통계 (예: {"행복": 5, "슬픔": 2, "화남": 1})
+  triggerStats          Json     // 트리거 통계 (예: {"가족": 3, "일": 2, "친구": 1})
+  aiAnalysis            String   // AI 분석 결과 텍스트
+  totalDiaryCount       Int      // 해당 월 총 일기 수
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  userId                String   @db.ObjectId
+  user                  User     @relation(fields: [userId], references: [id])
+  
+  @@unique([userId, monthStartDate])
 }
 
 model Message {

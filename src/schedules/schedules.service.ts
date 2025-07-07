@@ -4,6 +4,7 @@ import { CreateScheduleDto, UpdateScheduleDto } from './dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ReportsService } from '../reports/reports.service';
 import { ChallengesService } from '../challenges/challenges.service';
+import { TrackReportsService } from '../track-reports/track-reports.service';
 
 @Injectable()
 export class SchedulesService {
@@ -13,6 +14,7 @@ export class SchedulesService {
     private prisma: PrismaService,
     private readonly reportsService: ReportsService,
     private readonly challengesService: ChallengesService,
+    private readonly trackReportsService: TrackReportsService,
   ) {}
 
   async create(createScheduleDto: CreateScheduleDto, userId: string) {
@@ -77,9 +79,9 @@ export class SchedulesService {
   }
 
   /**
-   * 매주 월요일 자정에 주간 리포트를 생성합니다.
+   * 매주 월요일 오전 10시에 주간 리포트를 생성합니다.
    */
-  @Cron('0 0 * * 1', {
+  @Cron('0 10 * * 1', {
     name: 'generateWeeklyReports',
     timeZone: 'Asia/Seoul',
   })
@@ -100,5 +102,18 @@ export class SchedulesService {
     this.logger.log('만료된 챌린지 확인 및 실패 처리 작업을 시작합니다.');
     await this.challengesService.failExpiredChallenges();
     this.logger.log('만료된 챌린지 확인 및 실패 처리 작업을 완료했습니다.');
+  }
+
+  /**
+   * 매월 1일 오전 10시에 월간 트랙 리포트를 생성합니다.
+   */
+  @Cron('0 10 1 * *', {
+    name: 'generateMonthlyTrackReports',
+    timeZone: 'Asia/Seoul',
+  })
+  async handleMonthlyTrackReportGeneration() {
+    this.logger.log('월간 트랙 리포트 생성 작업을 시작합니다.');
+    await this.trackReportsService.generateMonthlyTrackReports();
+    this.logger.log('월간 트랙 리포트 생성 작업을 완료했습니다.');
   }
 } 
