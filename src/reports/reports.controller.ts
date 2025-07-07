@@ -20,13 +20,14 @@ export class ReportsController {
   }
 
   @Get('available-weeks')
-  async findAvailableWeeks(@GetUser() user: User) {
+  async findAvailableWeeks(@GetUser() user: any) {
+    const coupleId = user.coupleId || (user.couple && user.couple.id);
     console.log('GET /reports/available-weeks user:', user);
-    console.log('GET /reports/available-weeks user.coupleId:', user.coupleId);
-    if (!user.coupleId) {
+    console.log('GET /reports/available-weeks coupleId:', coupleId);
+    if (!coupleId) {
       throw new BadRequestException('Couple not found for this user.');
     }
-    return this.reportsService.findAvailableWeeks(user.coupleId);
+    return this.reportsService.findAvailableWeeks(coupleId);
   }
 
   @Get()
