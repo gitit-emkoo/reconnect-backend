@@ -21,6 +21,8 @@ export class ReportsController {
 
   @Get('available-weeks')
   async findAvailableWeeks(@GetUser() user: User) {
+    console.log('GET /reports/available-weeks user:', user);
+    console.log('GET /reports/available-weeks user.coupleId:', user.coupleId);
     if (!user.coupleId) {
       throw new BadRequestException('Couple not found for this user.');
     }
