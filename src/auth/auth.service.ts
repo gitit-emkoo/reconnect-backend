@@ -6,11 +6,24 @@ import { JwtService } from '@nestjs/jwt'; // JwtService 임포트 유지
 import * as bcrypt from 'bcryptjs'; // bcryptjs 임포트
 import axios from 'axios';
 import { GoogleAuthDto } from './dto/social-auth.dto';
+import multiavatar from '@multiavatar/multiavatar';
 
 // DTO(Data Transfer Object) 임포트 (이전에 정의했었던 dto 파일들)
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { DiagnosisService } from '../diagnosis/diagnosis.service';
+
+// 아바타 생성 함수
+const generateAvatarUrl = (seed: string): string => {
+  // multiavatar 생성
+  const svg = multiavatar(seed);
+  
+  // SVG를 base64로 인코딩
+  const base64 = Buffer.from(svg).toString('base64');
+  
+  // data URL로 반환
+  return `data:image/svg+xml;base64,${base64}`;
+};
 
 @Injectable()
 export class AuthService {
@@ -49,7 +62,10 @@ export class AuthService {
     const initialTemperature = unauthDiagnosis ? unauthDiagnosis.score : 61;
 
     const newUser = await this.prisma.$transaction(async (tx) => {
-      // 5. 새로운 사용자 생성 (temperature 필드 추가)
+      // 5. 랜덤 아바타 생성
+      const avatarUrl = generateAvatarUrl(email);
+      
+      // 6. 새로운 사용자 생성 (temperature 필드와 profileImageUrl 추가)
       const user = await tx.user.create({
         data: {
           email,
@@ -57,6 +73,7 @@ export class AuthService {
           nickname,
           provider: 'EMAIL',
           temperature: initialTemperature, // 초기 온도 설정
+          profileImageUrl: avatarUrl, // 랜덤 아바타 URL 저장
         },
       });
 
@@ -194,6 +211,9 @@ export class AuthService {
         const randomPassword = Math.random().toString(36).slice(-10);
         const hashedPassword = await bcrypt.hash(randomPassword, 10);
         const initialTemperature = unauthDiagnosis ? unauthDiagnosis.score : 61;
+        
+        // 랜덤 아바타 생성
+        const avatarUrl = generateAvatarUrl(email);
 
         user = await tx.user.create({
           data: {
@@ -203,6 +223,7 @@ export class AuthService {
             provider: 'GOOGLE',
             providerId,
             temperature: initialTemperature, // 초기 온도 설정
+            profileImageUrl: avatarUrl, // 랜덤 아바타 URL 저장
           },
         });
 
@@ -336,6 +357,9 @@ export class AuthService {
       // 4. 새로운 사용자 생성
       const randomPassword = Math.random().toString(36).slice(-10);
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      
+      // 랜덤 아바타 생성
+      const avatarUrl = generateAvatarUrl(email);
 
       await this.prisma.user.create({
         data: {
@@ -344,6 +368,7 @@ export class AuthService {
           nickname,
           provider: 'KAKAO',
           providerId: String(providerId),
+          profileImageUrl: avatarUrl, // 랜덤 아바타 URL 저장
         },
       });
 

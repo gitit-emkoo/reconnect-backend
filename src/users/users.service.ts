@@ -11,6 +11,7 @@ import * as crypto from 'crypto';
 import { MailService } from '../mail/mail.service';
 import { getPartnerId } from '../utils/getPartnerId';
 import { v4 as uuidv4 } from 'uuid';
+import multiavatar from '@multiavatar/multiavatar';
 
 @Injectable()
 export class UsersService {
@@ -227,6 +228,40 @@ export class UsersService {
     });
     if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
     const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
+  async updateProfileImage(userId: string, profileImageUrl: string) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { profileImageUrl },
+    });
+    if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
+  async generateRandomAvatar(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+
+    // multiavatar 생성
+    const svg = multiavatar(user.email);
+    
+    // SVG를 base64로 인코딩
+    const base64 = Buffer.from(svg).toString('base64');
+    
+    // data URL로 반환
+    const avatarUrl = `data:image/svg+xml;base64,${base64}`;
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { profileImageUrl: avatarUrl },
+    });
+    
+    const { password, ...userWithoutPassword } = updatedUser;
     return userWithoutPassword;
   }
 

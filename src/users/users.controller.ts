@@ -91,6 +91,24 @@ export class UsersController {
   }
 
   /**
+   * 프로필 이미지 업데이트 (로그인 필요)
+   */
+  @Patch('/me/profile-image')
+  @UseGuards(AuthGuard('jwt'))
+  async updateProfileImage(@GetUser() user: User, @Body('profileImageUrl') profileImageUrl: string) {
+    return this.usersService.updateProfileImage(user.id, profileImageUrl);
+  }
+
+  /**
+   * 랜덤 아바타 생성 (로그인 필요)
+   */
+  @Post('/me/generate-avatar')
+  @UseGuards(AuthGuard('jwt'))
+  async generateRandomAvatar(@GetUser() user: User) {
+    return this.usersService.generateRandomAvatar(user.id);
+  }
+
+  /**
    * 구독 시작 (로그인 필요)
    */
   @Post('/me/subscribe')
