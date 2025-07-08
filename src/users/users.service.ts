@@ -11,7 +11,7 @@ import * as crypto from 'crypto';
 import { MailService } from '../mail/mail.service';
 import { getPartnerId } from '../utils/getPartnerId';
 import { v4 as uuidv4 } from 'uuid';
-import multiavatar from '@multiavatar/multiavatar';
+const multiavatar = require('@multiavatar/multiavatar');
 
 @Injectable()
 export class UsersService {
