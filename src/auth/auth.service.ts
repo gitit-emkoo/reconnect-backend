@@ -6,7 +6,7 @@ import { JwtService } from '@nestjs/jwt'; // JwtService 임포트 유지
 import * as bcrypt from 'bcryptjs'; // bcryptjs 임포트
 import axios from 'axios';
 import { GoogleAuthDto } from './dto/social-auth.dto';
-const { multiavatar } = require('@multiavatar/multiavatar');
+const multiavatar = require('@multiavatar/multiavatar');
 
 // DTO(Data Transfer Object) 임포트 (이전에 정의했었던 dto 파일들)
 import { RegisterDto } from './dto/register.dto';
