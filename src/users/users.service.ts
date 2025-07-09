@@ -11,7 +11,7 @@ import * as crypto from 'crypto';
 import { MailService } from '../mail/mail.service';
 import { getPartnerId } from '../utils/getPartnerId';
 import { v4 as uuidv4 } from 'uuid';
-const { multiavatar } = require('@multiavatar/multiavatar');
+const multiavatar = require('@multiavatar/multiavatar');
 
 @Injectable()
 export class UsersService {
@@ -111,7 +111,7 @@ export class UsersService {
           <p style="color: #666; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
             아래 버튼을 클릭하여 새로운 비밀번호를 설정해주세요.
           </p>
-          <a href="${resetUrl}" target="_blank" style="display: inline-block; width: 100%; padding: 15px 0; text-align: center; background: linear-gradient(to right, #FF69B4, #785ce2); color: white; font-size: 16px; font-weight: 500; text-decoration: none; border-radius: 8px; box-sizing: border-box;">
+          <a href="${resetUrl}" target="_blank" style="display: inline-block; width: 100%; padding: 15px 0; text-align: center; background: linear-gradient(to right, #FF69B4, #785ce2); color: white; font-size: 16px; font-weight: 500; text-decoration: none; border-radius: 8px; box-sizing: border-box; padding: 10px 20px;">
             비밀번호 재설정하기
           </a>
           <p style="color: #888; font-size: 14px; margin-top: 30px; line-height: 1.5;">
