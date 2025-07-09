@@ -9,8 +9,8 @@ export class MailService {
 
   constructor(private readonly configService: ConfigService) {
     const host = this.configService.get<string>('EMAIL_HOST');
-    const port = this.configService.get<number>('EMAIL_PORT');
-    const secure = this.configService.get<boolean>('EMAIL_SECURE');
+    const port = Number(this.configService.get('EMAIL_PORT'));
+    const secure = this.configService.get('EMAIL_SECURE') === 'true'; // 문자열 비교로 boolean 변환
     const user = this.configService.get<string>('EMAIL_USER');
     // const pass = this.configService.get<string>('EMAIL_PASS'); // 보안상 출력하지 않음
 
@@ -23,7 +23,7 @@ export class MailService {
     this.transporter = nodemailer.createTransport({
       host,
       port,
-      secure,
+      secure, // boolean 값으로 전달
       auth: {
         user,
         pass: this.configService.get<string>('EMAIL_PASS'),
