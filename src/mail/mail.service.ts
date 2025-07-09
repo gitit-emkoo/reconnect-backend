@@ -8,12 +8,24 @@ export class MailService {
   private transporter: Mail;
 
   constructor(private readonly configService: ConfigService) {
+    const host = this.configService.get<string>('EMAIL_HOST');
+    const port = this.configService.get<number>('EMAIL_PORT');
+    const secure = this.configService.get<boolean>('EMAIL_SECURE');
+    const user = this.configService.get<string>('EMAIL_USER');
+    // const pass = this.configService.get<string>('EMAIL_PASS'); // 보안상 출력하지 않음
+
+    console.log('EMAIL_HOST:', host);
+    console.log('EMAIL_PORT:', port);
+    console.log('EMAIL_SECURE:', secure);
+    console.log('EMAIL_USER:', user);
+    // console.log('EMAIL_PASS:', pass); // 출력하지 않음
+
     this.transporter = nodemailer.createTransport({
-      host: this.configService.get<string>('EMAIL_HOST'),
-      port: this.configService.get<number>('EMAIL_PORT'),
-      secure: this.configService.get<boolean>('EMAIL_SECURE'),
+      host,
+      port,
+      secure,
       auth: {
-        user: this.configService.get<string>('EMAIL_USER'),
+        user,
         pass: this.configService.get<string>('EMAIL_PASS'),
       },
     });
