@@ -247,8 +247,9 @@ export class UsersService {
     });
     if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
 
-    // multiavatar 생성
-    const svg = multiavatar(user.email);
+    // 매번 다른 랜덤 아바타 생성을 위해 랜덤 문자열 사용
+    const randomSeed = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const svg = multiavatar(randomSeed);
     
     // SVG를 base64로 인코딩
     const base64 = Buffer.from(svg).toString('base64');
@@ -259,6 +260,7 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: { profileImageUrl: avatarUrl },
+      include: { partner: true, couple: true },
     });
     
     const { password, ...userWithoutPassword } = updatedUser;
