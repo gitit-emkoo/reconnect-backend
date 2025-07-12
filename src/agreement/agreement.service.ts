@@ -179,18 +179,13 @@ export class AgreementService {
       throw new NotFoundException('합의서를 찾을 수 없습니다.');
     }
 
-    // 상태 변경 권한 확인 (생성자만 가능)
-    if (agreement.authorId !== userId) {
-      throw new BadRequestException('상태 변경 권한이 없습니다.');
-    }
+    // 상태 변경 권한 제한을 삭제 (누구나 가능)
+    // if (agreement.authorId !== userId) {
+    //   throw new BadRequestException('상태 변경 권한이 없습니다.');
+    // }
 
     // PDF 발행('issued') 상태로 변경 시 검증
     if (updateStatusDto.status === 'issued') {
-      // completed 상태에서만 issued로 변경 가능
-      if (agreement.status !== 'completed') {
-        throw new BadRequestException('완료된 합의서만 PDF 발행할 수 있습니다.');
-      }
-      
       // 양쪽 모두 서명이 완료되어야 함
       if (!agreement.authorSignature || !agreement.partnerSignature) {
         throw new BadRequestException('양쪽 모두 서명이 완료되어야 PDF를 발행할 수 있습니다.');
