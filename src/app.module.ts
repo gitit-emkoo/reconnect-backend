@@ -22,6 +22,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AgreementModule } from './agreement/agreement.module';
 import { TrackReportsModule } from './track-reports/track-reports.module';
+import { SupportModule } from './support/support.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { TrackReportsModule } from './track-reports/track-reports.module';
     NotificationsModule,
     AgreementModule,
     TrackReportsModule,
+    SupportModule,
   ],
   controllers: [AppController],
   providers: [
