@@ -3,16 +3,28 @@ import { MailService } from '../mail/mail.service';
 import { CreateSupportDto, InquiryType } from './dto/create-support.dto';
 import { User } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class SupportService {
   constructor(
     private readonly mailService: MailService,
     private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async createInquiry(createSupportDto: CreateSupportDto, user: User) {
     const { title, content, type, attachmentUrl } = createSupportDto;
+    
+    // 문의내역 DB에 저장
+    await this.prisma.supportInquiry.create({
+      data: {
+        userId: user.id,
+        title,
+        content,
+        type,
+      },
+    });
     
     // 관리자 이메일 주소 (환경변수에서 가져오거나 하드코딩)
     const adminEmail = this.configService.get<string>('ADMIN_EMAIL') || 'admin@reconnect.com';
@@ -47,6 +59,21 @@ export class SupportService {
     } catch (error) {
       throw new Error('문의 접수 중 오류가 발생했습니다.');
     }
+  }
+
+  async getMyInquiries(user: User) {
+    // 문의내역을 최신순으로 반환
+    return this.prisma.supportInquiry.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        type: true,
+        createdAt: true,
+      },
+    });
   }
 
   private generateInquiryEmailHTML(data: {

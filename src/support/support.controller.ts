@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
 import { SupportService } from './support.service';
 import { CreateSupportDto } from './dto/create-support.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -16,5 +16,11 @@ export class SupportController {
     @GetUser() user: User,
   ) {
     return this.supportService.createInquiry(createSupportDto, user);
+  }
+
+  @Get('my-inquiries')
+  @UseGuards(JwtAuthGuard)
+  async getMyInquiries(@GetUser() user: User) {
+    return this.supportService.getMyInquiries(user);
   }
 } 
