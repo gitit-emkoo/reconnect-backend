@@ -254,17 +254,15 @@ export class UsersService {
     // SVG를 base64로 인코딩
     const base64 = Buffer.from(svg).toString('base64');
     
-    // data URL로 반환
+    // data URL로 반환 (미리보기용, DB에 저장하지 않음)
     const avatarUrl = `data:image/svg+xml;base64,${base64}`;
 
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: { profileImageUrl: avatarUrl },
-      include: { partner: true, couple: true },
-    });
-    
-    const { password, ...userWithoutPassword } = updatedUser;
-    return userWithoutPassword;
+    // 원본 사용자 정보에 새로운 아바타 URL만 추가하여 반환
+    const { password, ...userWithoutPassword } = user;
+    return {
+      ...userWithoutPassword,
+      profileImageUrl: avatarUrl,
+    };
   }
 
   async startSubscription(userId: string) {
