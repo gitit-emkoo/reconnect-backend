@@ -88,6 +88,7 @@ model User {
   trackReports       TrackReport[]
 
   supportInquiries SupportInquiry[]
+  withdrawalReason  WithdrawalReason?
 }
 
 model PasswordReset {
@@ -491,4 +492,16 @@ model SupportInquiry {
   content    String
   type       String
   createdAt  DateTime @default(now())
+}
+
+model WithdrawalReason {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  reason    String   // 탈퇴 사유 (예: "divorced", "relationship_better", "not_satisfied", "inconvenient")
+  createdAt DateTime @default(now())
+
+  // 관계
+  userId    String   @unique @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([reason])
 }

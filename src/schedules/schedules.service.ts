@@ -107,9 +107,8 @@ export class SchedulesService {
   /**
    * 매월 1일 오전 10시에 월간 트랙 리포트를 생성합니다.
    */
-  @Cron('0 10 1 * *', {
+  @Cron('0 1 1 * *', {
     name: 'generateMonthlyTrackReports',
-    timeZone: 'Asia/Seoul',
   })
   async handleMonthlyTrackReportGeneration() {
     this.logger.log('월간 트랙 리포트 생성 작업을 시작합니다.');

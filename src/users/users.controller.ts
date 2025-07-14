@@ -12,6 +12,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '@prisma/client';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { WithdrawDto } from './dto/withdraw.dto';
 
 @Controller('users')
 export class UsersController {
@@ -115,5 +116,14 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'))
   async startSubscription(@GetUser() user: User) {
     return this.usersService.startSubscription(user.id);
+  }
+
+  /**
+   * 회원 탈퇴 (로그인 필요)
+   */
+  @Post('/me/withdraw')
+  @UseGuards(AuthGuard('jwt'))
+  async withdraw(@GetUser() user: User, @Body() dto: WithdrawDto) {
+    return this.usersService.withdraw(user.id, dto.reason);
   }
 } 

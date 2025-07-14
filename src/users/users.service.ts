@@ -295,4 +295,30 @@ export class UsersService {
       message: '구독이 성공적으로 시작되었습니다.',
     };
   }
+
+  async withdraw(userId: string, reason: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { partner: true, couple: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    // 탈퇴 사유 저장
+    await this.prisma.withdrawalReason.create({
+      data: {
+        userId,
+        reason,
+      },
+    });
+
+    // 사용자 계정 삭제 (관련 데이터도 함께 삭제됨)
+    await this.prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return { success: true, message: '탈퇴가 완료되었습니다.' };
+  }
 } 
