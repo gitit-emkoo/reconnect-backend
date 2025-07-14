@@ -79,9 +79,9 @@ export class SchedulesService {
   }
 
   /**
-   * 매주 월요일 오전 10시에 주간 리포트를 생성합니다.
+   * 매주 월요일 오후 3시에 주간 리포트를 생성합니다.
    */
-  @Cron('0 10 * * 1', {
+  @Cron('0 15 * * 1', {
     name: 'generateWeeklyReports',
     timeZone: 'Asia/Seoul',
   })
