@@ -79,11 +79,11 @@ export class SchedulesService {
   }
 
   /**
-   * 매주 월요일 오후 3시에 주간 리포트를 생성합니다.
+   * 매주 월요일 오전 7시(서버 UTC 기준)에 주간 리포트를 생성합니다.
    */
-  @Cron('0 15 * * 1', {
+  @Cron('0 7 * * 1', {
     name: 'generateWeeklyReports',
-    timeZone: 'Asia/Seoul',
+    // timeZone: 'Asia/Seoul', // 서버 기준으로 동작하므로 제거
   })
   async handleWeeklyReportGeneration() {
     this.logger.log('주간 리포트 생성 작업을 시작합니다.');
