@@ -324,14 +324,9 @@ export class UsersService {
       
       // 트랜잭션으로 모든 관련 데이터 삭제와 사용자 삭제를 함께 처리
       const result = await this.prisma.$transaction(async (tx) => {
-        // 1. 탈퇴 사유 저장 (기존 데이터가 있으면 삭제 후 새로 생성)
-        await tx.withdrawalReason.deleteMany({
-          where: { userId },
-        });
-        
+        // 1. 탈퇴 사유 저장 (사용자 ID 없이)
         const withdrawalReason = await tx.withdrawalReason.create({
           data: {
-            userId,
             reason,
           },
         });
