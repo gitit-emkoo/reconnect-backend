@@ -38,7 +38,12 @@ export class PartnerInvitesController {
 
   @Get('me')
   async getMyInvites(@Request() req) {
+    console.log('[PartnerInvitesController] req.user:', req.user);
+    if (req.user) {
+      console.log('[PartnerInvitesController] req.user.userId:', req.user.userId);
+    }
     const invites = await this.partnerInvitesService.getMyInvites(req.user.userId);
+    console.log('[PartnerInvitesController] invites:', invites);
     return invites;
   }
 } 

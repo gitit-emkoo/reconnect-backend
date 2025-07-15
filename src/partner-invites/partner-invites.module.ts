@@ -12,7 +12,7 @@ import { DiagnosisModule } from '../diagnosis/diagnosis.module';
     PrismaModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '30d' }, // 30일로 통일
+      signOptions: { expiresIn: '1d' },
     }),
     NotificationsModule,
     AuthModule,

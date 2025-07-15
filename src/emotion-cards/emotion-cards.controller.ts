@@ -24,6 +24,8 @@ export class EmotionCardsController {
   async getEmotionCards(@Req() req: any, @Res() res: Response) {
     const userId = req.user.userId;
     const partnerId = getPartnerId(req.user);
+    console.log('[EmotionCardsController][GET /emotion-cards] req.user:', req.user);
+    console.log('[EmotionCardsController][GET /emotion-cards] userId:', userId, 'partnerId:', partnerId);
     if (!userId || !partnerId) {
       console.log('[EmotionCardsController][GET /emotion-cards] 403: 파트너 연결이 필요합니다.');
       return res.status(403).json({ 
@@ -42,9 +44,11 @@ export class EmotionCardsController {
   @Post()
   @UseGuards(JwtAuthGuard)
   async createEmotionCard(@Body() body: any, @Req() req: any, @Res() res: Response) {
+    console.log('[EmotionCardsController][POST /emotion-cards] req.user:', req.user);
     const senderId = req.user.userId;
     const receiverId = getPartnerId(req.user);
     const coupleId = req.user.couple?.id;
+    console.log('[EmotionCardsController][POST /emotion-cards] senderId:', senderId, 'receiverId:', receiverId, 'coupleId:', coupleId);
     if (!senderId || !receiverId || !coupleId) {
       console.log('[EmotionCardsController] 400: senderId, receiverId, coupleId가 필요합니다.');
       return res.status(400).json({ message: 'senderId, receiverId, coupleId가 필요합니다.' });
@@ -62,13 +66,22 @@ export class EmotionCardsController {
   @Get('received')
   @UseGuards(JwtAuthGuard)
   async getReceivedCards(@Req() req: any, @Res() res: Response) {
+    console.log('[EmotionCardsController][GET /emotion-cards/received] req.user:', req.user);
     const userId = req.user.userId;
     console.log('[EmotionCardsController][GET /emotion-cards/received] userId:', userId);
+    if (!userId) {
+      console.log('[EmotionCardsController][GET /emotion-cards/received] 400: userId가 필요합니다.');
+      return res.status(400).json({ message: 'userId가 필요합니다.' });
+    }
     try {
       const cards = await this.emotionCardsService.getReceivedCards(userId);
       return res.status(200).json(cards);
     } catch (error) {
-      return res.status(500).json({ message: '받은 감정카드 목록을 불러오지 못했습니다.' });
+      console.error('[EmotionCardsController][GET /emotion-cards/received] 에러:', error);
+      return res.status(500).json({ 
+        message: '받은 감정카드 목록을 불러오지 못했습니다.',
+        error: error.message 
+      });
     }
   }
 } 
