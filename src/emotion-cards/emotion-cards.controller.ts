@@ -15,11 +15,6 @@ export class EmotionCardsController {
   async refineEmotionCardText(
     @Body() refineTextDto: RefineTextDto,
   ): Promise<RefinedTextResponseDto> {
-    // 글자수 제한 검증 (300자)
-    if (refineTextDto.text.length > 300) {
-      throw new Error('텍스트는 300자를 초과할 수 없습니다.');
-    }
-    
     const refinedText = await this.emotionCardsService.refineText(refineTextDto.text);
     return { refinedText };
   }
@@ -58,19 +53,6 @@ export class EmotionCardsController {
       console.log('[EmotionCardsController] 400: senderId, receiverId, coupleId가 필요합니다.');
       return res.status(400).json({ message: 'senderId, receiverId, coupleId가 필요합니다.' });
     }
-
-    // 글자수 제한 검증 (300자)
-    const message = body.text || body.message || '';
-    if (message.length > 300) {
-      console.log('[EmotionCardsController] 400: 메시지가 300자를 초과합니다.');
-      return res.status(400).json({ 
-        message: '메시지는 300자를 초과할 수 없습니다.',
-        code: 'MESSAGE_TOO_LONG',
-        maxLength: 300,
-        currentLength: message.length
-      });
-    }
-
     try {
       const newCard = await this.emotionCardsService.createCard({ ...body, senderId, receiverId, coupleId });
       console.log('[EmotionCardsController] 생성된 카드:', newCard);
