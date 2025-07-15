@@ -49,7 +49,7 @@ export class ChallengesController {
     if (!user.couple || !user.couple.id) {
       throw new BadRequestException('연결된 파트너가 없습니다.');
     }
-    return this.challengesService.completeChallenge(user.couple.id, challengeId);
+    return this.challengesService.completeChallenge(challengeId, user.userId);
   }
 
   // 챌린지 히스토리 조회
