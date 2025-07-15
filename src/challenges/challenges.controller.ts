@@ -20,7 +20,6 @@ export class ChallengesController {
   @Get('active')
   async getActiveChallenge(@GetUser() user: any) {
     const partnerId = getPartnerId(user);
-    console.log('[ChallengeController][getActiveChallenge]', { userId: user.userId, partnerId, coupleId: user.couple?.id });
     if (!user.couple || !user.couple.id) {
       throw new BadRequestException('연결된 파트너가 없습니다.');
     }
@@ -34,7 +33,6 @@ export class ChallengesController {
     @GetUser() user: any,
   ) {
     const partnerId = getPartnerId(user);
-    console.log('[ChallengeController][startChallenge]', { userId: user.userId, partnerId, coupleId: user.couple?.id });
     if (!user.couple || !user.couple.id) {
       throw new BadRequestException('연결된 파트너가 없습니다.');
     }
@@ -48,18 +46,16 @@ export class ChallengesController {
     @GetUser() user: any,
   ) {
     const partnerId = getPartnerId(user);
-    console.log('[ChallengeController][completeChallenge]', { userId: user.userId, partnerId, coupleId: user.couple?.id });
     if (!user.couple || !user.couple.id) {
       throw new BadRequestException('연결된 파트너가 없습니다.');
     }
-    return this.challengesService.completeChallenge(challengeId, user.userId);
+    return this.challengesService.completeChallenge(user.couple.id, challengeId);
   }
 
   // 챌린지 히스토리 조회
   @Get('history')
   async getChallengeHistory(@GetUser() user: any) {
     const partnerId = getPartnerId(user);
-    console.log('[ChallengeController][getChallengeHistory]', { userId: user.userId, partnerId, coupleId: user.couple?.id });
     if (!user.couple || !user.couple.id) {
       throw new BadRequestException('연결된 파트너가 없습니다.');
     }
