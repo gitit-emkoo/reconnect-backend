@@ -320,9 +320,9 @@ export class UsersService {
         throw new NotFoundException('사용자를 찾을 수 없습니다.');
       }
 
-      console.log('[withdraw] 트랜잭션 시작 - 탈퇴 사유 저장 및 사용자 삭제');
+      console.log('[withdraw] 트랜잭션 시작 - 관련 데이터 삭제 및 사용자 삭제');
       
-      // 트랜잭션으로 탈퇴 사유 저장과 사용자 삭제를 함께 처리
+      // 트랜잭션으로 모든 관련 데이터 삭제와 사용자 삭제를 함께 처리
       const result = await this.prisma.$transaction(async (tx) => {
         // 1. 탈퇴 사유 저장 (기존 데이터가 있으면 삭제 후 새로 생성)
         await tx.withdrawalReason.deleteMany({
@@ -337,7 +337,138 @@ export class UsersService {
         });
         console.log('[withdraw] 탈퇴 사유 저장 완료:', withdrawalReason);
 
-        // 2. 사용자 계정 삭제
+        // 2. 관련된 모든 데이터 삭제
+        console.log('[withdraw] 관련 데이터 삭제 시작');
+        
+        // PartnerInvite 삭제 (보낸 초대, 받은 초대)
+        await tx.partnerInvite.deleteMany({
+          where: {
+            OR: [
+              { inviterId: userId },
+              { inviteeId: userId }
+            ]
+          }
+        });
+        console.log('[withdraw] PartnerInvite 삭제 완료');
+
+        // 감정카드 삭제 (보낸 카드, 받은 카드)
+        await tx.emotionCard.deleteMany({
+          where: {
+            OR: [
+              { senderId: userId },
+              { receiverId: userId }
+            ]
+          }
+        });
+        console.log('[withdraw] EmotionCard 삭제 완료');
+
+        // 메시지 삭제 (보낸 메시지, 받은 메시지)
+        await tx.message.deleteMany({
+          where: {
+            OR: [
+              { senderId: userId },
+              { receiverId: userId }
+            ]
+          }
+        });
+        console.log('[withdraw] Message 삭제 완료');
+
+        // 감정일기 삭제
+        await tx.emotionJournal.deleteMany({
+          where: { authorId: userId }
+        });
+        console.log('[withdraw] EmotionJournal 삭제 완료');
+
+        // 커뮤니티 포스트 삭제
+        await tx.communityPost.deleteMany({
+          where: { authorId: userId }
+        });
+        console.log('[withdraw] CommunityPost 삭제 완료');
+
+        // 댓글 삭제
+        await tx.comment.deleteMany({
+          where: { authorId: userId }
+        });
+        console.log('[withdraw] Comment 삭제 완료');
+
+        // 투표 삭제
+        await tx.communityPostVote.deleteMany({
+          where: { userId }
+        });
+        console.log('[withdraw] CommunityPostVote 삭제 완료');
+
+        // 관계 설문 삭제
+        await tx.relationshipSurvey.deleteMany({
+          where: { respondentId: userId }
+        });
+        console.log('[withdraw] RelationshipSurvey 삭제 완료');
+
+        // 일기 삭제
+        await tx.diary.deleteMany({
+          where: { userId }
+        });
+        console.log('[withdraw] Diary 삭제 완료');
+
+        // 스케줄 삭제
+        await tx.schedule.deleteMany({
+          where: { userId }
+        });
+        console.log('[withdraw] Schedule 삭제 완료');
+
+        // 콘텐츠 좋아요 삭제
+        await tx.contentLike.deleteMany({
+          where: { userId }
+        });
+        console.log('[withdraw] ContentLike 삭제 완료');
+
+        // 콘텐츠 북마크 삭제
+        await tx.contentBookmark.deleteMany({
+          where: { userId }
+        });
+        console.log('[withdraw] ContentBookmark 삭제 완료');
+
+        // 합의서 삭제 (작성자 또는 파트너)
+        await tx.agreement.deleteMany({
+          where: {
+            OR: [
+              { authorId: userId },
+              { partnerId: userId }
+            ]
+          }
+        });
+        console.log('[withdraw] Agreement 삭제 완료');
+
+        // 트랙 리포트 삭제
+        await tx.trackReport.deleteMany({
+          where: { userId }
+        });
+        console.log('[withdraw] TrackReport 삭제 완료');
+
+        // 고객지원 문의 삭제
+        await tx.supportInquiry.deleteMany({
+          where: { userId }
+        });
+        console.log('[withdraw] SupportInquiry 삭제 완료');
+
+        // 알림 삭제
+        await tx.notification.deleteMany({
+          where: { userId }
+        });
+        console.log('[withdraw] Notification 삭제 완료');
+
+        // 진단 결과 삭제
+        await tx.diagnosisResult.deleteMany({
+          where: { userId }
+        });
+        console.log('[withdraw] DiagnosisResult 삭제 완료');
+
+        // 비밀번호 재설정 토큰 삭제
+        await tx.passwordReset.deleteMany({
+          where: { email: user.email }
+        });
+        console.log('[withdraw] PasswordReset 삭제 완료');
+
+        // 3. 사용자 계정 삭제
         const deletedUser = await tx.user.delete({
           where: { id: userId },
         });
