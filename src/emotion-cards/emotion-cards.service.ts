@@ -117,10 +117,27 @@ export class EmotionCardsService {
     return cards;
   }
 
-  // 감정카드 생성 (임시: text만 저장, sender/receiver/couple 등은 null)
+  // 감정카드 생성 (AI 변환 적용)
   async createCard(body: any) {
     console.log('[EmotionCardsService] createCard 호출:', body);
-    const newCard = await this.prisma.emotionCard.create({ data: { message: body.text || '', aiSuggestion: '', isRead: false, emoji: body.emoji || '❤️', senderId: body.senderId, receiverId: body.receiverId, coupleId: body.coupleId } });
+    // AI 변환 적용: message는 AI 변환 결과, aiSuggestion은 원본 메시지
+    let refined = body.text || '';
+    try {
+      refined = await this.refineText(body.text || '');
+    } catch (e) {
+      // refineText 내부에서 이미 graceful degradation 처리됨
+    }
+    const newCard = await this.prisma.emotionCard.create({
+      data: {
+        message: refined,
+        aiSuggestion: body.text || '',
+        isRead: false,
+        emoji: body.emoji || '❤️',
+        senderId: body.senderId,
+        receiverId: body.receiverId,
+        coupleId: body.coupleId
+      }
+    });
     console.log('[EmotionCardsService] 생성된 카드:', newCard);
     return newCard;
   }
