@@ -91,11 +91,19 @@ export class EmotionCardsService {
       }
     } catch (error) {
       console.error('Error calling Gemini API:', error.response?.data || error.message);
-      let errorMessage = 'AI 제안을 가져오는데 실패했습니다.';
+      
+      // 오버쿼트 에러인지 확인
       if (axios.isAxiosError(error) && error.response?.data?.error?.message) {
-        errorMessage = `AI 서비스 오류: ${error.response.data.error.message}`;
+        const errorMessage = error.response.data.error.message;
+        if (errorMessage.includes('quota') || errorMessage.includes('queries') || errorMessage.includes('limit')) {
+          console.log('[EmotionCardsService] Gemini API 할당량 초과 - 원본 텍스트 반환');
+          return originalText; // 원본 텍스트 그대로 반환
+        }
       }
-      throw new HttpException(errorMessage, HttpStatus.SERVICE_UNAVAILABLE);
+      
+      // 기타 API 오류 시에도 원본 텍스트 반환
+      console.log('[EmotionCardsService] Gemini API 오류 - 원본 텍스트 반환');
+      return originalText;
     }
   }
 

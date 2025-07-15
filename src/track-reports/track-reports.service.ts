@@ -211,6 +211,15 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
       }
     } catch (error) {
       this.logger.error('AI 분석 생성 실패:', error);
+      
+      // 오버쿼트 에러인지 확인
+      if (axios.isAxiosError(error) && error.response?.data?.error?.message) {
+        const errorMessage = error.response.data.error.message;
+        if (errorMessage.includes('quota') || errorMessage.includes('queries') || errorMessage.includes('limit')) {
+          this.logger.warn('Gemini API 할당량 초과 - 기본 분석 텍스트 반환');
+        }
+      }
+      
       return this.generateDefaultAnalysis(emotionStats, triggerStats);
     }
   }
