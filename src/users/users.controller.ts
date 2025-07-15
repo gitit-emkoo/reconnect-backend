@@ -124,6 +124,21 @@ export class UsersController {
   @Post('/me/withdraw')
   @UseGuards(AuthGuard('jwt'))
   async withdraw(@GetUser() user: User, @Body() dto: WithdrawDto) {
-    return this.usersService.withdraw(user.id, dto.reason);
+    console.log('[UsersController] withdraw 호출됨');
+    console.log('[UsersController] user:', {
+      id: user.id,
+      email: user.email,
+      nickname: user.nickname
+    });
+    console.log('[UsersController] dto:', dto);
+    
+    try {
+      const result = await this.usersService.withdraw(user.id, dto.reason);
+      console.log('[UsersController] withdraw 성공:', result);
+      return result;
+    } catch (error) {
+      console.error('[UsersController] withdraw 실패:', error);
+      throw error;
+    }
   }
 } 

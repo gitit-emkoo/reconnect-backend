@@ -297,28 +297,66 @@ export class UsersService {
   }
 
   async withdraw(userId: string, reason: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { partner: true, couple: true },
-    });
+    console.log('[withdraw] 시작 - userId:', userId, 'reason:', reason);
+    
+    try {
+      console.log('[withdraw] 사용자 정보 조회 시작');
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { partner: true, couple: true },
+      });
+      console.log('[withdraw] 사용자 정보 조회 완료:', {
+        id: user?.id,
+        email: user?.email,
+        nickname: user?.nickname,
+        hasPartner: !!user?.partner,
+        hasCouple: !!user?.couple,
+        partnerId: user?.partner?.id,
+        coupleId: user?.couple?.id
+      });
 
-    if (!user) {
-      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+      if (!user) {
+        console.log('[withdraw] 사용자를 찾을 수 없음 - userId:', userId);
+        throw new NotFoundException('사용자를 찾을 수 없습니다.');
+      }
+
+      console.log('[withdraw] 트랜잭션 시작 - 탈퇴 사유 저장 및 사용자 삭제');
+      
+      // 트랜잭션으로 탈퇴 사유 저장과 사용자 삭제를 함께 처리
+      const result = await this.prisma.$transaction(async (tx) => {
+        // 1. 탈퇴 사유 저장 (기존 데이터가 있으면 삭제 후 새로 생성)
+        await tx.withdrawalReason.deleteMany({
+          where: { userId },
+        });
+        
+        const withdrawalReason = await tx.withdrawalReason.create({
+          data: {
+            userId,
+            reason,
+          },
+        });
+        console.log('[withdraw] 탈퇴 사유 저장 완료:', withdrawalReason);
+
+        // 2. 사용자 계정 삭제
+        const deletedUser = await tx.user.delete({
+          where: { id: userId },
+        });
+        console.log('[withdraw] 사용자 계정 삭제 완료:', {
+          id: deletedUser.id,
+          email: deletedUser.email,
+          nickname: deletedUser.nickname
+        });
+
+        return { withdrawalReason, deletedUser };
+      });
+
+      console.log('[withdraw] 트랜잭션 완료');
+      console.log('[withdraw] 탈퇴 처리 완료');
+      return { success: true, message: '탈퇴가 완료되었습니다.' };
+    } catch (error) {
+      console.error('[withdraw] 오류 발생:', error);
+      console.error('[withdraw] 오류 스택:', error.stack);
+      throw error;
     }
-
-    // 탈퇴 사유 저장
-    await this.prisma.withdrawalReason.create({
-      data: {
-        userId,
-        reason,
-      },
-    });
-
-    // 사용자 계정 삭제 (관련 데이터도 함께 삭제됨)
-    await this.prisma.user.delete({
-      where: { id: userId },
-    });
-
-    return { success: true, message: '탈퇴가 완료되었습니다.' };
   }
 } 
