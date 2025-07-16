@@ -123,12 +123,12 @@ export class PartnerInvitesService {
       // 7. 파트너 연결 알림 생성
       await this.notificationsService.createNotification({
         userId: inviter.id,
-        message: `${invitee.nickname}님과 파트너로 연결되었어요!`,
+        message: `${invitee.nickname}님과 파트너로 연결되었어요!\n파트너 연결 시 낮은 온도를 갖고 있는 파트너의 온도로 동기화됩니다.`,
         type: 'PARTNER_CONNECTED', url: '/dashboard',
       });
       await this.notificationsService.createNotification({
         userId: invitee.id,
-        message: `${inviter.nickname}님과 파트너로 연결되었어요!`,
+        message: `${inviter.nickname}님과 파트너로 연결되었어요!\n파트너 연결 시 낮은 온도를 갖고 있는 파트너의 온도로 동기화됩니다.`,
         type: 'PARTNER_CONNECTED', url: '/dashboard',
       });
 

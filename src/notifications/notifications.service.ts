@@ -18,11 +18,61 @@ export class NotificationsService {
     });
   }
 
+  // 파트너 연결 알림
+  async createPartnerConnectedNotification(userId: string, partnerName: string) {
+    return this.createNotification({
+      userId,
+      message: `파트너 ${partnerName}님이 연결되었습니다. 낮은 온도를 갖고 있는 파트너의 온도로 동기화됩니다.`,
+      type: 'PARTNER_CONNECTED',
+      url: '/dashboard',
+    });
+  }
+
+  // 감정 카드 수신 알림
+  async createEmotionCardNotification(userId: string) {
+    return this.createNotification({
+      userId,
+      message: '새 감정카드가 도착했어요!',
+      type: 'EMOTION_CARD_RECEIVED',
+      url: '/emotion-card?tab=received',
+    });
+  }
+
+  // 챌린지 완료 알림
+  async createChallengeCompletedNotification(userId: string, challengeTitle: string) {
+    return this.createNotification({
+      userId,
+      message: `챌린지 "${challengeTitle}"이 완료되었습니다!`,
+      type: 'CHALLENGE_COMPLETED',
+      url: '/challenge',
+    });
+  }
+
+  // 챌린지 시작 알림
+  async createChallengeStartedNotification(userId: string, challengeTitle: string) {
+    return this.createNotification({
+      userId,
+      message: `새로운 챌린지 "${challengeTitle}"이 시작되었습니다!`,
+      type: 'CHALLENGE_STARTED',
+      url: '/challenge',
+    });
+  }
+
   // 사용자의 모든 알림 조회
   async getNotifications(userId: string) {
     return this.prisma.notification.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // 읽지 않은 알림 개수 조회
+  async getUnreadCount(userId: string) {
+    return this.prisma.notification.count({
+      where: { 
+        userId, 
+        isRead: false 
+      },
     });
   }
 
@@ -39,6 +89,21 @@ export class NotificationsService {
     return this.prisma.notification.updateMany({
       where: { userId, isRead: false },
       data: { isRead: true },
+    });
+  }
+
+  // 오래된 알림 삭제 (30일 이상)
+  async deleteOldNotifications() {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    return this.prisma.notification.deleteMany({
+      where: {
+        createdAt: {
+          lt: thirtyDaysAgo,
+        },
+        isRead: true,
+      },
     });
   }
 }

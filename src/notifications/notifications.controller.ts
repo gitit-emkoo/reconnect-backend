@@ -20,6 +20,12 @@ export class NotificationsController {
     return this.notificationsService.getNotifications(user.id);
   }
 
+  @Get('unread-count')
+  async getUnreadCount(@GetUser() user: User) {
+    const count = await this.notificationsService.getUnreadCount(user.id);
+    return { count };
+  }
+
   @Patch(':id/read')
   async markAsRead(@Param('id') id: string) {
     // TODO: Consider adding authorization logic to ensure
