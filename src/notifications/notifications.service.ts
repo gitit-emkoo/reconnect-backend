@@ -58,6 +58,46 @@ export class NotificationsService {
     });
   }
 
+  // 합의서 작성 알림
+  async createAgreementCreatedNotification(userId: string, agreementTitle: string) {
+    return this.createNotification({
+      userId,
+      message: `파트너가 "${agreementTitle}" 합의서를 작성했습니다. 확인해주세요.`,
+      type: 'AGREEMENT_CREATED',
+      url: '/agreement',
+    });
+  }
+
+  // 합의서 서명 요청 알림
+  async createAgreementSignatureRequestNotification(userId: string, agreementTitle: string) {
+    return this.createNotification({
+      userId,
+      message: `파트너가 "${agreementTitle}" 합의서에 서명했습니다. 서명을 완료해주세요.`,
+      type: 'AGREEMENT_SIGNATURE_REQUEST',
+      url: '/agreement',
+    });
+  }
+
+  // 합의서 완료 알림
+  async createAgreementCompletedNotification(userId: string, agreementTitle: string) {
+    return this.createNotification({
+      userId,
+      message: `"${agreementTitle}" 합의서가 완료되었습니다! PDF로 발행할 수 있습니다.`,
+      type: 'AGREEMENT_COMPLETED',
+      url: '/issued-agreements',
+    });
+  }
+
+  // 합의서 PDF 발행 알림
+  async createAgreementPublishedNotification(userId: string, agreementTitle: string) {
+    return this.createNotification({
+      userId,
+      message: `"${agreementTitle}" 합의서가 PDF로 발행되었습니다.`,
+      type: 'AGREEMENT_PUBLISHED',
+      url: '/issued-agreements',
+    });
+  }
+
   // 사용자의 모든 알림 조회
   async getNotifications(userId: string) {
     return this.prisma.notification.findMany({
