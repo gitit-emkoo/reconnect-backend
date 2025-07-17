@@ -338,6 +338,14 @@ export class UsersService {
       ],
     } : {};
 
+    // 통계 계산 (전체 DB 기준)
+    const [totalUsers, activeUsers, adminUsers, connectedUsers] = await Promise.all([
+      this.prisma.user.count({}),
+      this.prisma.user.count({ where: { role: 'USER' } }),
+      this.prisma.user.count({ where: { role: 'ADMIN' } }),
+      this.prisma.user.count({ where: { partnerId: { not: null } } }),
+    ]);
+
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
         where,
@@ -377,6 +385,13 @@ export class UsersService {
         limit,
         total,
         totalPages: Math.ceil(total / limit),
+      },
+      stats: {
+        total: totalUsers,
+        active: activeUsers,
+        inactive: totalUsers - activeUsers - adminUsers, // 비활성 = 전체 - 활성 - 관리자
+        admins: adminUsers,
+        connected: connectedUsers,
       },
     };
   }
