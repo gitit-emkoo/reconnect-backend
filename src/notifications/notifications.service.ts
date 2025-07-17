@@ -41,4 +41,11 @@ export class NotificationsService {
       data: { isRead: true },
     });
   }
+
+  // 읽지 않은 알림 개수 조회
+  async getUnreadCount(userId: string) {
+    return this.prisma.notification.count({
+      where: { userId, isRead: false },
+    });
+  }
 }
