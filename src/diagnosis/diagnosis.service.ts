@@ -98,6 +98,23 @@ export class DiagnosisService {
     });
   }
 
+  async getDiagnosisCounter() {
+    // diagnosisType이 'BASELINE_TEMPERATURE'인 진단 결과 개수 반환
+    const count = await this.prisma.diagnosisResult.count({
+      where: { diagnosisType: 'BASELINE_TEMPERATURE' },
+    });
+    // 기본값 2391 이상으로 보이게 하고 싶으면 +2391 등 가공 가능
+    return { count };
+  }
+
+  async incrementDiagnosisCounter() {
+    // 실제 진단 저장과 별개로, 카운트만 증가시키고 싶으면 dummy row를 insert하거나, 프론트에서 진단 시작시 호출만 하고 count 반환
+    // 여기서는 진짜로 row를 추가하지 않고, 단순히 count만 반환(실제 진단 저장은 따로 처리됨)
+    // 만약 진짜로 카운트만 올리고 싶으면 redis나 별도 테이블을 써야 함. 여기선 단순 count 반환
+    const count = await this.getDiagnosisCounter();
+    return count;
+  }
+
   findAll() {
     return `This action returns all diagnosis`;
   }

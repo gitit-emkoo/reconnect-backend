@@ -35,6 +35,17 @@ export class DiagnosisController {
     return this.diagnosisService.createOrUpdateFromUnauth(user.id, createDiagnosisDto);
   }
 
+  @Get('counter')
+  getDiagnosisCounter() {
+    return this.diagnosisService.getDiagnosisCounter();
+  }
+
+  @Post('counter/increment')
+  @HttpCode(HttpStatus.OK)
+  incrementDiagnosisCounter() {
+    return this.diagnosisService.incrementDiagnosisCounter();
+  }
+
   @Get('my-latest')
   @UseGuards(JwtAuthGuard)
   findMyLatest(@GetUser() user: User) {
