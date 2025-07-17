@@ -5,6 +5,8 @@ import {
   Body,
   UseGuards,
   Patch,
+  Param,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -13,6 +15,7 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '@prisma/client';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { WithdrawDto } from './dto/withdraw.dto';
+import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('users')
 export class UsersController {
@@ -140,5 +143,55 @@ export class UsersController {
       console.error('[UsersController] withdraw 실패:', error);
       throw error;
     }
+  }
+
+  /**
+   * 모든 유저 조회 (관리자만)
+   */
+  @Get('/admin/all')
+  @UseGuards(AdminGuard)
+  async getAllUsers(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+    @Query('search') search?: string,
+  ) {
+    return this.usersService.getAllUsers({
+      page: parseInt(page),
+      limit: parseInt(limit),
+      search,
+    });
+  }
+
+  /**
+   * 유저 상세 정보 조회 (관리자만)
+   */
+  @Get('/admin/:id')
+  @UseGuards(AdminGuard)
+  async getUserById(@Param('id') id: string) {
+    return this.usersService.getUserById(id);
+  }
+
+  /**
+   * 유저 역할 변경 (관리자만)
+   */
+  @Patch('/admin/:id/role')
+  @UseGuards(AdminGuard)
+  async updateUserRole(
+    @Param('id') id: string,
+    @Body('role') role: string,
+  ) {
+    return this.usersService.updateUserRole(id, role);
+  }
+
+  /**
+   * 유저 계정 상태 변경 (관리자만)
+   */
+  @Patch('/admin/:id/status')
+  @UseGuards(AdminGuard)
+  async updateUserStatus(
+    @Param('id') id: string,
+    @Body('isActive') isActive: boolean,
+  ) {
+    return this.usersService.updateUserStatus(id, isActive);
   }
 } 

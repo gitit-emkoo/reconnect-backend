@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
 import { CreateAgreementDto } from './dto/create-agreement.dto';
 import { SignAgreementDto } from './dto/sign-agreement.dto';
 import { UpdateAgreementStatusDto } from './dto/update-agreement-status.dto';
@@ -8,10 +7,7 @@ import * as crypto from 'crypto';
 
 @Injectable()
 export class AgreementService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly notificationsService: NotificationsService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   // 해시 생성 함수
   private generateAgreementHash(agreement: any): string {
@@ -30,7 +26,7 @@ export class AgreementService {
       data.authorSignature = '';
     }
     
-    const agreement = await this.prisma.agreement.create({
+    return this.prisma.agreement.create({
       data,
       include: {
         author: {
@@ -49,16 +45,6 @@ export class AgreementService {
         },
       },
     });
-
-    // 파트너에게 합의서 작성 알림 생성
-    if (agreement.partnerId) {
-      await this.notificationsService.createAgreementCreatedNotification(
-        agreement.partnerId,
-        agreement.title
-      );
-    }
-
-    return agreement;
   }
 
   async findAll() {
@@ -162,7 +148,7 @@ export class AgreementService {
       updateData.status = 'signed';
     }
 
-    const updatedAgreement = await this.prisma.agreement.update({
+    return this.prisma.agreement.update({
       where: { id },
       data: updateData,
       include: {
@@ -182,29 +168,6 @@ export class AgreementService {
         },
       },
     });
-
-    // 합의서 서명 또는 완료 알림 생성
-    if (updateData.status === 'signed') {
-      // 서명 요청 알림
-      const otherUserId = agreement.authorId === userId ? agreement.partnerId : agreement.authorId;
-      if (otherUserId) {
-        await this.notificationsService.createAgreementSignatureRequestNotification(
-          otherUserId,
-          agreement.title
-        );
-      }
-    } else if (updateData.status === 'completed') {
-      // 합의서 완료 알림
-      const otherUserId = agreement.authorId === userId ? agreement.partnerId : agreement.authorId;
-      if (otherUserId) {
-        await this.notificationsService.createAgreementCompletedNotification(
-          otherUserId,
-          agreement.title
-        );
-      }
-    }
-
-    return updatedAgreement;
   }
 
   async updateStatus(id: string, userId: string, updateStatusDto: UpdateAgreementStatusDto) {
@@ -229,7 +192,7 @@ export class AgreementService {
       }
     }
 
-    const updatedAgreement = await this.prisma.agreement.update({
+    return this.prisma.agreement.update({
       where: { id },
       data: {
         status: updateStatusDto.status,
@@ -251,23 +214,6 @@ export class AgreementService {
         },
       },
     });
-
-    // PDF 발행 알림 생성
-    if (updateStatusDto.status === 'issued') {
-      // 양쪽 모두에게 PDF 발행 알림
-      await this.notificationsService.createAgreementPublishedNotification(
-        agreement.authorId,
-        agreement.title
-      );
-      if (agreement.partnerId) {
-        await this.notificationsService.createAgreementPublishedNotification(
-          agreement.partnerId,
-          agreement.title
-        );
-      }
-    }
-
-    return updatedAgreement;
   }
 
   async findByUser(userId: string) {
