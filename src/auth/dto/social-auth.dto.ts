@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional, IsObject } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsObject, IsNumber, IsArray } from 'class-validator';
 
 export class SocialAuthDto {
   @IsString()
@@ -7,17 +7,16 @@ export class SocialAuthDto {
 }
 
 class UnauthDiagnosisDto {
-  @IsString()
-  id: string;
-
-  @IsString()
+  @IsNumber()
   score: number;
 
-  @IsString()
-  resultType: string;
+  @IsOptional()
+  @IsArray()
+  answers?: string[];
 
+  @IsOptional()
   @IsString()
-  createdAt: string;
+  createdAt?: string;
 }
 
 export class GoogleAuthDto {

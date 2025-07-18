@@ -250,6 +250,14 @@ export class AuthService {
       // 5. 이미 구글로 가입된 사용자인 경우
       else {
         user = existingUser;
+        
+        // 기존 사용자도 비회원 진단 결과가 있으면 업데이트
+        if (unauthDiagnosis) {
+          await this.diagnosisService.createOrUpdateFromUnauth(user.id, {
+            ...unauthDiagnosis,
+            diagnosisType: 'BASELINE_TEMPERATURE',
+          });
+        }
       }
       
       return user;
