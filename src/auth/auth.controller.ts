@@ -41,7 +41,7 @@ export class AuthController {
   async googleRegister(
     @Body() googleAuthDto: GoogleAuthDto
   ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
-    return this.authService.googleLogin(googleAuthDto);
+    return this.authService.googleRegister(googleAuthDto);
   }
 
   @Post('kakao/register')
