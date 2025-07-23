@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { Prisma } from '@prisma/client';
+import { CreateComplaintDto } from './dto/create-complaint.dto';
 
 @Injectable()
 export class CommunityService {
@@ -290,5 +291,24 @@ export class CommunityService {
       result[group.option] = group._count.option;
     }
     return result;
+  }
+
+  async complaintContent(dto: CreateComplaintDto, reporterId: string) {
+    return this.prisma.communityComplaint.create({
+      data: {
+        postId: dto.postId,
+        commentId: dto.commentId,
+        reporterId,
+        reason: dto.reason,
+        etcReason: dto.etcReason,
+      }
+    });
+  }
+
+  async getComplaints() {
+    return this.prisma.communityComplaint.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { post: true, comment: true, reporter: true }
+    });
   }
 }

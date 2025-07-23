@@ -88,6 +88,7 @@ model User {
   trackReports       TrackReport[]
 
   supportInquiries SupportInquiry[]
+  complaints CommunityComplaint[] @relation("UserComplaints")
 }
 
 model PasswordReset {
@@ -375,6 +376,7 @@ model CommunityPost {
   category      Category  @relation(fields: [categoryId], references: [id])
   comments      Comment[]
   votes         CommunityPostVote[]
+  complaints CommunityComplaint[] @relation("PostComplaints")
 
   @@index([authorId])
   @@index([categoryId])
@@ -398,6 +400,7 @@ model Comment {
   parentId  String?  @db.ObjectId
   parent    Comment? @relation("CommentToParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   replies   Comment[] @relation("CommentToParent")
+  complaints CommunityComplaint[] @relation("CommentComplaints")
 }
 
 model CommunityPostVote {
@@ -499,4 +502,21 @@ model WithdrawalReason {
   createdAt DateTime @default(now())
 
   @@index([reason])
+}
+
+model CommunityComplaint {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId      String?  @db.ObjectId
+  post        CommunityPost? @relation("PostComplaints", fields: [postId], references: [id])
+  commentId   String?  @db.ObjectId
+  comment     Comment? @relation("CommentComplaints", fields: [commentId], references: [id])
+  reporterId  String   @db.ObjectId
+  reporter    User     @relation("UserComplaints", fields: [reporterId], references: [id])
+  reason      String
+  etcReason   String?
+  createdAt   DateTime @default(now())
+
+  @@index([postId])
+  @@index([commentId])
+  @@index([reporterId])
 }

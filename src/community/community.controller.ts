@@ -6,6 +6,7 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { VoteDto } from './dto/vote.dto';
+import { CreateComplaintDto } from './dto/create-complaint.dto';
 
 @Controller('community')
 export class CommunityController {
@@ -95,5 +96,20 @@ export class CommunityController {
   @Get('posts/:id/poll')
   async getPollResult(@Param('id') postId: string) {
     return this.communityService.getPollResult(postId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('complaint')
+  async complaintContent(
+    @Body() dto: CreateComplaintDto,
+    @GetUser() user: any
+  ) {
+    return this.communityService.complaintContent(dto, user.userId);
+  }
+
+  // 관리자용: 전체 신고 내역 조회 (추후 AdminGuard로 보호 권장)
+  @Get('complaints')
+  async getComplaints() {
+    return this.communityService.getComplaints();
   }
 }
