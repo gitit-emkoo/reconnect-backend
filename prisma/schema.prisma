@@ -514,9 +514,16 @@ model CommunityComplaint {
   reporter    User     @relation("UserComplaints", fields: [reporterId], references: [id])
   reason      String
   etcReason   String?
+  status      ComplaintStatus @default(PENDING)
   createdAt   DateTime @default(now())
 
   @@index([postId])
   @@index([commentId])
   @@index([reporterId])
+}
+
+enum ComplaintStatus {
+  PENDING
+  RESOLVED
+  REJECTED
 }
