@@ -209,7 +209,27 @@ export class CommunityService {
     const post = await this.prisma.communityPost.findUnique({ where: { id: postId } });
     if (!post) throw new Error('게시글을 찾을 수 없습니다.');
     if (post.authorId !== userId) throw new Error('본인 글만 삭제할 수 있습니다.');
-    return this.prisma.communityPost.delete({ where: { id: postId } });
+    
+    // 트랜잭션으로 관련 데이터 모두 삭제
+    return this.prisma.$transaction(async (tx) => {
+      // 관련된 투표 삭제
+      await tx.communityPostVote.deleteMany({
+        where: { postId }
+      });
+      
+      // 관련된 신고 삭제
+      await tx.communityComplaint.deleteMany({
+        where: { postId }
+      });
+      
+      // 관련된 댓글 삭제 (cascade로 자동 삭제됨)
+      await tx.comment.deleteMany({
+        where: { communityPostId: postId }
+      });
+      
+      // 게시글 삭제
+      return tx.communityPost.delete({ where: { id: postId } });
+    });
   }
 
   async voteOnPost(postId: string, userId: string, option: string) {
