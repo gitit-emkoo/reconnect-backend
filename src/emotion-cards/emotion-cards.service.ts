@@ -117,20 +117,14 @@ export class EmotionCardsService {
     return cards;
   }
 
-  // 감정카드 생성 (AI 변환 적용)
+  // 감정카드 생성 (원본 텍스트 그대로 저장)
   async createCard(body: any) {
     console.log('[EmotionCardsService] createCard 호출:', body);
-    // AI 변환 적용: message는 AI 변환 결과, aiSuggestion은 원본 메시지
-    let refined = body.text || '';
-    try {
-      refined = await this.refineText(body.text || '');
-    } catch (e) {
-      // refineText 내부에서 이미 graceful degradation 처리됨
-    }
+    
     const newCard = await this.prisma.emotionCard.create({
       data: {
-        message: refined,
-        aiSuggestion: body.text || '',
+        message: body.text || '', // 원본 텍스트 그대로 저장
+        aiSuggestion: '', // AI 변환은 사용자가 요청할 때만
         isRead: false,
         emoji: body.emoji || '❤️',
         senderId: body.senderId,
