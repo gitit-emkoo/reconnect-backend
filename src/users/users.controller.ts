@@ -122,6 +122,15 @@ export class UsersController {
   }
 
   /**
+   * 구독 취소 (로그인 필요)
+   */
+  @Delete('/me/subscribe')
+  @UseGuards(AuthGuard('jwt'))
+  async cancelSubscription(@GetUser() user: User) {
+    return this.usersService.cancelSubscription(user.id);
+  }
+
+  /**
    * 회원 탈퇴 (로그인 필요)
    */
   @Post('/me/withdraw')

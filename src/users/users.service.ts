@@ -296,6 +296,37 @@ export class UsersService {
     };
   }
 
+  async cancelSubscription(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { partner: true, couple: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    if (user.subscriptionStatus !== 'SUBSCRIBED') {
+      throw new BadRequestException('구독 중이 아닌 사용자입니다.');
+    }
+
+    // 구독 상태를 FREE로 변경하고 구독 시작일 초기화
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        subscriptionStatus: 'FREE',
+        subscriptionStartedAt: null,
+      },
+      include: { partner: true, couple: true },
+    });
+
+    const { password, ...userWithoutPassword } = updatedUser;
+    return {
+      ...userWithoutPassword,
+      message: '구독이 성공적으로 취소되었습니다.',
+    };
+  }
+
   async withdraw(userId: string, reason: string) {
     console.log('[UsersService] withdraw 호출됨');
     console.log('[UsersService] userId:', userId);
