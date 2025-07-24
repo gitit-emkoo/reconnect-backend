@@ -206,9 +206,20 @@ export class CommunityService {
   }
 
   async deletePost(postId: string, userId: string) {
-    const post = await this.prisma.communityPost.findUnique({ where: { id: postId } });
+    const post = await this.prisma.communityPost.findUnique({ 
+      where: { id: postId },
+      include: { author: true }
+    });
     if (!post) throw new Error('게시글을 찾을 수 없습니다.');
-    if (post.authorId !== userId) throw new Error('본인 글만 삭제할 수 있습니다.');
+    
+    // 사용자 정보 조회
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error('사용자를 찾을 수 없습니다.');
+    
+    // 본인 글 또는 관리자인 경우에만 삭제 가능
+    if (post.authorId !== userId && user.role !== 'ADMIN') {
+      throw new Error('본인 글만 삭제할 수 있습니다.');
+    }
     
     // 트랜잭션으로 관련 데이터 모두 삭제
     return this.prisma.$transaction(async (tx) => {
