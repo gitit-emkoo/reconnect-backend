@@ -7,6 +7,7 @@ import {
   Patch,
   Param,
   Query,
+  Delete,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
