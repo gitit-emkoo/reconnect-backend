@@ -76,8 +76,17 @@ export class AuthController {
 
   @Post('refresh')
   @UseGuards(JwtAuthGuard)
-  async refreshToken(@GetUser() user: any) {
+  async refreshToken(@GetUser() user: any, @Res({ passthrough: true }) res: Response) {
     const newToken = this.authService.createJwtToken(user);
+    
+    // 쿠키에 새 토큰 설정
+    res.cookie('accessToken', newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 90 * 24 * 60 * 60 * 1000, // 90일
+    });
+    
     return { accessToken: newToken };
   }
 }
