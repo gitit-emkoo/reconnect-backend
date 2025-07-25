@@ -184,4 +184,12 @@ export class AppController {
       timestamp: new Date().toISOString(),
     };
   }
+
+  @Get('api/health')
+  getApiHealth(): { status: string; timestamp: string } {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+    };
+  }
 }
