@@ -6,29 +6,36 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { SocialAuthDto } from './dto/social-auth.dto';
 import { GoogleAuthDto } from './dto/social-auth.dto';
-import { User } from '@prisma/client'; // User 타입 임포트는 유지
+import { User } from '@prisma/client';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
 
-@Controller('auth') // 이 컨트롤러의 기본 경로가 /auth가 됩니다.
+// 쿠키 설정 함수
+const setAuthCookie = (res: Response, token: string) => {
+  res.cookie('accessToken', token, {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 90 * 24 * 60 * 60 * 1000, // 90일
+  });
+};
+
+@Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Post('register') // POST /auth/register
-  @HttpCode(HttpStatus.CREATED) // 성공 시 201 Created 반환
+  @Post('register')
+  @HttpCode(HttpStatus.CREATED)
   async register(
     @Body() registerDto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: Omit<User, 'password'>; accessToken: string }> {
-    // 이제 AuthService.register는 RegisterDto 전체를 인자로 받습니다.
     return this.authService.register(registerDto, res);
   }
 
-  @Post('login') // POST /auth/login
-  @HttpCode(HttpStatus.OK) // 성공 시 200 OK 반환
-  // AuthService.login의 반환 타입에 맞춰 컨트롤러의 반환 타입도 변경
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
-    // 이제 AuthService.login은 LoginDto 전체를 인자로 받습니다.
     return this.authService.login(loginDto, res);
   }
 
@@ -78,15 +85,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async refreshToken(@GetUser() user: any, @Res({ passthrough: true }) res: Response) {
     const newToken = this.authService.createJwtToken(user);
-    
-    // 쿠키에 새 토큰 설정
-    res.cookie('accessToken', newToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 90 * 24 * 60 * 60 * 1000, // 90일
-    });
-    
+    setAuthCookie(res, newToken);
     return { accessToken: newToken };
   }
 }

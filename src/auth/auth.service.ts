@@ -1,44 +1,42 @@
 // src/auth/auth.service.ts
 import { Injectable, ConflictException, UnauthorizedException, BadRequestException, Res } from '@nestjs/common';
 import { Response } from 'express';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma, User, Provider } from '@prisma/client';
-import { JwtService } from '@nestjs/jwt'; // JwtService 임포트 유지
-import * as bcrypt from 'bcryptjs'; // bcryptjs 임포트
-import axios from 'axios';
-import { GoogleAuthDto } from './dto/social-auth.dto';
-const multiavatar = require('@multiavatar/multiavatar');
-
-// DTO(Data Transfer Object) 임포트 (이전에 정의했었던 dto 파일들)
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { GoogleAuthDto } from './dto/social-auth.dto';
 import { DiagnosisService } from '../diagnosis/diagnosis.service';
+import { User, Prisma } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
+import axios from 'axios';
+const multiavatar = require('@multiavatar/multiavatar');
 
-// 아바타 생성 함수
+// 아바타 URL 생성 함수
 const generateAvatarUrl = (seed: string): string => {
-  // multiavatar 생성
   const svg = multiavatar(seed);
-  
-  // SVG를 base64로 인코딩
   const base64 = Buffer.from(svg).toString('base64');
-  
-  // data URL로 반환
   return `data:image/svg+xml;base64,${base64}`;
+};
+
+// 쿠키 설정 함수
+const setAuthCookie = (res: Response, token: string) => {
+  res.cookie('accessToken', token, {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 90 * 24 * 60 * 60 * 1000, // 90일
+  });
 };
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService, // JwtService 주입 유지
-    private diagnosisService: DiagnosisService, // DiagnosisService 주입
+    private jwtService: JwtService,
+    private diagnosisService: DiagnosisService,
   ) {}
 
-  /**
-   * 새로운 사용자를 등록합니다.
-   * @param registerDto 이메일, 비밀번호, 닉네임, 비회원 진단결과 정보를 포함하는 DTO
-   * @returns 생성된 사용자 정보 (비밀번호 제외)
-   */
   async register(
     registerDto: RegisterDto,
     res?: Response,
@@ -67,38 +65,36 @@ export class AuthService {
       // 5. 랜덤 아바타 생성
       const avatarUrl = generateAvatarUrl(email);
       
-      // 6. 새로운 사용자 생성 (temperature 필드와 profileImageUrl 추가)
+      // 6. 새로운 사용자 생성
       const user = await tx.user.create({
         data: {
           email,
           password: hashedPassword,
           nickname,
           provider: 'EMAIL',
-          temperature: initialTemperature, // 초기 온도 설정
-          profileImageUrl: avatarUrl, // 랜덤 아바타 URL 저장
+          temperature: initialTemperature,
+          profileImageUrl: avatarUrl,
         },
       });
 
-      // 6. 진단 결과 처리
+      // 7. 진단 결과 처리
       if (unauthDiagnosis) {
-        // 비회원 진단 결과를 회원 진단 결과로 전환
         await this.diagnosisService.createOrUpdateFromUnauth(user.id, {
           ...unauthDiagnosis,
-          diagnosisType: 'BASELINE_TEMPERATURE', // 타입 명확화
+          diagnosisType: 'BASELINE_TEMPERATURE',
         });
       } else {
-        // 연결할 진단 결과가 없으면 기본값으로 새로 생성
         await this.diagnosisService.create({
           score: initialTemperature,
           resultType: '기초 관계온도',
-          diagnosisType: 'BASELINE_TEMPERATURE', // [추가] 타입 명시
+          diagnosisType: 'BASELINE_TEMPERATURE',
         }, user.id);
       }
 
       return user;
     });
 
-    // 7. JWT 토큰 생성
+    // 8. JWT 토큰 생성
     const payload = {
       userId: newUser.id,
       email: newUser.email,
@@ -109,29 +105,20 @@ export class AuthService {
     };
     const accessToken = this.jwtService.sign(payload);
 
-    // 8. 쿠키에 토큰 설정 (웹뷰 호환성)
+    // 9. 쿠키에 토큰 설정
     if (res) {
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 90 * 24 * 60 * 60 * 1000, // 90일
-      });
+      setAuthCookie(res, accessToken);
     }
 
-    // 9. 민감 정보(비밀번호) 제외하고 반환
+    // 10. 민감 정보 제외하고 반환
     const { password: _, ...result } = newUser;
     return { user: result, accessToken };
   }
 
-  /**
-   * 사용자 로그인을 처리하고 JWT 토큰을 발급합니다.
-   * @param loginDto 이메일, 비밀번호 정보를 포함하는 DTO
-   * @returns JWT 액세스 토큰과 사용자 정보
-   */
   async login(loginDto: LoginDto, res?: Response): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
     const { email, password } = loginDto;
-    // 1. 사용자 이메일로 조회 (partner, couple 포함)
+    
+    // 1. 사용자 조회
     const user = await this.prisma.user.findUnique({
       where: { email },
       include: { partner: true, couple: true },
@@ -139,11 +126,14 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
     }
+    
+    // 2. 비밀번호 검증
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
     }
-    // partnerId, couple 정보 포함
+    
+    // 3. partnerId 설정
     let partnerId: string | null = null;
     if (user.partnerId) {
       partnerId = user.partnerId;
@@ -152,6 +142,8 @@ export class AuthService {
     } else if (typeof user.partner === 'string') {
       partnerId = user.partner;
     }
+    
+    // 4. JWT 토큰 생성
     const payload = {
       userId: user.id,
       email: user.email,
@@ -162,14 +154,9 @@ export class AuthService {
     };
     const accessToken = this.jwtService.sign(payload);
     
-    // 쿠키에 토큰 설정 (웹뷰 호환성)
+    // 5. 쿠키에 토큰 설정
     if (res) {
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 90 * 24 * 60 * 60 * 1000, // 90일
-      });
+      setAuthCookie(res, accessToken);
     }
     
     const { password: userPassword, ...result } = user;
