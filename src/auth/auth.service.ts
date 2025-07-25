@@ -1,5 +1,6 @@
 // src/auth/auth.service.ts
-import { Injectable, ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException, BadRequestException, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, User, Provider } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt'; // JwtService 임포트 유지
@@ -40,6 +41,7 @@ export class AuthService {
    */
   async register(
     registerDto: RegisterDto,
+    res?: Response,
   ): Promise<{ user: Omit<User, 'password'>; accessToken: string }> {
     const { email, password, nickname, unauthDiagnosis } = registerDto;
 
@@ -107,7 +109,17 @@ export class AuthService {
     };
     const accessToken = this.jwtService.sign(payload);
 
-    // 8. 민감 정보(비밀번호) 제외하고 반환
+    // 8. 쿠키에 토큰 설정 (웹뷰 호환성)
+    if (res) {
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 90 * 24 * 60 * 60 * 1000, // 90일
+      });
+    }
+
+    // 9. 민감 정보(비밀번호) 제외하고 반환
     const { password: _, ...result } = newUser;
     return { user: result, accessToken };
   }
@@ -117,7 +129,7 @@ export class AuthService {
    * @param loginDto 이메일, 비밀번호 정보를 포함하는 DTO
    * @returns JWT 액세스 토큰과 사용자 정보
    */
-  async login(loginDto: LoginDto): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
+  async login(loginDto: LoginDto, res?: Response): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
     const { email, password } = loginDto;
     // 1. 사용자 이메일로 조회 (partner, couple 포함)
     const user = await this.prisma.user.findUnique({
@@ -149,6 +161,17 @@ export class AuthService {
       couple: user.couple ? { id: user.couple.id } : null,
     };
     const accessToken = this.jwtService.sign(payload);
+    
+    // 쿠키에 토큰 설정 (웹뷰 호환성)
+    if (res) {
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 90 * 24 * 60 * 60 * 1000, // 90일
+      });
+    }
+    
     const { password: userPassword, ...result } = user;
     return {
       accessToken,

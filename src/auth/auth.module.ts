@@ -15,7 +15,7 @@ import { DiagnosisModule } from '../diagnosis/diagnosis.module';
     // JwtModule 설정 추가
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'superSecretKey', // JWT 서명에 사용할 secret 키 (환경 변수에서 가져옴)
-      signOptions: { expiresIn: '30d' }, // 토큰 만료 시간 (예: 1시간)
+      signOptions: { expiresIn: '90d' }, // 토큰 만료 시간 (90일로 연장)
     }),
     DiagnosisModule, // [추가]
   ],
