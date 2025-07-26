@@ -10,8 +10,10 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 모든 API 경로에 '/api' 접두사 추가
-  app.setGlobalPrefix('api');
+  // Health Check를 위해 루트 경로는 제외하고 API 경로에만 '/api' 접두사 추가
+  app.setGlobalPrefix('api', {
+    exclude: ['/health']
+  });
   
   // CORS 설정 강화
   app.enableCors({

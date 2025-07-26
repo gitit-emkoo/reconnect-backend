@@ -7,6 +7,15 @@ import { Response } from 'express'; // Response 타입 추가
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
+  @Get('health')
+  getHealth(): { status: string; timestamp: string } {
+    console.log('Health check requested at:', new Date().toISOString());
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Get()
   getHello(@Res() res: Response): void {
     const html = `
@@ -175,21 +184,5 @@ export class AppController {
   @Get('users') // GET 요청으로 /users 경로에 접근
   async getUsers(): Promise<User[]> {
     return this.appService.getAllUsers();
-  }
-
-  @Get('health')
-  getHealth(): { status: string; timestamp: string } {
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  @Get('api/health')
-  getApiHealth(): { status: string; timestamp: string } {
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-    };
   }
 }
