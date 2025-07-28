@@ -68,7 +68,7 @@ export class AppleAuthUtils {
 
       // JWT 검증
       const verifiedToken = jwt.verify(idToken, this.convertJwkToPem(publicKey), {
-        algorithms: [alg],
+        algorithms: [alg as jwt.Algorithm],
         audience: process.env.APPLE_CLIENT_ID, // Apple App ID
         issuer: 'https://appleid.apple.com',
       }) as AppleUserInfo;
