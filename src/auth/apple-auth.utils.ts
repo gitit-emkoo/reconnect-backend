@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import * as jose from 'jose';
 
 export interface AppleUserInfo {
   sub: string; // Apple의 고유 사용자 ID
@@ -22,7 +21,10 @@ export class AppleAuthUtils {
    */
   async verifyAppleIdToken(idToken: string): Promise<AppleUserInfo> {
     try {
-      // jose 라이브러리를 사용하여 JWT 검증
+      // jose 라이브러리를 동적 import로 가져오기
+      const jose = await import('jose');
+      
+      // Apple의 JWKS를 직접 사용
       const JWKS = jose.createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
       
       const { payload } = await jose.jwtVerify(idToken, JWKS, {
