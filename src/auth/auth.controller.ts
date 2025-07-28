@@ -1,5 +1,5 @@
 // src/auth/auth.controller.ts
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Res } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Res, BadRequestException } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -59,10 +59,11 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   async kakaoRegister(@Body('code') code: string) {
     if (!code) {
-      console.log('카카오 회원가입 요청 받음');
-      console.log('인증 코드:', code);
-      return this.authService.kakaoRegister(code);
+      throw new BadRequestException('카카오 인증 코드가 필요합니다.');
     }
+    console.log('카카오 회원가입 요청 받음');
+    console.log('인증 코드:', code);
+    return this.authService.kakaoRegister(code);
   }
 
   @Post('kakao/login')
