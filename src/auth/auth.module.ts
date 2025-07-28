@@ -7,6 +7,7 @@ import { JwtModule } from '@nestjs/jwt'; // JwtModule 임포트
 import { PassportModule } from '@nestjs/passport'; // PassportModule 임포트
 import { JwtStrategy } from './jwt.strategy'; // JwtStrategy 임포트
 import { DiagnosisModule } from '../diagnosis/diagnosis.module';
+import { AppleAuthUtils } from './apple-auth.utils';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { DiagnosisModule } from '../diagnosis/diagnosis.module';
     DiagnosisModule, // [추가]
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy], // JwtStrategy를 providers에 추가
+  providers: [AuthService, JwtStrategy, AppleAuthUtils], // JwtStrategy를 providers에 추가
   exports: [AuthService, PassportModule], // PassportModule도 export 할 수 있음 (다른 모듈에서 guard 사용 시 필요할 수 있음)
 })
 export class AuthModule {}

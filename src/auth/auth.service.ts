@@ -5,11 +5,12 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { GoogleAuthDto } from './dto/social-auth.dto';
+import { GoogleAuthDto, AppleAuthDto } from './dto/social-auth.dto';
 import { DiagnosisService } from '../diagnosis/diagnosis.service';
 import { User, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import axios from 'axios';
+import { AppleAuthUtils } from './apple-auth.utils';
 const multiavatar = require('@multiavatar/multiavatar');
 
 // 아바타 URL 생성 함수
@@ -35,6 +36,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private diagnosisService: DiagnosisService,
+    private appleAuthUtils: AppleAuthUtils,
   ) {}
 
   async register(
@@ -507,6 +509,170 @@ export class AuthService {
     // (예: 토큰 블랙리스트 추가 등)
     // 따라서 성공 메시지만 반환합니다.
     return { message: '성공적으로 로그아웃되었습니다.' };
+  }
+
+  /**
+   * Apple ID 토큰으로 로그인을 처리합니다.
+   */
+  async appleLogin(
+    appleAuthDto: AppleAuthDto,
+  ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
+    const { idToken, user: userString, unauthDiagnosis } = appleAuthDto;
+
+    // 1. Apple ID 토큰 검증
+    const appleUserInfo = await this.appleAuthUtils.verifyAppleIdToken(idToken);
+    const { email, name, sub: providerId } = this.appleAuthUtils.extractUserInfo(appleUserInfo, userString);
+
+    if (!email) {
+      throw new BadRequestException('Apple 계정에서 이메일 정보를 가져올 수 없습니다.');
+    }
+
+    // 2. 이메일로 기존 사용자 찾기
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+      include: { partner: true, couple: true },
+    });
+
+    // 3. 사용자가 존재하지 않으면 에러
+    if (!existingUser) {
+      throw new UnauthorizedException('가입되지 않은 사용자입니다. 회원가입을 진행해주세요.');
+    }
+
+    // 4. 사용자가 존재하지만, Apple 연동이 안된 경우 -> 에러 발생
+    if (existingUser.provider !== 'APPLE') {
+      throw new ConflictException(
+        '이미 다른 방식으로 가입된 이메일입니다. 해당 방식으로 로그인해주세요.',
+      );
+    }
+
+    // 5. 비회원 진단 결과가 있으면 업데이트
+    if (unauthDiagnosis) {
+      await this.diagnosisService.createOrUpdateFromUnauth(existingUser.id, {
+        ...unauthDiagnosis,
+        diagnosisType: 'BASELINE_TEMPERATURE',
+      });
+    }
+
+    // 6. JWT 토큰 생성 및 반환 (로그인)
+    let partnerId: string | null = null;
+    if (existingUser.partnerId) {
+      partnerId = existingUser.partnerId;
+    } else if (existingUser.partner && typeof existingUser.partner === 'object' && existingUser.partner.id) {
+      partnerId = existingUser.partner.id;
+    } else if (typeof existingUser.partner === 'string') {
+      partnerId = existingUser.partner as any;
+    }
+
+    const payload = {
+      userId: existingUser.id,
+      email: existingUser.email,
+      nickname: existingUser.nickname,
+      role: existingUser.role,
+      partnerId: partnerId ?? null,
+      couple: existingUser.couple ? { id: existingUser.couple.id } : null,
+    };
+    const accessToken = this.jwtService.sign(payload);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = existingUser;
+
+    return {
+      accessToken,
+      user: result,
+    };
+  }
+
+  /**
+   * Apple ID 토큰으로 회원가입을 처리합니다.
+   */
+  async appleRegister(
+    appleAuthDto: AppleAuthDto,
+  ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
+    const { idToken, user: userString, unauthDiagnosis } = appleAuthDto;
+
+    // 1. Apple ID 토큰 검증
+    const appleUserInfo = await this.appleAuthUtils.verifyAppleIdToken(idToken);
+    const { email, name, sub: providerId } = this.appleAuthUtils.extractUserInfo(appleUserInfo, userString);
+
+    if (!email) {
+      throw new BadRequestException('Apple 계정에서 이메일 정보를 가져올 수 없습니다.');
+    }
+
+    const user = await this.prisma.$transaction(async (tx) => {
+      // 2. 이메일로 기존 사용자 찾기
+      const existingUser = await tx.user.findUnique({
+        where: { email },
+      });
+
+      // 3. 사용자가 이미 존재하면 에러
+      if (existingUser) {
+        throw new ConflictException('이미 가입된 사용자입니다. 로그인을 진행해주세요.');
+      }
+
+      // 4. 새로운 사용자 생성
+      const randomPassword = Math.random().toString(36).slice(-10);
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      const initialTemperature = unauthDiagnosis ? unauthDiagnosis.score : 61;
+      
+      // 랜덤 아바타 생성
+      const avatarUrl = generateAvatarUrl(email);
+
+      const newUser = await tx.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          nickname: name || email.split('@')[0],
+          provider: 'APPLE',
+          providerId,
+          temperature: initialTemperature, // 초기 온도 설정
+          profileImageUrl: avatarUrl, // 랜덤 아바타 URL 저장
+        },
+      });
+
+      // 5. 진단 결과 처리
+      if (unauthDiagnosis) {
+        await this.diagnosisService.createOrUpdateFromUnauth(newUser.id, {
+          ...unauthDiagnosis,
+          diagnosisType: 'BASELINE_TEMPERATURE',
+        });
+      } else {
+        await this.diagnosisService.create({
+          score: initialTemperature,
+          resultType: '기초 관계온도',
+          diagnosisType: 'BASELINE_TEMPERATURE',
+        }, newUser.id);
+      }
+
+      return newUser;
+    });
+
+    // 6. JWT 토큰 생성 및 반환
+    const userWithDetails = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      include: { partner: true, couple: true },
+    });
+
+    if (!userWithDetails) {
+      throw new UnauthorizedException('사용자 정보를 찾는 데 실패했습니다.');
+    }
+
+    const payload = {
+      userId: userWithDetails.id,
+      email: userWithDetails.email,
+      nickname: userWithDetails.nickname,
+      role: userWithDetails.role,
+      partnerId: null,
+      couple: null,
+    };
+    const accessToken = this.jwtService.sign(payload);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = userWithDetails;
+
+    return {
+      accessToken,
+      user: result,
+    };
   }
 
   /**

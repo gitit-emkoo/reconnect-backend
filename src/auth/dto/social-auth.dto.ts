@@ -27,4 +27,22 @@ export class GoogleAuthDto {
   @IsOptional()
   @IsObject()
   unauthDiagnosis?: UnauthDiagnosisDto;
+}
+
+export class AppleAuthDto {
+  @IsString()
+  @IsNotEmpty({ message: 'Apple ID 토큰은 필수입니다.' })
+  idToken: string;
+
+  @IsOptional()
+  @IsString()
+  authorizationCode?: string;
+
+  @IsOptional()
+  @IsString()
+  user?: string; // Apple에서 제공하는 사용자 정보 (JSON string)
+
+  @IsOptional()
+  @IsObject()
+  unauthDiagnosis?: UnauthDiagnosisDto;
 } 

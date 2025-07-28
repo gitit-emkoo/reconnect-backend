@@ -5,7 +5,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { SocialAuthDto } from './dto/social-auth.dto';
-import { GoogleAuthDto } from './dto/social-auth.dto';
+import { GoogleAuthDto, AppleAuthDto } from './dto/social-auth.dto';
 import { User } from '@prisma/client';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
@@ -73,6 +73,22 @@ export class AuthController {
     console.log('카카오 로그인 요청 받음');
     console.log('인증 코드:', socialAuthDto.code);
     return this.authService.kakaoLogin(socialAuthDto.code);
+  }
+
+  @Post('apple/login')
+  @HttpCode(HttpStatus.OK)
+  async appleLogin(
+    @Body() appleAuthDto: AppleAuthDto
+  ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
+    return this.authService.appleLogin(appleAuthDto);
+  }
+
+  @Post('apple/register')
+  @HttpCode(HttpStatus.CREATED)
+  async appleRegister(
+    @Body() appleAuthDto: AppleAuthDto
+  ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
+    return this.authService.appleRegister(appleAuthDto);
   }
 
   @Post('logout')

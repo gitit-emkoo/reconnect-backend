@@ -13,6 +13,7 @@ enum Provider {
   EMAIL
   KAKAO
   GOOGLE
+  APPLE
 }
 
 enum Role {
