@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import * as jwt from 'jsonwebtoken';
+import * as jwksClient from 'jwks-rsa';
 
 export interface AppleUserInfo {
   sub: string; // Apple의 고유 사용자 ID
@@ -21,18 +23,37 @@ export class AppleAuthUtils {
    */
   async verifyAppleIdToken(idToken: string): Promise<AppleUserInfo> {
     try {
-      // jose 라이브러리를 동적 import로 가져오기
-      const jose = await import('jose');
-      
-      // Apple의 JWKS를 직접 사용
-      const JWKS = jose.createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
-      
-      const { payload } = await jose.jwtVerify(idToken, JWKS, {
-        issuer: 'https://appleid.apple.com',
-        audience: process.env.APPLE_CLIENT_ID,
+      // 토큰 헤더에서 kid (Key ID) 추출
+      const decodedHeader = jwt.decode(idToken, { complete: true });
+      if (!decodedHeader || typeof decodedHeader === 'string') {
+        throw new Error('유효하지 않은 Apple ID 토큰입니다.');
+      }
+
+      const { kid, alg } = decodedHeader.header;
+      if (!kid || !alg) {
+        throw new Error('토큰 헤더에 필요한 정보가 없습니다.');
+      }
+
+      // jwks-rsa 클라이언트 생성
+      const client = jwksClient({
+        jwksUri: 'https://appleid.apple.com/auth/keys',
+        cache: true,
+        cacheMaxEntries: 5,
+        cacheMaxAge: 600000, // 10분
       });
 
-      return payload as AppleUserInfo;
+      // kid에 해당하는 공개키 가져오기
+      const key = await client.getSigningKey(kid);
+      const publicKey = key.getPublicKey();
+
+      // JWT 검증
+      const verifiedToken = jwt.verify(idToken, publicKey, {
+        algorithms: [alg as jwt.Algorithm],
+        audience: process.env.APPLE_CLIENT_ID,
+        issuer: 'https://appleid.apple.com',
+      }) as AppleUserInfo;
+
+      return verifiedToken;
     } catch (error) {
       console.error('Apple ID token verification failed:', error);
       throw new Error('Apple ID 토큰 검증에 실패했습니다.');
