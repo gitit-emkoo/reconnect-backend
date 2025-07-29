@@ -208,25 +208,21 @@ export class ChallengesService {
   }
 
   // 만료된 챌린지 처리 (스케줄러에서 호출)
-  async processExpiredChallenges() {
+  async failExpiredChallenges(): Promise<void> {
     const now = new Date();
-    const expiredChallenges = await this.prisma.challenge.findMany({
+    const result = await this.prisma.challenge.updateMany({
       where: {
-        status: ChallengeStatus.IN_PROGRESS,
+        status: 'IN_PROGRESS',
         endDate: {
           lt: now,
         },
       },
+      data: {
+        status: 'FAILED',
+        updatedAt: now, // 실패 처리 시점 기록
+      },
     });
-
-    for (const challenge of expiredChallenges) {
-      await this.prisma.challenge.update({
-        where: { id: challenge.id },
-        data: {
-          status: ChallengeStatus.FAILED,
-        },
-      });
-    }
+    this.logger.log(`만료된 챌린지 ${result.count}개를 실패 처리했습니다.`);
   }
 
   // 이번 주 챌린지 달성 여부 확인
@@ -252,24 +248,5 @@ export class ChallengesService {
     });
 
     return !!completedChallenge;
-  }
-
-  /**
-   * 매일 자정 실행: 만료된 챌린지를 'FAILED' 상태로 업데이트합니다.
-   */
-  async failExpiredChallenges(): Promise<void> {
-    const now = new Date();
-    const result = await this.prisma.challenge.updateMany({
-      where: {
-        status: 'IN_PROGRESS',
-        endDate: {
-          lt: now,
-        },
-      },
-      data: {
-        status: 'FAILED',
-      },
-    });
-    this.logger.log(`만료된 챌린지 ${result.count}개를 실패 처리했습니다.`);
   }
 } 

@@ -379,6 +379,10 @@ export class AuthService {
   async kakaoRegister(code: string): Promise<{ message: string }> {
     try {
       console.log('카카오 회원가입 처리 시작');
+      console.log('환경 변수 확인:');
+      console.log('KAKAO_CLIENT_ID:', process.env.KAKAO_CLIENT_ID);
+      console.log('KAKAO_CLIENT_SECRET:', process.env.KAKAO_CLIENT_SECRET ? '설정됨' : '설정 안됨');
+      console.log('KAKAO_REGISTER_REDIRECT_URI:', process.env.KAKAO_REGISTER_REDIRECT_URI);
       
       // 1. 카카오 토큰 받기
       const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
@@ -451,6 +455,12 @@ export class AuthService {
 
   async kakaoLogin(code: string): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
     try {
+      console.log('카카오 로그인 처리 시작');
+      console.log('환경 변수 확인:');
+      console.log('KAKAO_CLIENT_ID:', process.env.KAKAO_CLIENT_ID);
+      console.log('KAKAO_CLIENT_SECRET:', process.env.KAKAO_CLIENT_SECRET ? '설정됨' : '설정 안됨');
+      console.log('KAKAO_REDIRECT_URI:', process.env.KAKAO_REDIRECT_URI);
+      
       const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
         params: {
           grant_type: 'authorization_code',

@@ -9,6 +9,7 @@ import { TrackReportsService } from '../track-reports/track-reports.service';
 @Injectable()
 export class SchedulesService {
   private readonly logger = new Logger(SchedulesService.name);
+  private isGeneratingWeeklyReports = false; // 중복 실행 방지 플래그
 
   constructor(
     private prisma: PrismaService,
@@ -86,22 +87,29 @@ export class SchedulesService {
     // timeZone: 'Asia/Seoul', // 서버 기준으로 동작하므로 제거
   })
   async handleWeeklyReportGeneration() {
-    this.logger.log('주간 리포트 생성 작업을 시작합니다.');
-    await this.reportsService.generateWeeklyReports();
-    this.logger.log('주간 리포트 생성 작업을 완료했습니다.');
-  }
+    // 중복 실행 방지
+    if (this.isGeneratingWeeklyReports) {
+      this.logger.warn('주간 리포트 생성 작업이 이미 실행 중입니다. 중복 실행을 건너뜁니다.');
+      return;
+    }
 
-  /**
-   * 매일 자정에 만료된 챌린지를 확인하고 실패 처리합니다.
-   */
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, {
-    name: 'failExpiredChallenges',
-    timeZone: 'Asia/Seoul',
-  })
-  async handleExpiredChallenges() {
-    this.logger.log('만료된 챌린지 확인 및 실패 처리 작업을 시작합니다.');
-    await this.challengesService.failExpiredChallenges();
-    this.logger.log('만료된 챌린지 확인 및 실패 처리 작업을 완료했습니다.');
+    try {
+      this.isGeneratingWeeklyReports = true;
+      this.logger.log('주간 리포트 생성 작업을 시작합니다.');
+      
+      // 1. 먼저 만료된 챌린지 실패 처리
+      this.logger.log('만료된 챌린지 실패 처리를 시작합니다.');
+      await this.challengesService.failExpiredChallenges();
+      this.logger.log('만료된 챌린지 실패 처리를 완료했습니다.');
+      
+      // 2. 주간 리포트 생성
+      await this.reportsService.generateWeeklyReports();
+      this.logger.log('주간 리포트 생성 작업을 완료했습니다.');
+    } catch (error) {
+      this.logger.error('주간 리포트 생성 작업 중 오류 발생:', error);
+    } finally {
+      this.isGeneratingWeeklyReports = false;
+    }
   }
 
   /**

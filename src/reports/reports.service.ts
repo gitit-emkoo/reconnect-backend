@@ -63,7 +63,7 @@ export class ReportsService {
       where: {
         coupleId: coupleId,
         status: 'FAILED',
-        updatedAt: {
+        endDate: {  // updatedAt 대신 endDate 기준으로 집계
           gte: weekStartDate,
           lte: weekEndDate,
         },
