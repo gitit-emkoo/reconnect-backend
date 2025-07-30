@@ -97,15 +97,64 @@ export class ReportsService {
 
     // 2. 관계 온도 계산
     const previousWeekStartDate = subWeeks(weekStartDate, 1);
-    const previousReport = await this.prisma.report.findUnique({
+    
+    // 이전 주 리포트가 없으면 더 이전 주의 리포트를 찾기
+    let baseScore = 61; // 기본값
+    let previousReport = null;
+    
+    // 최대 4주 전까지 찾아보기
+    for (let i = 1; i <= 4; i++) {
+      const targetWeekStartDate = subWeeks(weekStartDate, i);
+      previousReport = await this.prisma.report.findUnique({
         where: {
-            coupleId_weekStartDate: {
-                coupleId,
-                weekStartDate: previousWeekStartDate,
-            },
+          coupleId_weekStartDate: {
+            coupleId,
+            weekStartDate: targetWeekStartDate,
+          },
         },
-    });
-    const baseScore = previousReport ? previousReport.overallScore : 50; // 이전 주 리포트가 없으면 50점으로 시작
+      });
+      
+      if (previousReport) {
+        baseScore = previousReport.overallScore;
+        this.logger.log(`${coupleId} 커플의 ${i}주 전 리포트를 기준점으로 사용: ${baseScore}`);
+        break;
+      }
+    }
+    
+    // 이전 리포트가 없으면 베이스라인 진단 결과를 찾아서 사용
+    if (!previousReport) {
+      // 커플 멤버들의 베이스라인 진단 결과 찾기
+      const coupleMembers = await this.prisma.couple.findUnique({
+        where: { id: coupleId },
+        select: { members: { select: { id: true } } },
+      });
+
+      if (coupleMembers && coupleMembers.members.length > 0) {
+        const memberIds = coupleMembers.members.map(m => m.id);
+        
+        // 베이스라인 진단 결과 찾기 (INITIAL 또는 UNAUTH_CONVERTED)
+        const baselineDiagnosis = await this.prisma.diagnosisResult.findFirst({
+          where: {
+            userId: { in: memberIds },
+            resultType: {
+              in: ['INITIAL', 'UNAUTH_CONVERTED'],
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        });
+
+        if (baselineDiagnosis) {
+          baseScore = baselineDiagnosis.score;
+          this.logger.log(`${coupleId} 커플의 베이스라인 진단 결과를 기준점으로 사용: ${baseScore}`);
+        } else {
+          this.logger.log(`${coupleId} 커플의 베이스라인 진단 결과가 없어 기본값 61을 사용합니다.`);
+        }
+      } else {
+        this.logger.log(`${coupleId} 커플의 멤버 정보를 찾을 수 없어 기본값 61을 사용합니다.`);
+      }
+    }
     const { score: overallScore, reason } = this.calculateOverallScore(baseScore, { 
       cardsSentCount, 
       challengesCompletedCount,
@@ -204,10 +253,10 @@ export class ReportsService {
       scoreChanges.push(`챌린지 실패(${activities.challengesFailedCount}회)`);
     }
 
-    // 챌린지 안 하기: -0.025점
+    // 챌린지 안 하기: 활동이 없는 경우 이전 온도 유지 (감점 제거)
     if (activities.noChallengeActivity) {
-      score -= 0.025;
-      scoreChanges.push('주간 챌린지 미수행');
+      // score -= 0.025; // 감점 제거
+      // scoreChanges.push('주간 챌린지 미수행'); // 감점 메시지 제거
     }
 
     // 전문가 솔루션(상담)은 추후 구현 예정
