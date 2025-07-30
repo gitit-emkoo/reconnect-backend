@@ -38,7 +38,10 @@ export class ReportsController {
     
     // 해당 주차의 시작일 계산 (월요일)
     const targetDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-    const weekStartDate = this.reportsService.getWeekStartDate(parseInt(year), parseInt(week));
+    // 해당 월의 첫 번째 날부터 시작해서 주차 계산
+    const firstDayOfMonth = new Date(parseInt(year), parseInt(month) - 1, 1);
+    const offset = (firstDayOfMonth.getDay() + 6) % 7; // 월요일 시작 보정
+    const weekStartDate = new Date(parseInt(year), parseInt(month) - 1, 1 + (parseInt(week) - 1) * 7 + offset);
     
     return this.reportsService.generateWeeklyReportForCouple(user.coupleId, weekStartDate);
   }
