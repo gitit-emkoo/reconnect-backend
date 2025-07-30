@@ -19,6 +19,30 @@ export class ReportsController {
     return this.reportsService.generateWeeklyReports();
   }
 
+  /**
+   * (개발용) 특정 커플의 특정 주차 리포트를 재생성합니다.
+   */
+  @Post('regenerate')
+  async regenerateReport(
+    @GetUser() user: User,
+    @Query('year') year: string,
+    @Query('month') month: string,
+    @Query('week') week: string,
+  ) {
+    if (!user.coupleId) {
+      throw new BadRequestException('Couple not found for this user.');
+    }
+    if (!year || !month || !week) {
+      throw new BadRequestException('Year, month, and week are required.');
+    }
+    
+    // 해당 주차의 시작일 계산 (월요일)
+    const targetDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+    const weekStartDate = this.reportsService.getWeekStartDate(parseInt(year), parseInt(week));
+    
+    return this.reportsService.generateWeeklyReportForCouple(user.coupleId, weekStartDate);
+  }
+
   @Get('available-weeks')
   async findAvailableWeeks(@GetUser() user: any) {
     const coupleId = user.coupleId || (user.couple && user.couple.id);

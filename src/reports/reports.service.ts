@@ -366,7 +366,7 @@ export class ReportsService {
    * @param year 년도
    * @param week 주차 (1-53)
    */
-  private getWeekStartDate(year: number, week: number): Date {
+  public getWeekStartDate(year: number, week: number): Date {
     const date = new Date(year, 0, 1 + (week - 1) * 7);
     date.setDate(date.getDate() + (1 - date.getDay())); // 월요일 시작
     return date;
