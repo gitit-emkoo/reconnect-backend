@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { getYear, getMonth, getWeek, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
+import { Report } from '@prisma/client';
 
 @Injectable()
 export class ReportsService {
@@ -100,7 +101,7 @@ export class ReportsService {
     
     // 이전 주 리포트가 없으면 더 이전 주의 리포트를 찾기
     let baseScore = 61; // 기본값
-    let previousReport = null;
+    let previousReport: Report | null = null;
     
     // 최대 4주 전까지 찾아보기
     for (let i = 1; i <= 4; i++) {
