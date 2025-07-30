@@ -13,6 +13,14 @@ export class ReportsService {
    * 보통 스케줄러에 의해 매주 초에 실행됩니다.
    */
   async generateWeeklyReports() {
+    const lastWeek = subWeeks(new Date(), 1);
+    return this.generateWeeklyReportsForDate(lastWeek);
+  }
+
+  /**
+   * 모든 활성 커플에 대한 특정 날짜의 주간 리포트를 생성합니다.
+   */
+  async generateWeeklyReportsForDate(targetDate: Date) {
     this.logger.log('주간 리포트 생성을 시작합니다.');
     const activeCouples = await this.prisma.couple.findMany({
       where: { status: 'ACTIVE' },
@@ -20,11 +28,10 @@ export class ReportsService {
     });
 
     for (const couple of activeCouples) {
-      // 지난주에 대한 리포트를 생성합니다.
-      const lastWeek = subWeeks(new Date(), 1);
-      await this.generateWeeklyReportForCouple(couple.id, lastWeek);
+      await this.generateWeeklyReportForCouple(couple.id, targetDate);
     }
     this.logger.log(`총 ${activeCouples.length} 커플의 리포트 생성을 완료했습니다.`);
+    return { message: `총 ${activeCouples.length} 커플의 리포트 생성을 완료했습니다.` };
   }
 
   /**

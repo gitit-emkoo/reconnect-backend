@@ -1,4 +1,5 @@
 import { Controller, Get, Post, UseGuards, Query, BadRequestException } from '@nestjs/common';
+import { subWeeks } from 'date-fns';
 import { ReportsService } from './reports.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthGuard } from '@nestjs/passport';
@@ -11,12 +12,29 @@ export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   /**
-   * (개발용) 수동으로 모든 커플의 지난주 리포트를 생성합니다.
+   * (개발용) 수동으로 모든 커플의 특정 주차 리포트를 생성합니다.
    */
   @Post('generate')
-  async generateReports() {
+  async generateReports(
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+    @Query('week') week?: string,
+  ) {
     // 실제 프로덕션에서는 이 엔드포인트를 AdminGuard 등으로 보호해야 합니다.
-    return this.reportsService.generateWeeklyReports();
+    
+    let targetDate: Date;
+    
+    if (year && month && week) {
+      // 특정 주차 지정
+      const firstDayOfMonth = new Date(parseInt(year), parseInt(month) - 1, 1);
+      const offset = (firstDayOfMonth.getDay() + 6) % 7;
+      targetDate = new Date(parseInt(year), parseInt(month) - 1, 1 + (parseInt(week) - 1) * 7 + offset);
+    } else {
+      // 기본값: 지난주
+      targetDate = subWeeks(new Date(), 1);
+    }
+    
+    return this.reportsService.generateWeeklyReportsForDate(targetDate);
   }
 
   /**
