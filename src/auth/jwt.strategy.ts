@@ -22,7 +22,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       nickname: payload.nickname,
       role: payload.role,
       partnerId: payload.partnerId,
-      couple: payload.couple
+      couple: payload.couple,
+      coupleId: payload.couple?.id || null  // ✅ coupleId 추가
     };
     return req.user;
   }
