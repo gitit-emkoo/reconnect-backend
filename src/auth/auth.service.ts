@@ -43,7 +43,7 @@ export class AuthService {
     registerDto: RegisterDto,
     res?: Response,
   ): Promise<{ user: Omit<User, 'password'>; accessToken: string }> {
-    const { email, password, nickname, unauthDiagnosis } = registerDto;
+    const { email, password, nickname } = registerDto;
 
     // 1. 이메일 중복 확인
     const existingUserByEmail = await this.prisma.user.findUnique({ where: { email } });
@@ -60,43 +60,26 @@ export class AuthService {
     // 3. 비밀번호 해싱
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 4. 비회원 진단 결과에 따른 초기 온도 설정
-    const initialTemperature = unauthDiagnosis ? unauthDiagnosis.score : 61;
-
     const newUser = await this.prisma.$transaction(async (tx) => {
-      // 5. 랜덤 아바타 생성
+      // 4. 랜덤 아바타 생성
       const avatarUrl = generateAvatarUrl(email);
       
-      // 6. 새로운 사용자 생성
+      // 5. 새로운 사용자 생성 (기본 온도 0도)
       const user = await tx.user.create({
         data: {
           email,
           password: hashedPassword,
           nickname,
           provider: 'EMAIL',
-          temperature: initialTemperature,
+          temperature: 0, // 새로운 구조: 기본 온도 0도
           profileImageUrl: avatarUrl,
         },
       });
 
-      // 7. 진단 결과 처리
-      if (unauthDiagnosis) {
-        await this.diagnosisService.createOrUpdateFromUnauth(user.id, {
-          ...unauthDiagnosis,
-          diagnosisType: 'BASELINE_TEMPERATURE',
-        });
-      } else {
-        await this.diagnosisService.create({
-          score: initialTemperature,
-          resultType: '기초 관계온도',
-          diagnosisType: 'BASELINE_TEMPERATURE',
-        }, user.id);
-      }
-
       return user;
     });
 
-    // 8. JWT 토큰 생성
+    // 6. JWT 토큰 생성
     const payload = {
       userId: newUser.id,
       email: newUser.email,
@@ -107,14 +90,13 @@ export class AuthService {
     };
     const accessToken = this.jwtService.sign(payload);
 
-    // 9. 쿠키에 토큰 설정
-    if (res) {
-      setAuthCookie(res, accessToken);
-    }
-
-    // 10. 민감 정보 제외하고 반환
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...result } = newUser;
-    return { user: result, accessToken };
+
+    return {
+      user: result,
+      accessToken,
+    };
   }
 
   async login(loginDto: LoginDto, res?: Response): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
@@ -200,7 +182,7 @@ export class AuthService {
   async googleLogin(
     googleAuthDto: GoogleAuthDto,
   ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
-    const { accessToken: googleAccessToken, unauthDiagnosis } = googleAuthDto;
+    const { accessToken: googleAccessToken } = googleAuthDto;
 
     // 1. 구글에서 사용자 정보 가져오기
     const googleUserInfo = await this.getGoogleUserInfo(googleAccessToken);
@@ -228,22 +210,10 @@ export class AuthService {
       );
     }
 
-    // 5. 비회원 진단 결과가 있으면 업데이트
-    if (unauthDiagnosis) {
-      await this.diagnosisService.createOrUpdateFromUnauth(existingUser.id, {
-        ...unauthDiagnosis,
-        diagnosisType: 'BASELINE_TEMPERATURE',
-      });
-    }
-
-    // 6. JWT 토큰 생성 및 반환 (로그인)
+    // 5. JWT 토큰 생성 및 반환 (로그인)
     let partnerId: string | null = null;
     if (existingUser.partnerId) {
       partnerId = existingUser.partnerId;
-    } else if (existingUser.partner && typeof existingUser.partner === 'object' && existingUser.partner.id) {
-      partnerId = existingUser.partner.id;
-    } else if (typeof existingUser.partner === 'string') {
-      partnerId = existingUser.partner as any;
     }
 
     const payload = {
@@ -251,8 +221,8 @@ export class AuthService {
       email: existingUser.email,
       nickname: existingUser.nickname,
       role: existingUser.role,
-      partnerId: partnerId ?? null,
-      couple: existingUser.couple ? { id: existingUser.couple.id } : null,
+      partnerId,
+      couple: existingUser.couple,
     };
     const accessToken = this.jwtService.sign(payload);
 
@@ -272,7 +242,7 @@ export class AuthService {
   async googleRegister(
     googleAuthDto: GoogleAuthDto,
   ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
-    const { accessToken: googleAccessToken, unauthDiagnosis } = googleAuthDto;
+    const { accessToken: googleAccessToken } = googleAuthDto;
 
     // 1. 구글에서 사용자 정보 가져오기
     const googleUserInfo = await this.getGoogleUserInfo(googleAccessToken);
@@ -288,19 +258,17 @@ export class AuthService {
         where: { email },
       });
 
-      // 3. 사용자가 이미 존재하면 에러
       if (existingUser) {
-        throw new ConflictException('이미 가입된 사용자입니다. 로그인을 진행해주세요.');
+        throw new ConflictException('이미 가입된 사용자입니다.');
       }
 
-      // 4. 새로운 사용자 생성
-      const randomPassword = Math.random().toString(36).slice(-10);
-      const hashedPassword = await bcrypt.hash(randomPassword, 10);
-      const initialTemperature = unauthDiagnosis ? unauthDiagnosis.score : 61;
-      
-      // 랜덤 아바타 생성
+      // 3. 랜덤 아바타 URL 생성
       const avatarUrl = generateAvatarUrl(email);
 
+      // 4. 새로운 사용자 생성 (기본 온도 0도)
+      const randomPassword = Math.random().toString(36).slice(-10);
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      
       const newUser = await tx.user.create({
         data: {
           email,
@@ -308,29 +276,15 @@ export class AuthService {
           nickname: name || email.split('@')[0],
           provider: 'GOOGLE',
           providerId,
-          temperature: initialTemperature, // 초기 온도 설정
+          temperature: 0, // 새로운 구조: 기본 온도 0도
           profileImageUrl: avatarUrl, // 랜덤 아바타 URL 저장
         },
       });
 
-      // 5. 진단 결과 처리
-      if (unauthDiagnosis) {
-        await this.diagnosisService.createOrUpdateFromUnauth(newUser.id, {
-          ...unauthDiagnosis,
-          diagnosisType: 'BASELINE_TEMPERATURE',
-        });
-      } else {
-        await this.diagnosisService.create({
-          score: initialTemperature,
-          resultType: '기초 관계온도',
-          diagnosisType: 'BASELINE_TEMPERATURE',
-        }, newUser.id);
-      }
-
       return newUser;
     });
 
-    // 6. JWT 토큰 생성 및 반환
+    // 5. JWT 토큰 생성 및 반환
     const userWithDetails = await this.prisma.user.findUnique({
       where: { id: user.id },
       include: { partner: true, couple: true },
@@ -614,19 +568,17 @@ export class AuthService {
         where: { email },
       });
 
-      // 3. 사용자가 이미 존재하면 에러
       if (existingUser) {
-        throw new ConflictException('이미 가입된 사용자입니다. 로그인을 진행해주세요.');
+        throw new ConflictException('이미 가입된 사용자입니다.');
       }
 
-      // 4. 새로운 사용자 생성
-      const randomPassword = Math.random().toString(36).slice(-10);
-      const hashedPassword = await bcrypt.hash(randomPassword, 10);
-      const initialTemperature = unauthDiagnosis ? unauthDiagnosis.score : 61;
-      
-      // 랜덤 아바타 생성
+      // 3. 랜덤 아바타 URL 생성
       const avatarUrl = generateAvatarUrl(email);
 
+      // 4. 새로운 사용자 생성 (기본 온도 0도)
+      const randomPassword = Math.random().toString(36).slice(-10);
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      
       const newUser = await tx.user.create({
         data: {
           email,
@@ -634,29 +586,15 @@ export class AuthService {
           nickname: name || email.split('@')[0],
           provider: 'APPLE',
           providerId,
-          temperature: initialTemperature, // 초기 온도 설정
+          temperature: 0, // 새로운 구조: 기본 온도 0도
           profileImageUrl: avatarUrl, // 랜덤 아바타 URL 저장
         },
       });
 
-      // 5. 진단 결과 처리
-      if (unauthDiagnosis) {
-        await this.diagnosisService.createOrUpdateFromUnauth(newUser.id, {
-          ...unauthDiagnosis,
-          diagnosisType: 'BASELINE_TEMPERATURE',
-        });
-      } else {
-        await this.diagnosisService.create({
-          score: initialTemperature,
-          resultType: '기초 관계온도',
-          diagnosisType: 'BASELINE_TEMPERATURE',
-        }, newUser.id);
-      }
-
       return newUser;
     });
 
-    // 6. JWT 토큰 생성 및 반환
+    // 5. JWT 토큰 생성 및 반환
     const userWithDetails = await this.prisma.user.findUnique({
       where: { id: user.id },
       include: { partner: true, couple: true },

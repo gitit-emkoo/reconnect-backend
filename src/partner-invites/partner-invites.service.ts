@@ -85,58 +85,77 @@ export class PartnerInvitesService {
 
     // 트랜잭션으로 커플 생성 및 모든 정보 업데이트
     const result = await this.prisma.$transaction(async (tx) => {
-      // 1. 두 사용자의 최신 `User.temperature` 값을 직접 사용
-      const inviter = invite.inviter;
-      const invitee = inviteeUser;
-      
-      // 2. 두 점수 중 낮은 점수를 동기화된 온도로 설정
-      const synchronizedTemperature = Math.min(inviter.temperature, invitee.temperature);
+      // 1. 두 사용자의 결혼진단 결과 확인
+      const [inviterDiagnosis, inviteeDiagnosis] = await Promise.all([
+        tx.diagnosisResult.findFirst({
+          where: { 
+            userId: invite.inviterId,
+            diagnosisType: 'marriage'
+          },
+          orderBy: { createdAt: 'desc' }
+        }),
+        tx.diagnosisResult.findFirst({
+          where: { 
+            userId: inviteeId,
+            diagnosisType: 'marriage'
+          },
+          orderBy: { createdAt: 'desc' }
+        })
+      ]);
 
-      // 3. 새로운 커플 생성
+      // 2. 둘 다 결혼진단을 완료했는지 확인
+      if (!inviterDiagnosis || !inviteeDiagnosis) {
+        throw new BadRequestException('파트너 연결을 위해서는 둘 다 결혼진단을 완료해야 합니다.');
+      }
+
+      // 3. 두 결혼진단 결과 중 낮은 점수를 동기화된 온도로 설정
+      const synchronizedTemperature = Math.min(inviterDiagnosis.score, inviteeDiagnosis.score);
+
+      // 4. 새로운 커플 생성
       const couple = await tx.couple.create({
         data: {
           members: {
-            connect: [{ id: inviter.id }, { id: invitee.id }],
+            connect: [{ id: invite.inviterId }, { id: inviteeId }],
           },
         },
       });
 
-      // 4. 두 사용자의 실제 온도를 동기화하고, coupleId를 연결
+      // 5. 두 사용자의 실제 온도를 동기화하고, coupleId를 연결
       await tx.user.updateMany({
-        where: { id: { in: [inviter.id, invitee.id] } },
+        where: { id: { in: [invite.inviterId, inviteeId] } },
         data: { 
           temperature: synchronizedTemperature,
           coupleId: couple.id,
         },
       });
 
-      // 5. 서로의 partnerId 업데이트
-      await tx.user.update({ where: { id: inviter.id }, data: { partnerId: invitee.id } });
-      await tx.user.update({ where: { id: invitee.id }, data: { partnerId: inviter.id } });
+      // 6. 서로의 partnerId 업데이트
+      await tx.user.update({ where: { id: invite.inviterId }, data: { partnerId: inviteeId } });
+      await tx.user.update({ where: { id: inviteeId }, data: { partnerId: invite.inviterId } });
       
-      // 6. 초대 상태 업데이트 (CONFIRMED)
+      // 7. 초대 상태 업데이트 (CONFIRMED)
       const updatedInvite = await tx.partnerInvite.update({
         where: { id: invite.id },
         data: { inviteeId, status: 'CONFIRMED', coupleId: couple.id },
       });
 
-      // 7. 파트너 연결 알림 생성
+      // 8. 파트너 연결 알림 생성
       await this.notificationsService.createNotification({
-        userId: inviter.id,
-        message: `${invitee.nickname}님과 파트너로 연결되었어요!\n파트너 연결 시 낮은 온도를 갖고 있는 파트너의 온도로 동기화됩니다.`,
+        userId: invite.inviterId,
+        message: `${inviteeUser.nickname}님과 파트너로 연결되었어요!\n파트너 연결 시 낮은 온도를 갖고 있는 파트너의 온도로 동기화됩니다.`,
         type: 'PARTNER_CONNECTED', url: '/dashboard',
       });
       await this.notificationsService.createNotification({
-        userId: invitee.id,
-        message: `${inviter.nickname}님과 파트너로 연결되었어요!\n파트너 연결 시 낮은 온도를 갖고 있는 파트너의 온도로 동기화됩니다.`,
+        userId: inviteeId,
+        message: `${invite.inviter.nickname}님과 파트너로 연결되었어요!\n파트너 연결 시 낮은 온도를 갖고 있는 파트너의 온도로 동기화됩니다.`,
         type: 'PARTNER_CONNECTED', url: '/dashboard',
       });
 
-      // 8. 이력 관리를 위해 DiagnosisResult에도 기록
+      // 9. 이력 관리를 위해 DiagnosisResult에도 기록
       await tx.diagnosisResult.createMany({
         data: [
-          { userId: inviter.id, score: synchronizedTemperature, resultType: '파트너 연결', diagnosisType: 'COUPLE_SYNC' },
-          { userId: invitee.id, score: synchronizedTemperature, resultType: '파트너 연결', diagnosisType: 'COUPLE_SYNC' },
+          { userId: invite.inviterId, score: synchronizedTemperature, resultType: '파트너 연결', diagnosisType: 'COUPLE_SYNC' },
+          { userId: inviteeId, score: synchronizedTemperature, resultType: '파트너 연결', diagnosisType: 'COUPLE_SYNC' },
         ],
       });
       
