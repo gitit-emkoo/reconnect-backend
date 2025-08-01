@@ -339,6 +339,15 @@ export class AuthService {
       console.log('KAKAO_REGISTER_REDIRECT_URI:', process.env.KAKAO_REGISTER_REDIRECT_URI);
       
       // 1. 카카오 토큰 받기
+      console.log('카카오 토큰 요청 시작...');
+      console.log('요청 파라미터:', {
+        grant_type: 'authorization_code',
+        client_id: process.env.KAKAO_CLIENT_ID,
+        client_secret: process.env.KAKAO_CLIENT_SECRET ? '***' : 'undefined',
+        code,
+        redirect_uri: process.env.KAKAO_REGISTER_REDIRECT_URI,
+      });
+      
       const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
         params: {
           grant_type: 'authorization_code',
@@ -349,6 +358,7 @@ export class AuthService {
         },
       });
 
+      console.log('카카오 토큰 응답 성공:', tokenResponse.data);
       const { access_token } = tokenResponse.data;
 
       // 2. 사용자 정보 받기
@@ -403,6 +413,15 @@ export class AuthService {
         throw error;
       }
       console.error('Kakao register error:', error);
+      
+      // Axios 에러인 경우 더 자세한 정보 출력
+      if (error.response) {
+        console.error('카카오 API 응답 에러:');
+        console.error('Status:', error.response.status);
+        console.error('Headers:', error.response.headers);
+        console.error('Data:', error.response.data);
+      }
+      
       throw new UnauthorizedException('카카오 회원가입에 실패했습니다.');
     }
   }
@@ -415,6 +434,15 @@ export class AuthService {
       console.log('KAKAO_CLIENT_SECRET:', process.env.KAKAO_CLIENT_SECRET ? '설정됨' : '설정 안됨');
       console.log('KAKAO_REDIRECT_URI:', process.env.KAKAO_REDIRECT_URI);
       
+      console.log('카카오 토큰 요청 시작...');
+      console.log('요청 파라미터:', {
+        grant_type: 'authorization_code',
+        client_id: process.env.KAKAO_CLIENT_ID,
+        client_secret: process.env.KAKAO_CLIENT_SECRET ? '***' : 'undefined',
+        code,
+        redirect_uri: process.env.KAKAO_REDIRECT_URI,
+      });
+      
       const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
         params: {
           grant_type: 'authorization_code',
@@ -424,6 +452,8 @@ export class AuthService {
           redirect_uri: process.env.KAKAO_REDIRECT_URI,
         },
       });
+      
+      console.log('카카오 토큰 응답 성공:', tokenResponse.data);
       const { access_token } = tokenResponse.data;
       const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
         headers: { Authorization: `Bearer ${access_token}` },
@@ -457,13 +487,28 @@ export class AuthService {
         couple: user.couple ? { id: user.couple.id } : null,
       };
       const accessToken = this.jwtService.sign(payload);
-      const { password: _, ...userWithoutPassword } = user;
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password: _, ...result } = user;
+
       return {
         accessToken,
-        user: userWithoutPassword,
+        user: result,
       };
     } catch (error) {
       console.error('Kakao login error:', error);
+      
+      // Axios 에러인 경우 더 자세한 정보 출력
+      if (error.response) {
+        console.error('카카오 API 응답 에러:');
+        console.error('Status:', error.response.status);
+        console.error('Headers:', error.response.headers);
+        console.error('Data:', error.response.data);
+      }
+      
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       throw new UnauthorizedException('카카오 로그인에 실패했습니다.');
     }
   }
