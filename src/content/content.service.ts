@@ -30,7 +30,18 @@ export class ContentService {
       orderBy: {
         createdAt: 'desc',
       },
-    });
+      include: {
+        _count: {
+          select: { likes: true, bookmarks: true },
+        },
+      },
+    }).then(contents => 
+      contents.map(({ _count, ...content }) => ({
+        ...content,
+        likesCount: _count.likes,
+        bookmarksCount: _count.bookmarks,
+      }))
+    );
   }
 
   async findOne(id: string, userId: string) {
