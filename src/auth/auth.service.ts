@@ -526,69 +526,75 @@ export class AuthService {
   async appleLogin(
     appleAuthDto: AppleAuthDto,
   ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
-    const { idToken, user: userString, unauthDiagnosis } = appleAuthDto;
+    console.log('[DEBUG] appleLogin 함수 진입', appleAuthDto);
+    try {
+      const { idToken, user: userString, unauthDiagnosis } = appleAuthDto;
 
-    // 1. Apple ID 토큰 검증
-    const appleUserInfo = await this.appleAuthUtils.verifyAppleIdToken(idToken);
-    const { email, name, sub: providerId } = this.appleAuthUtils.extractUserInfo(appleUserInfo, userString);
+      // 1. Apple ID 토큰 검증
+      const appleUserInfo = await this.appleAuthUtils.verifyAppleIdToken(idToken);
+      const { email, name, sub: providerId } = this.appleAuthUtils.extractUserInfo(appleUserInfo, userString);
 
-    if (!email) {
-      throw new BadRequestException('Apple 계정에서 이메일 정보를 가져올 수 없습니다.');
-    }
+      if (!email) {
+        throw new BadRequestException('Apple 계정에서 이메일 정보를 가져올 수 없습니다.');
+      }
 
-    // 2. 이메일로 기존 사용자 찾기
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
-      include: { partner: true, couple: true },
-    });
-
-    // 3. 사용자가 존재하지 않으면 에러
-    if (!existingUser) {
-      throw new UnauthorizedException('가입되지 않은 사용자입니다. 회원가입을 진행해주세요.');
-    }
-
-    // 4. 사용자가 존재하지만, Apple 연동이 안된 경우 -> 에러 발생
-    if (existingUser.provider !== 'APPLE') {
-      throw new ConflictException(
-        '이미 다른 방식으로 가입된 이메일입니다. 해당 방식으로 로그인해주세요.',
-      );
-    }
-
-    // 5. 비회원 진단 결과가 있으면 업데이트
-    if (unauthDiagnosis) {
-      await this.diagnosisService.createOrUpdateFromUnauth(existingUser.id, {
-        ...unauthDiagnosis,
-        diagnosisType: 'BASELINE_TEMPERATURE',
+      // 2. 이메일로 기존 사용자 찾기
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email },
+        include: { partner: true, couple: true },
       });
+
+      // 3. 사용자가 존재하지 않으면 에러
+      if (!existingUser) {
+        throw new UnauthorizedException('가입되지 않은 사용자입니다. 회원가입을 진행해주세요.');
+      }
+
+      // 4. 사용자가 존재하지만, Apple 연동이 안된 경우 -> 에러 발생
+      if (existingUser.provider !== 'APPLE') {
+        throw new ConflictException(
+          '이미 다른 방식으로 가입된 이메일입니다. 해당 방식으로 로그인해주세요.',
+        );
+      }
+
+      // 5. 비회원 진단 결과가 있으면 업데이트
+      if (unauthDiagnosis) {
+        await this.diagnosisService.createOrUpdateFromUnauth(existingUser.id, {
+          ...unauthDiagnosis,
+          diagnosisType: 'BASELINE_TEMPERATURE',
+        });
+      }
+
+      // 6. JWT 토큰 생성 및 반환 (로그인)
+      let partnerId: string | null = null;
+      if (existingUser.partnerId) {
+        partnerId = existingUser.partnerId;
+      } else if (existingUser.partner && typeof existingUser.partner === 'object' && existingUser.partner.id) {
+        partnerId = existingUser.partner.id;
+      } else if (typeof existingUser.partner === 'string') {
+        partnerId = existingUser.partner as any;
+      }
+
+      const payload = {
+        userId: existingUser.id,
+        email: existingUser.email,
+        nickname: existingUser.nickname,
+        role: existingUser.role,
+        partnerId: partnerId ?? null,
+        couple: existingUser.couple ? { id: existingUser.couple.id } : null,
+      };
+      const accessToken = this.jwtService.sign(payload);
+
+      // password 필드 제거
+      const { password, ...userWithoutPassword } = existingUser as any;
+
+      console.log('[DEBUG] 애플 로그인 반환 accessToken:', accessToken);
+      console.log('[DEBUG] 애플 로그인 반환 user:', userWithoutPassword);
+
+      return { accessToken, user: userWithoutPassword };
+    } catch (e) {
+      console.error('[DEBUG] appleLogin 예외 발생:', e);
+      throw e;
     }
-
-    // 6. JWT 토큰 생성 및 반환 (로그인)
-    let partnerId: string | null = null;
-    if (existingUser.partnerId) {
-      partnerId = existingUser.partnerId;
-    } else if (existingUser.partner && typeof existingUser.partner === 'object' && existingUser.partner.id) {
-      partnerId = existingUser.partner.id;
-    } else if (typeof existingUser.partner === 'string') {
-      partnerId = existingUser.partner as any;
-    }
-
-    const payload = {
-      userId: existingUser.id,
-      email: existingUser.email,
-      nickname: existingUser.nickname,
-      role: existingUser.role,
-      partnerId: partnerId ?? null,
-      couple: existingUser.couple ? { id: existingUser.couple.id } : null,
-    };
-    const accessToken = this.jwtService.sign(payload);
-
-    // password 필드 제거
-    const { password, ...userWithoutPassword } = existingUser as any;
-
-    console.log('[DEBUG] 애플 로그인 반환 accessToken:', accessToken);
-    console.log('[DEBUG] 애플 로그인 반환 user:', userWithoutPassword);
-
-    return { accessToken, user: userWithoutPassword };
   }
 
   /**
