@@ -582,13 +582,13 @@ export class AuthService {
     };
     const accessToken = this.jwtService.sign(payload);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...result } = existingUser;
+    // password 필드 제거
+    const { password, ...userWithoutPassword } = existingUser as any;
 
-    return {
-      accessToken,
-      user: result,
-    };
+    console.log('[DEBUG] 애플 로그인 반환 accessToken:', accessToken);
+    console.log('[DEBUG] 애플 로그인 반환 user:', userWithoutPassword);
+
+    return { accessToken, user: userWithoutPassword };
   }
 
   /**
