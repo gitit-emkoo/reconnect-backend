@@ -36,7 +36,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private diagnosisService: DiagnosisService,
-    private appleAuthUtils: AppleAuthUtils,
+    // appleAuthUtils 주입 제거
   ) {}
 
   async register(
@@ -531,8 +531,8 @@ export class AuthService {
       const { idToken, user: userString, unauthDiagnosis } = appleAuthDto;
 
       // 1. Apple ID 토큰 검증
-      const appleUserInfo = await this.appleAuthUtils.verifyAppleIdToken(idToken);
-      const { email, name, sub: providerId } = this.appleAuthUtils.extractUserInfo(appleUserInfo, userString);
+      const appleUserInfo = await AppleAuthUtils.verifyAppleIdToken(idToken);
+      const { email, name, sub: providerId } = AppleAuthUtils.extractUserInfo(appleUserInfo, userString);
 
       if (!email) {
         throw new BadRequestException('Apple 계정에서 이메일 정보를 가져올 수 없습니다.');
@@ -606,8 +606,8 @@ export class AuthService {
     const { idToken, user: userString, unauthDiagnosis } = appleAuthDto;
 
     // 1. Apple ID 토큰 검증
-    const appleUserInfo = await this.appleAuthUtils.verifyAppleIdToken(idToken);
-    const { email, name, sub: providerId } = this.appleAuthUtils.extractUserInfo(appleUserInfo, userString);
+    const appleUserInfo = await AppleAuthUtils.verifyAppleIdToken(idToken);
+    const { email, name, sub: providerId } = AppleAuthUtils.extractUserInfo(appleUserInfo, userString);
 
     if (!email) {
       throw new BadRequestException('Apple 계정에서 이메일 정보를 가져올 수 없습니다.');
