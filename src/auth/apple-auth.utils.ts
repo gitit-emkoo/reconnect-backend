@@ -1,10 +1,62 @@
-import * as jwt from 'jsonwebtoken';
-import * as jwksClient from 'jwks-rsa';
+// jose 방식 (권장)
+import { jwtVerify, createRemoteJWKSet } from 'jose';
+import jwt from 'jsonwebtoken';
+import jwksClient from 'jwks-rsa';
 
+const JOSE_JWKS = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
+
+export async function verifyAppleIdToken(identityToken: string) {
+  // 디버깅: kid 확인
+  const header = JSON.parse(Buffer.from(identityToken.split('.')[0], 'base64').toString('utf8'));
+  console.log('[DEBUG] idToken kid:', header.kid);
+
+  const allowedAudiences =
+    process.env.NODE_ENV === 'production'
+      ? ['com.reconnect.kwcc']
+      : ['com.reconnect.kwcc', 'host.exp.Exponent'];
+
+  const { payload } = await jwtVerify(identityToken, JOSE_JWKS, {
+    issuer: 'https://appleid.apple.com',
+    audience: allowedAudiences,
+  });
+  return payload; // sub, email 등 사용
+}
+
+// jsonwebtoken + jwks-rsa 방식 (대체안)
 const client = jwksClient({
   jwksUri: 'https://appleid.apple.com/auth/keys',
+  cache: true,
+  cacheMaxAge: 10 * 60 * 1000, // 10분 캐시
 });
 
+export function verifyAppleIdTokenWithJWT(identityToken: string) {
+  // 디버깅: kid 확인
+  const header = JSON.parse(Buffer.from(identityToken.split('.')[0], 'base64').toString('utf8'));
+  console.log('[DEBUG] idToken kid:', header.kid);
+
+  const allowedAudiences =
+    process.env.NODE_ENV === 'production'
+      ? ['com.reconnect.kwcc']
+      : ['com.reconnect.kwcc', 'host.exp.Exponent'];
+
+  function getKey(header: any, cb: any) {
+    client.getSigningKey(header.kid, (err, key) => {
+      if (err || !key) return cb(err || new Error('No signing key found'));
+      cb(null, key.getPublicKey());
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    jwt.verify(
+      identityToken,
+      getKey,
+      { issuer: 'https://appleid.apple.com', audience: allowedAudiences, algorithms: ['RS256'] },
+      (err, decoded) => (err ? reject(err) : resolve(decoded)),
+    );
+  });
+}
+
+// 기존 extractUserInfo 유지
 export interface AppleUserInfo {
   email?: string;
   name?: string;
@@ -12,50 +64,6 @@ export interface AppleUserInfo {
 }
 
 export class AppleAuthUtils {
-  static decodePayload(idToken: string) {
-    const b64 = idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const json = Buffer.from(b64, 'base64').toString('utf8');
-    return JSON.parse(json);
-  }
-
-  static async verifyAppleIdToken(identityToken: string): Promise<AppleUserInfo> {
-    // 1. 환경별 allowedAudiences 분기
-    const allowedAudiences =
-      process.env.NODE_ENV === 'production'
-        ? ['com.reconnect.kwcc']
-        : ['com.reconnect.kwcc', 'host.exp.Exponent'];
-
-    // 2. idToken의 aud 값 로그로 확인
-    const payload = AppleAuthUtils.decodePayload(identityToken);
-    console.log('[DEBUG] apple idToken aud:', payload.aud);
-
-    // 3. 기존 getKey 로직
-    function getKey(header, callback) {
-      client.getSigningKey(header.kid, function (err, key) {
-        if (!key) return callback(new Error('No signing key found'));
-        const signingKey = key.getPublicKey();
-        callback(null, signingKey);
-      });
-    }
-
-    // 4. 검증
-    return new Promise((resolve, reject) => {
-      jwt.verify(
-        identityToken,
-        getKey,
-        {
-          algorithms: ['RS256'],
-          issuer: 'https://appleid.apple.com',
-          audience: allowedAudiences,
-        },
-        (err, decoded) => {
-          if (err) return reject(err);
-          resolve(decoded as AppleUserInfo);
-        }
-      );
-    });
-  }
-
   static extractUserInfo(
     appleUserInfo: AppleUserInfo,
     userString?: string

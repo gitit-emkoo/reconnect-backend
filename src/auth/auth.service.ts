@@ -10,7 +10,7 @@ import { DiagnosisService } from '../diagnosis/diagnosis.service';
 import { User, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import axios from 'axios';
-import { AppleAuthUtils } from './apple-auth.utils';
+import { AppleAuthUtils, verifyAppleIdToken } from './apple-auth.utils';
 const multiavatar = require('@multiavatar/multiavatar');
 
 // 아바타 URL 생성 함수
@@ -531,7 +531,7 @@ export class AuthService {
       const { idToken, user: userString, unauthDiagnosis } = appleAuthDto;
 
       // 1. Apple ID 토큰 검증
-      const appleUserInfo = await AppleAuthUtils.verifyAppleIdToken(idToken);
+      const appleUserInfo = await verifyAppleIdToken(idToken);
       const { email, name, sub: providerId } = AppleAuthUtils.extractUserInfo(appleUserInfo, userString);
 
       if (!email) {
@@ -606,7 +606,7 @@ export class AuthService {
     const { idToken, user: userString, unauthDiagnosis } = appleAuthDto;
 
     // 1. Apple ID 토큰 검증
-    const appleUserInfo = await AppleAuthUtils.verifyAppleIdToken(idToken);
+    const appleUserInfo = await verifyAppleIdToken(idToken);
     const { email, name, sub: providerId } = AppleAuthUtils.extractUserInfo(appleUserInfo, userString);
 
     if (!email) {
