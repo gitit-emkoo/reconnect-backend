@@ -11,13 +11,11 @@ const client = new JwksClient({
 function getKey(header: any, cb: (err: Error | null, key?: string) => void) {
   client.getSigningKey(header?.kid as string, (err: Error | null, key?: SigningKey) => {
     if (err || !key) return cb(err || new Error('No signing key found'));
-    // v3 타입 호환: getPublicKey() 또는 필드 참조
     const pubKey = (key as any).getPublicKey ? (key as any).getPublicKey() : (key as any).publicKey || (key as any).rsaPublicKey;
     cb(null, pubKey);
   });
 }
 
-// 기존 extractUserInfo 등 유틸 함수 유지
 export interface AppleUserInfo {
   email?: string;
   name?: string;
@@ -25,18 +23,20 @@ export interface AppleUserInfo {
 }
 
 export async function verifyAppleIdToken(idToken: string): Promise<AppleUserInfo> {
-  // kid 디버깅 로그
-  try {
-    const header = JSON.parse(Buffer.from(idToken.split('.')[0], 'base64').toString('utf8'));
-    console.log('[DEBUG] idToken kid:', header?.kid);
-  } catch {
-    // 무시 (디버그 목적)
-  }
+  // 1) 검증 전 안전하게 payload만 decode해서 aud 확인
+  const decodedAny: any = jwt.decode(idToken, { complete: true }) || {};
+  const aud: string | undefined = decodedAny?.payload?.aud;
+  if (aud) console.log('[DEBUG] idToken aud(pre-verify):', aud);
 
-  const allowedAudiences =
-    process.env.NODE_ENV === 'production'
-      ? ['com.reconnect.kwcc']
-      : ['com.reconnect.kwcc', 'host.exp.Exponent'];
+  // 2) 환경/토큰에 따라 허용 audience 구성
+  const isProd = process.env.NODE_ENV === 'production';
+  const allowedAudiences: string[] = isProd
+    ? ['com.reconnect.kwcc']
+    : ['com.reconnect.kwcc', 'host.exp.Exponent'];
+
+  if (aud === 'host.exp.Exponent' && !allowedAudiences.includes('host.exp.Exponent')) {
+    allowedAudiences.push('host.exp.Exponent');
+  }
 
   return new Promise<AppleUserInfo>((resolve, reject) => {
     jwt.verify(
