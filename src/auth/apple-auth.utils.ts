@@ -1,11 +1,10 @@
-import { Injectable } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import * as jwksClient from 'jwks-rsa';
-import { jwtVerify, createRemoteJWKSet } from 'jose';
 
-const JWKS = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
+const client = jwksClient({
+  jwksUri: 'https://appleid.apple.com/auth/keys',
+});
 
-// AppleUserInfo 타입 정의
 export interface AppleUserInfo {
   email?: string;
   name?: string;
@@ -13,17 +12,34 @@ export interface AppleUserInfo {
 }
 
 export class AppleAuthUtils {
-  static async verifyAppleIdToken(identityToken: string) {
-    const allowedAudiences = (process.env.ALLOWED_APPLE_AUDIENCES ?? 'com.reconnect.kwcc')
-      .split(',')
-      .map(s => s.trim())
-      .filter(Boolean);
+  static async verifyAppleIdToken(identityToken: string): Promise<AppleUserInfo> {
+    function getKey(header, callback) {
+      client.getSigningKey(header.kid, function (err, key) {
+        if (!key) return callback(new Error('No signing key found'));
+        const signingKey = key.getPublicKey();
+        callback(null, signingKey);
+      });
+    }
 
-    const { payload } = await jwtVerify(identityToken, JWKS, {
-      issuer: 'https://appleid.apple.com',
-      audience: allowedAudiences,
+    const allowedAudiences = process.env.ALLOWED_APPLE_AUDIENCES
+      ? process.env.ALLOWED_APPLE_AUDIENCES.split(',').map(s => s.trim())
+      : ['com.reconnect.kwcc'];
+
+    return new Promise((resolve, reject) => {
+      jwt.verify(
+        identityToken,
+        getKey,
+        {
+          algorithms: ['RS256'],
+          issuer: 'https://appleid.apple.com',
+          audience: allowedAudiences,
+        },
+        (err, decoded) => {
+          if (err) return reject(err);
+          resolve(decoded as AppleUserInfo);
+        }
+      );
     });
-    return payload;
   }
 
   static extractUserInfo(
