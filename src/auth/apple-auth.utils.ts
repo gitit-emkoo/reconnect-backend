@@ -12,7 +12,24 @@ export interface AppleUserInfo {
 }
 
 export class AppleAuthUtils {
+  static decodePayload(idToken: string) {
+    const b64 = idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = Buffer.from(b64, 'base64').toString('utf8');
+    return JSON.parse(json);
+  }
+
   static async verifyAppleIdToken(identityToken: string): Promise<AppleUserInfo> {
+    // 1. 환경별 allowedAudiences 분기
+    const allowedAudiences =
+      process.env.NODE_ENV === 'production'
+        ? ['com.reconnect.kwcc']
+        : ['com.reconnect.kwcc', 'host.exp.Exponent'];
+
+    // 2. idToken의 aud 값 로그로 확인
+    const payload = AppleAuthUtils.decodePayload(identityToken);
+    console.log('[DEBUG] apple idToken aud:', payload.aud);
+
+    // 3. 기존 getKey 로직
     function getKey(header, callback) {
       client.getSigningKey(header.kid, function (err, key) {
         if (!key) return callback(new Error('No signing key found'));
@@ -21,10 +38,7 @@ export class AppleAuthUtils {
       });
     }
 
-    const allowedAudiences = process.env.ALLOWED_APPLE_AUDIENCES
-      ? process.env.ALLOWED_APPLE_AUDIENCES.split(',').map(s => s.trim())
-      : ['com.reconnect.kwcc'];
-
+    // 4. 검증
     return new Promise((resolve, reject) => {
       jwt.verify(
         identityToken,
