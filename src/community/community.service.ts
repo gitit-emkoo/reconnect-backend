@@ -183,10 +183,10 @@ export class CommunityService {
     const post = await this.prisma.communityPost.findUnique({
       where: { id },
       include: {
-        author: { select: { nickname: true } },
+        author: { select: { id: true, nickname: true } },
         category: true,
         comments: {
-          include: { author: { select: { nickname: true } } }
+          include: { author: { select: { id: true, nickname: true } } }
         },
         votes: true
       }
