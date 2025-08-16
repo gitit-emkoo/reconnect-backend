@@ -535,4 +535,14 @@ export class UsersService {
     await this.prisma.userBlock.deleteMany({ where: { blockerId, blockedId } });
     return { success: true };
   }
+
+  async getMyBlockedUsers(userId: string) {
+    const blocks = await this.prisma.userBlock.findMany({ where: { blockerId: userId } });
+    if (!blocks.length) return [];
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: blocks.map(b => b.blockedId) } },
+      select: { id: true, nickname: true, email: true, profileImageUrl: true }
+    });
+    return users;
+  }
 } 

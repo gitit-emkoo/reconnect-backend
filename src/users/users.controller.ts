@@ -219,4 +219,13 @@ export class UsersController {
   async unblockUser(@GetUser() user: User, @Param('targetId') targetId: string) {
     return this.usersService.unblockUser(user.id, targetId);
   }
+
+  /**
+   * 내가 차단한 사용자 목록 (로그인 필요)
+   */
+  @Get('/me/blocks')
+  @UseGuards(AuthGuard('jwt'))
+  async getMyBlockedUsers(@GetUser() user: User) {
+    return this.usersService.getMyBlockedUsers(user.id);
+  }
 } 
