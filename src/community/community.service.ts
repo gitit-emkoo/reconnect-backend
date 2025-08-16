@@ -175,7 +175,13 @@ export class CommunityService {
     return { posts, total };
   }
 
-  async getPostById(id: string) {
+  async getPostById(id: string, userId?: string) {
+    // 차단 사용자 목록 조회 (옵션)
+    const blockedIds = userId
+      ? (await this.prisma.userBlock.findMany({ where: { blockerId: userId }, select: { blockedId: true } })).map(
+          (b) => b.blockedId,
+        )
+      : [];
     await this.prisma.communityPost.update({
       where: { id },
       data: { viewCount: { increment: 1 } },
@@ -186,7 +192,11 @@ export class CommunityService {
         author: { select: { id: true, nickname: true } },
         category: true,
         comments: {
-          include: { author: { select: { id: true, nickname: true } } }
+          where: {
+            authorId: blockedIds.length ? { notIn: blockedIds } : undefined,
+          },
+          include: { author: { select: { id: true, nickname: true } } },
+          orderBy: { createdAt: 'asc' },
         },
         votes: true
       }

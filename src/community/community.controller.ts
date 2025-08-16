@@ -45,13 +45,15 @@ export class CommunityController {
     });
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('posts/:id')
-  async getPostById(@Param('id') id: string) {
+  async getPostById(@Param('id') id: string, @GetUser() user?: any) {
     const isMongoId = /^[0-9a-fA-F]{24}$/.test(id);
     if (!isMongoId) {
       throw new BadRequestException('Invalid ID format');
     }
-    return this.communityService.getPostById(id);
+    const userId = user?.userId;
+    return this.communityService.getPostById(id, userId);
   }
 
   @UseGuards(JwtAuthGuard)
