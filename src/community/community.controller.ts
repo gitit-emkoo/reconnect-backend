@@ -2,6 +2,7 @@ import { Controller, Post, Body, Get, UseGuards, Query, Param, Patch, Delete, Fo
 import { CommunityService } from './community.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // 경로에 guards/ 없음
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -21,17 +22,20 @@ export class CommunityController {
     return this.communityService.createPost(createPostDto, user.userId);
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('posts')
   getAllPosts(
     @Query('categoryId') categoryId?: string,
     @Query('search') search?: string,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
+    @GetUser() user?: any,
   ) {
+    const userId = user?.userId;
     if (search) {
-      return this.communityService.findAll(categoryId, search, Number(page), Number(limit));
+      return this.communityService.findAll(categoryId, search, Number(page), Number(limit), userId);
     }
-    return this.communityService.getAllPosts(categoryId, Number(page), Number(limit));
+    return this.communityService.getAllPosts(categoryId, Number(page), Number(limit), userId);
   }
 
   @Get('categories')

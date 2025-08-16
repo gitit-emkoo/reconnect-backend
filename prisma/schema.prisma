@@ -528,3 +528,15 @@ enum ComplaintStatus {
   RESOLVED
   REJECTED
 }
+
+/// 사용자 차단 정보
+model UserBlock {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  blockerId String   @db.ObjectId
+  blockedId String   @db.ObjectId
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+}

@@ -517,4 +517,22 @@ export class UsersService {
 
     return user;
   }
+
+  // === 사용자 차단 ===
+  async blockUser(blockerId: string, blockedId: string) {
+    if (blockerId === blockedId) {
+      throw new BadRequestException('자기 자신을 차단할 수 없습니다.');
+    }
+    await this.prisma.userBlock.upsert({
+      where: { blockerId_blockedId: { blockerId, blockedId } as any },
+      update: {},
+      create: { blockerId, blockedId },
+    });
+    return { success: true };
+  }
+
+  async unblockUser(blockerId: string, blockedId: string) {
+    await this.prisma.userBlock.deleteMany({ where: { blockerId, blockedId } });
+    return { success: true };
+  }
 } 

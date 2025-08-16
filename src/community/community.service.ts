@@ -11,6 +11,20 @@ export class CommunityService {
   async createPost(createPostDto: CreatePostDto, authorId: string) {
     const { title, content, categoryId, imageUrl, tags, poll, isPollCategory } = createPostDto;
 
+    // 1단계: 간단 콘텐츠 필터(금칙어, 링크/도배)
+    const plain = (title + ' ' + content).replace(/<[^>]*>/g, ' ');
+    const BLOCKLIST: RegExp[] = [
+      /시발|병신|꺼져|fuck|shit|bitch/i,
+      /nigger|faggot|cunt/i,
+      /자살|팔아넘기|불법|아동음란/i,
+    ];
+    const hasBlocked = BLOCKLIST.some(rx => rx.test(plain));
+    const tooManyLinks = ((plain.match(/https?:\/\//g) || []).length) > 2;
+    const spammy = /([\w가-힣])\1{6,}/.test(plain);
+    if (hasBlocked || tooManyLinks || spammy) {
+      throw new BadRequestException('가이드라인에 맞지 않는 내용이 포함되어 게시할 수 없습니다.');
+    }
+
     // 카테고리 정보 조회
     const category = await this.prisma.category.findUnique({
       where: { id: categoryId },
@@ -54,12 +68,14 @@ export class CommunityService {
     });
   }
 
-  async getAllPosts(categoryId?: string, page: number = 1, limit: number = 20) {
+  async getAllPosts(categoryId?: string, page: number = 1, limit: number = 20, userId?: string) {
     const skip = (page - 1) * limit;
+    const blockedIds = userId ? (await this.prisma.userBlock.findMany({ where: { blockerId: userId }, select: { blockedId: true } })).map(b => b.blockedId) : [];
     const [posts, total] = await Promise.all([
       this.prisma.communityPost.findMany({
         where: {
           categoryId: categoryId ? categoryId : undefined,
+          authorId: blockedIds.length ? { notIn: blockedIds } : undefined,
         },
         orderBy: {
           createdAt: 'desc',
@@ -87,15 +103,17 @@ export class CommunityService {
       this.prisma.communityPost.count({
         where: {
           categoryId: categoryId ? categoryId : undefined,
+          authorId: blockedIds.length ? { notIn: blockedIds } : undefined,
         },
       }),
     ]);
     return { posts, total };
   }
 
-  async findAll(categoryId?: string, search?: string, page: number = 1, limit: number = 20) {
+  async findAll(categoryId?: string, search?: string, page: number = 1, limit: number = 20, userId?: string) {
     const skip = (page - 1) * limit;
     const where: Prisma.CommunityPostWhereInput = {};
+    const blockedIds = userId ? (await this.prisma.userBlock.findMany({ where: { blockerId: userId }, select: { blockedId: true } })).map(b => b.blockedId) : [];
 
     if (categoryId) {
       where.categoryId = categoryId;
@@ -125,7 +143,10 @@ export class CommunityService {
 
     const [posts, total] = await Promise.all([
       this.prisma.communityPost.findMany({
-        where,
+        where: {
+          ...where,
+          authorId: blockedIds.length ? { notIn: blockedIds } : undefined,
+        },
         orderBy: {
           createdAt: 'desc',
         },
@@ -149,7 +170,7 @@ export class CommunityService {
         skip,
         take: limit,
       }),
-      this.prisma.communityPost.count({ where }),
+      this.prisma.communityPost.count({ where: { ...where, authorId: blockedIds.length ? { notIn: blockedIds } : undefined } }),
     ]);
     return { posts, total };
   }

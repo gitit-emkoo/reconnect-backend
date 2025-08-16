@@ -204,4 +204,19 @@ export class UsersController {
   ) {
     return this.usersService.updateUserStatus(id, isActive);
   }
+
+  /**
+   * 사용자 차단/해제 (로그인 필요)
+   */
+  @Post('/:targetId/block')
+  @UseGuards(AuthGuard('jwt'))
+  async blockUser(@GetUser() user: User, @Param('targetId') targetId: string) {
+    return this.usersService.blockUser(user.id, targetId);
+  }
+
+  @Delete('/:targetId/block')
+  @UseGuards(AuthGuard('jwt'))
+  async unblockUser(@GetUser() user: User, @Param('targetId') targetId: string) {
+    return this.usersService.unblockUser(user.id, targetId);
+  }
 } 
