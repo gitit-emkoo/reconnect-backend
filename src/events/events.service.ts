@@ -36,6 +36,13 @@ export class EventsService {
     });
     return entries;
   }
+
+  async findMyEntry(eventKey: string, userId: string) {
+    if (!userId) return null;
+    return this.prisma.eventEntry.findUnique({
+      where: { eventKey_userId: { eventKey, userId } },
+    });
+  }
 }
 
 

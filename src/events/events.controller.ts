@@ -25,6 +25,17 @@ export class EventsController {
     const entries = await this.eventsService.listEntries(eventKey);
     return { success: true, entries };
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/entry')
+  async getMyEntry(
+    @Query('eventKey') eventKey: string,
+    @GetUser() user: any,
+  ) {
+    const userId = user?.id;
+    const entry = await this.eventsService.findMyEntry(eventKey, userId);
+    return { success: true, entry };
+  }
 }
 
 
