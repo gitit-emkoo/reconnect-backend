@@ -12,8 +12,9 @@ export class EventsController {
   @Post('entry')
   async createEntry(
     @Body('eventKey') eventKey: string,
-    @GetUser('id') userId: string,
+    @GetUser() user: any,
   ) {
+    const userId = user?.id;
     const entry = await this.eventsService.createEntry(eventKey, userId);
     return { success: true, entry };
   }

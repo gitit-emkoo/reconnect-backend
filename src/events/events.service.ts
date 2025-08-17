@@ -6,6 +6,9 @@ export class EventsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createEntry(eventKey: string, userId: string) {
+    if (!userId) {
+      throw new Error('Unauthorized: missing user id');
+    }
     try {
       const entry = await this.prisma.eventEntry.create({
         data: { eventKey, userId },
