@@ -3,10 +3,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { Prisma } from '@prisma/client';
 import { CreateComplaintDto } from './dto/create-complaint.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class CommunityService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private notifications: NotificationsService) {}
 
   async createPost(createPostDto: CreatePostDto, authorId: string) {
     const { title, content, categoryId, imageUrl, tags, poll, isPollCategory } = createPostDto;
@@ -206,17 +207,33 @@ export class CommunityService {
   }
 
   async createComment(postId: string, content: string, authorId: string) {
-    return this.prisma.comment.create({
+    const comment = await this.prisma.comment.create({
       data: {
         content,
         author: { connect: { id: authorId } },
         communityPost: { connect: { id: postId } }
       }
     });
+    // 게시글 작성자에게 알림
+    try {
+      const post = await this.prisma.communityPost.findUnique({ where: { id: postId }, select: { authorId: true, title: true } });
+      if (post && post.authorId !== authorId) {
+        await this.notifications.createNotification({
+          userId: post.authorId,
+          message: `내 게시글에 새 댓글이 달렸어요: ${post.title ?? ''}`.trim(),
+          type: 'COMMUNITY_COMMENT',
+          url: `/community/${postId}`,
+        });
+      }
+    } catch (e) {
+      // 로깅만, 실패해도 본 흐름은 유지
+      console.error('[notify] createComment failed:', e);
+    }
+    return comment;
   }
 
   async createReply(postId: string, parentId: string, content: string, authorId: string) {
-    return this.prisma.comment.create({
+    const reply = await this.prisma.comment.create({
       data: {
         content,
         author: { connect: { id: authorId } },
@@ -224,6 +241,21 @@ export class CommunityService {
         parent: { connect: { id: parentId } },
       }
     });
+    // 부모 댓글 작성자에게 알림
+    try {
+      const parent = await this.prisma.comment.findUnique({ where: { id: parentId }, select: { authorId: true } });
+      if (parent && parent.authorId !== authorId) {
+        await this.notifications.createNotification({
+          userId: parent.authorId,
+          message: '내 댓글에 답글이 달렸어요.',
+          type: 'COMMUNITY_REPLY',
+          url: `/community/${postId}`,
+        });
+      }
+    } catch (e) {
+      console.error('[notify] createReply failed:', e);
+    }
+    return reply;
   }
 
   async updatePost(postId: string, updateData: any, userId: string) {

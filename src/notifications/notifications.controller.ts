@@ -1,9 +1,10 @@
-import {
+import { 
   Controller,
   Get,
   Patch,
   Param,
   UseGuards,
+  Body,
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -36,5 +37,44 @@ export class NotificationsController {
   @Patch('read-all')
   async markAllAsRead(@GetUser() user: User) {
     return this.notificationsService.markAllAsRead(user.id);
+  }
+
+  // 알림 설정 조회/업데이트
+  @Get('preferences')
+  async getPreferences(@GetUser() user: User) {
+    const pref = await this.notificationsService['prisma'].notificationPreference.findUnique({ where: { userId: user.id } });
+    return (
+      pref || {
+        muteAll: false,
+        muteCommunity: false,
+        muteChallenge: false,
+        muteEmotionCard: false,
+      }
+    );
+  }
+
+  @Patch('preferences')
+  async updatePreferences(
+    @GetUser() user: User,
+    @Body() body: Partial<{ muteAll: boolean; muteCommunity: boolean; muteChallenge: boolean; muteEmotionCard: boolean }>
+  ) {
+    const { muteAll, muteCommunity, muteChallenge, muteEmotionCard } = body || {};
+    const updated = await this.notificationsService['prisma'].notificationPreference.upsert({
+      where: { userId: user.id },
+      create: {
+        userId: user.id,
+        muteAll: !!muteAll,
+        muteCommunity: !!muteCommunity,
+        muteChallenge: !!muteChallenge,
+        muteEmotionCard: !!muteEmotionCard,
+      },
+      update: {
+        muteAll: muteAll ?? undefined,
+        muteCommunity: muteCommunity ?? undefined,
+        muteChallenge: muteChallenge ?? undefined,
+        muteEmotionCard: muteEmotionCard ?? undefined,
+      },
+    });
+    return updated;
   }
 }
