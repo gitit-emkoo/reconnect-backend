@@ -23,6 +23,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AgreementModule } from './agreement/agreement.module';
 import { TrackReportsModule } from './track-reports/track-reports.module';
 import { SupportModule } from './support/support.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { SupportModule } from './support/support.module';
     AgreementModule,
     TrackReportsModule,
     SupportModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [
