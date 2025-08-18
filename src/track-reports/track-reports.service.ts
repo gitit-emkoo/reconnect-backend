@@ -449,6 +449,7 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
    */
   async generateManualTrackReportForUser(userId: string, subscriptionStartedAt: Date) {
     try {
+      this.logger.log(`[DEV] generateManualTrackReportForUser start user=${userId}`);
       // 지난 달 1일과 마지막 날 계산
       const now = new Date();
       const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -468,25 +469,32 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
         },
         orderBy: { date: 'asc' }
       });
+      this.logger.log(`[DEV] last-month diariesRaw=${diariesRaw.length} periodStart=${periodStart.toISOString()} lastMonthEnd=${lastMonthEnd.toISOString()}`);
       const diaries = diariesRaw.filter((d) => {
         const hasComment = !!(d.comment && String(d.comment).trim().length >= 5);
         const hasEmotion = !!(d.emotion && (d.emotion as any)?.name);
         const hasTrigger = Array.isArray(d.triggers) && (d.triggers as any[]).length > 0;
         return hasComment || hasEmotion || hasTrigger;
       });
+      this.logger.log(`[DEV] last-month validDiaries=${diaries.length}`);
 
-      // 개발용이므로 7개 제한 제거 - 1개 이상이면 생성
-      if (diaries.length === 0) {
-        this.logger.log(`사용자 ${userId}: 일기 수 0개로 리포트 생성 건너뜀`);
-        return;
-      }
-
-      // 감정 및 트리거 통계 계산
-      const emotionStats = this.calculateEmotionStats(diaries);
-      const triggerStats = this.calculateTriggerStats(diaries);
-
-      // AI 분석 수행
-      const aiAnalysis = await this.generateAIAnalysis(diaries, emotionStats, triggerStats);
+      // 개발용: 데이터가 없어도 플레이스홀더로 발행
+      const emotionStats: any = diaries.length > 0 ? this.calculateEmotionStats(diaries) : {};
+      const triggerStats: any = diaries.length > 0 ? this.calculateTriggerStats(diaries) : {};
+      const t1 = Date.now();
+      const aiAnalysis = diaries.length > 0
+        ? await this.generateAIAnalysis(diaries, emotionStats, triggerStats)
+        : JSON.stringify({
+            summary: '지난 달 데이터가 부족하여 기본 리포트를 생성했습니다.',
+            comparison: '',
+            suggestions: [
+              '다음 달에는 감정일기를 3개 이상 작성해보세요.',
+              '하루 끝에 간단 메모라도 남겨 꾸준함을 유지해보세요.',
+              '키워드(감정/트리거)를 함께 기록하면 분석 품질이 향상됩니다.'
+            ],
+            metrics: { emotionStats: {}, triggerStats: {}, dayOfWeekStats: {}, timeOfDayStats: {}, averageCommentLength: 0, positivityRatio: 0, topKeywords: [], topEmojis: [] }
+          });
+      this.logger.log(`[DEV] last-month aiAnalysis ms=${Date.now()-t1}`);
 
       // 트랙 리포트 저장 (지난 달 기준)
       await this.prisma.trackReport.upsert({
@@ -595,6 +603,7 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
    * 개발/테스트용: 현재 월 리포트 강제 생성 (최소 일기 수 제한 없음)
    */
   async generateCurrentMonthManual(userId: string, subscriptionStartedAt: Date) {
+    this.logger.log(`[DEV] generateCurrentMonthManual start user=${userId}`);
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const subscriptionStart = new Date(subscriptionStartedAt);
@@ -610,19 +619,32 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
       },
       orderBy: { date: 'asc' },
     });
+    this.logger.log(`[DEV] current-month diariesRaw=${diariesRaw.length} periodStart=${periodStart.toISOString()} now=${now.toISOString()}`);
     const diaries = diariesRaw.filter((d) => {
       const hasComment = !!(d.comment && String(d.comment).trim().length >= 5);
       const hasEmotion = !!(d.emotion && (d.emotion as any)?.name);
       const hasTrigger = Array.isArray(d.triggers) && (d.triggers as any[]).length > 0;
       return hasComment || hasEmotion || hasTrigger;
     });
-    if (diaries.length === 0) {
-      return { generated: false, reason: 'NO_VALID_DIARY' };
-    }
+    this.logger.log(`[DEV] current-month validDiaries=${diaries.length}`);
 
-    const emotionStats = this.calculateEmotionStats(diaries);
-    const triggerStats = this.calculateTriggerStats(diaries);
-    const aiAnalysis = await this.generateAIAnalysis(diaries, emotionStats, triggerStats);
+    // 개발용: 데이터가 없어도 플레이스홀더로 발행
+    const emotionStats: any = diaries.length > 0 ? this.calculateEmotionStats(diaries) : {};
+    const triggerStats: any = diaries.length > 0 ? this.calculateTriggerStats(diaries) : {};
+    const t0 = Date.now();
+    const aiAnalysis = diaries.length > 0
+      ? await this.generateAIAnalysis(diaries, emotionStats, triggerStats)
+      : JSON.stringify({
+          summary: '이번 달 데이터가 부족하여 기본 리포트를 생성했습니다.',
+          comparison: '',
+          suggestions: [
+            '이번 달에는 감정일기를 3개 이상 작성해보세요.',
+            '하루 끝에 간단 메모라도 남겨 꾸준함을 유지해보세요.',
+            '키워드(감정/트리거)를 함께 기록하면 분석 품질이 향상됩니다.'
+          ],
+          metrics: { emotionStats: {}, triggerStats: {}, dayOfWeekStats: {}, timeOfDayStats: {}, averageCommentLength: 0, positivityRatio: 0, topKeywords: [], topEmojis: [] }
+        });
+    this.logger.log(`[DEV] current-month aiAnalysis ms=${Date.now()-t0}`);
 
     await this.prisma.trackReport.upsert({
       where: { userId_monthStartDate: { userId, monthStartDate: currentMonthStart } },
