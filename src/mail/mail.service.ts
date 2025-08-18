@@ -31,13 +31,14 @@ export class MailService {
     });
   }
 
-  async sendMail({ to, subject, html }) {
+  async sendMail({ to, subject, html, attachments }: { to: string; subject: string; html: string; attachments?: Array<{ filename: string; content: Buffer | string; contentType?: string }> }) {
     try {
       const info = await this.transporter.sendMail({
         from: this.configService.get<string>('EMAIL_FROM'),
         to,
         subject,
         html,
+        attachments,
       });
       console.log('Message sent: %s', info.messageId);
       return true;

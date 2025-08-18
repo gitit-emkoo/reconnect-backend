@@ -106,4 +106,76 @@ export class TrackReportsController {
       });
     }
   }
+
+  /**
+   * 현재 월 일기 진행 현황 (유효/전체/최소 필요치)
+   */
+  @Get('/me/current/progress')
+  async getCurrentProgress(@Req() req: Request, @Res() res: Response) {
+    try {
+      const { userId } = req.user as any;
+      const result = await this.trackReportsService.getCurrentMonthProgress(userId);
+      return res.status(HttpStatus.OK).json(result);
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: '진행 현황 조회 실패' });
+    }
+  }
+
+  /**
+   * 현재 월 즉시 생성 (최소 일기 충족 시)
+   */
+  @Get('/me/current/generate-now')
+  async generateNow(@Req() req: Request, @Res() res: Response) {
+    try {
+      const { userId, subscriptionStartedAt } = req.user as any;
+      if (!subscriptionStartedAt) {
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: '구독 시작 정보가 없습니다.' });
+      }
+      const result = await this.trackReportsService.generateCurrentMonthNow(userId, new Date(subscriptionStartedAt));
+      if (!result.generated) {
+        return res.status(HttpStatus.BAD_REQUEST).json(result);
+      }
+      return res.status(HttpStatus.OK).json({ message: '생성 완료' });
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: '즉시 생성 실패' });
+    }
+  }
+
+  /**
+   * 개발용: 현재 월 즉시 생성(최소 일기 제한 없음)
+   */
+  @Get('/me/current/generate-manual')
+  async generateCurrentManual(@Req() req: Request, @Res() res: Response) {
+    try {
+      const { userId, subscriptionStartedAt, role } = req.user as any;
+      if (role !== 'ADMIN') {
+        return res.status(HttpStatus.FORBIDDEN).json({ message: '관리자만 사용 가능합니다.' });
+      }
+      if (!subscriptionStartedAt) {
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: '구독 시작 정보가 없습니다.' });
+      }
+      const result = await this.trackReportsService.generateCurrentMonthManual(userId, new Date(subscriptionStartedAt));
+      if (!result.generated) {
+        return res.status(HttpStatus.BAD_REQUEST).json(result);
+      }
+      return res.status(HttpStatus.OK).json({ message: '현재 월 개발용 생성 완료' });
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: '현재 월 개발용 생성 실패' });
+    }
+  }
+
+  /**
+   * 이번 달 리포트를 사용자 이메일로 전송 (PDF 첨부)
+   * - 자동 발행 이후 스케줄러에서 호출하거나, 관리자 도구로 수동 호출 가능
+   */
+  @Get('/me/current/email')
+  async emailCurrent(@Req() req: Request, @Res() res: Response) {
+    try {
+      const { userId } = req.user as any;
+      await this.trackReportsService.emailCurrentMonthReport(userId);
+      return res.status(HttpStatus.OK).json({ message: '이메일 발송 완료' });
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: '이메일 발송 실패' });
+    }
+  }
 } 
