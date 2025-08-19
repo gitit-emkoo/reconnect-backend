@@ -174,15 +174,22 @@ export class TrackReportsService {
     triggerStats: Record<string, number>,
     context?: { prevEmotionStats?: Record<string, number> | null; prevTriggerStats?: Record<string, number> | null }
   ): Promise<string> {
+    const composeText = (summary: string, comparison: string, suggestions: string[]) => {
+      const parts: string[] = [];
+      if (summary) parts.push(`요약\n\n${summary}`);
+      if (comparison) parts.push(`\n전월 대비 변화\n\n${comparison}`);
+      if (suggestions && suggestions.length) parts.push(`\n실천 제안\n\n- ${suggestions.slice(0, 3).join('\n- ')}`);
+      return parts.join('\n\n').trim();
+    };
+
     if (!this.geminiApiKey) {
-      this.logger.warn('Gemini API Key가 설정되지 않아 기본 분석 텍스트(JSON)를 반환합니다.');
+      this.logger.warn('Gemini API Key가 설정되지 않아 기본 분석 텍스트를 반환합니다.');
       const extended = this.computeExtendedStats(diaries);
-      return JSON.stringify({
-        summary: this.generateDefaultAnalysis(emotionStats, triggerStats),
-        comparison: this.generateDefaultComparison(context?.prevEmotionStats || {}, context?.prevTriggerStats || {}, emotionStats, triggerStats),
-        suggestions: this.generateDefaultSuggestions(extended),
-        metrics: { emotionStats, triggerStats, ...extended },
-      });
+      return composeText(
+        this.generateDefaultAnalysis(emotionStats, triggerStats),
+        this.generateDefaultComparison(context?.prevEmotionStats || {}, context?.prevTriggerStats || {}, emotionStats, triggerStats),
+        this.generateDefaultSuggestions(extended),
+      );
     }
 
     try {
@@ -210,27 +217,12 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
 
 요구사항:
 - 한국어, 친근하고 따뜻한 톤
-- 길이: 200~300자 내 요약(summary)
-- 전월 대비 변화(comparison): 핵심 변화 1~2가지 설명(100자 내)
-- 개선 제안(suggestions): 사용자가 즉시 시도할 수 있는 3가지 행동 제안(각 1줄)
-- metrics로 확장 지표(extended)도 함께 포함
-
-반드시 아래 JSON 스키마로만 응답하세요 (추가 설명 금지):
-{
-  "summary": string,
-  "comparison": string,
-  "suggestions": string[3],
-  "metrics": {
-    "emotionStats": object,
-    "triggerStats": object,
-    "dayOfWeekStats": object,
-    "timeOfDayStats": object,
-    "averageCommentLength": number,
-    "positivityRatio": number,
-    "topKeywords": string[],
-    "topEmojis": string[]
-  }
-}`;
+- 결과는 사람에게 보여줄 텍스트로만 작성 (코드블록/마크다운/JSON 금지)
+- 섹션 구성과 예시 형식:
+  1) 요약: 한두 단락으로 핵심 정리
+  2) 전월 대비 변화: 한 단락으로 핵심 변화 1~2가지
+  3) 실천 제안: 3개의 불릿("- 제안 문장")
+- 각 섹션 제목은 그대로 사용: "요약", "전월 대비 변화", "실천 제안"`;
 
       const response = await axios.post(
         `${this.geminiApiUrl}?key=${this.geminiApiKey}`,
@@ -249,18 +241,17 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
       );
 
       if (response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-        const text = response.data.candidates[0].content.parts[0].text.trim();
-        // 응답이 JSON이 아닐 수 있으므로 파싱 가능 여부 확인 후 원문/래핑
+        const raw = response.data.candidates[0].content.parts[0].text.trim();
+        const cleaned = raw.replace(/```json|```/g, '').trim();
         try {
-          JSON.parse(text);
-          return text;
+          const parsed = JSON.parse(cleaned);
+          return composeText(
+            parsed.summary || '',
+            parsed.comparison || '',
+            Array.isArray(parsed.suggestions) ? parsed.suggestions : this.generateDefaultSuggestions(extended),
+          );
         } catch {
-          return JSON.stringify({
-            summary: text,
-            comparison: this.generateDefaultComparison(context?.prevEmotionStats || {}, context?.prevTriggerStats || {}, emotionStats, triggerStats),
-            suggestions: this.generateDefaultSuggestions(extended),
-            metrics: { emotionStats, triggerStats, ...extended },
-          });
+          return cleaned;
         }
       } else {
         throw new Error('AI 응답 형식이 올바르지 않습니다.');
@@ -277,12 +268,11 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
       }
       
       const extended = this.computeExtendedStats(diaries);
-      return JSON.stringify({
-        summary: this.generateDefaultAnalysis(emotionStats, triggerStats),
-        comparison: this.generateDefaultComparison(context?.prevEmotionStats || {}, context?.prevTriggerStats || {}, emotionStats, triggerStats),
-        suggestions: this.generateDefaultSuggestions(extended),
-        metrics: { emotionStats, triggerStats, ...extended },
-      });
+      return composeText(
+        this.generateDefaultAnalysis(emotionStats, triggerStats),
+        this.generateDefaultComparison(context?.prevEmotionStats || {}, context?.prevTriggerStats || {}, emotionStats, triggerStats),
+        this.generateDefaultSuggestions(extended),
+      );
     }
   }
 
@@ -455,8 +445,8 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
       const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
       
-      // 구독 시작일이 지난 달보다 늦으면 구독 시작일부터
-      const periodStart = subscriptionStartedAt > lastMonthStart ? subscriptionStartedAt : lastMonthStart;
+      // 개발용: 구독 시작일 무시하고 지난 달 전체를 범위로 사용
+      const periodStart = lastMonthStart;
       
       // 해당 기간의 감정일기 조회
       const diariesRaw = await this.prisma.diary.findMany({
@@ -484,16 +474,7 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
       const t1 = Date.now();
       const aiAnalysis = diaries.length > 0
         ? await this.generateAIAnalysis(diaries, emotionStats, triggerStats)
-        : JSON.stringify({
-            summary: '지난 달 데이터가 부족하여 기본 리포트를 생성했습니다.',
-            comparison: '',
-            suggestions: [
-              '다음 달에는 감정일기를 3개 이상 작성해보세요.',
-              '하루 끝에 간단 메모라도 남겨 꾸준함을 유지해보세요.',
-              '키워드(감정/트리거)를 함께 기록하면 분석 품질이 향상됩니다.'
-            ],
-            metrics: { emotionStats: {}, triggerStats: {}, dayOfWeekStats: {}, timeOfDayStats: {}, averageCommentLength: 0, positivityRatio: 0, topKeywords: [], topEmojis: [] }
-          });
+        : `요약\n\n지난 달 데이터가 부족하여 기본 리포트를 생성했습니다.\n\n전월 대비 변화\n\n데이터 부족으로 비교가 어려워요.\n\n실천 제안\n\n- 다음 달에는 감정일기를 3개 이상 작성해보세요.\n- 하루 끝에 간단 메모라도 남겨 꾸준함을 유지해보세요.\n- 키워드(감정/트리거)를 함께 기록하면 분석 품질이 향상됩니다.`;
       this.logger.log(`[DEV] last-month aiAnalysis ms=${Date.now()-t1}`);
 
       // 트랙 리포트 저장 (지난 달 기준)
@@ -606,8 +587,8 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
     this.logger.log(`[DEV] generateCurrentMonthManual start user=${userId}`);
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const subscriptionStart = new Date(subscriptionStartedAt);
-    const periodStart = subscriptionStart > currentMonthStart ? subscriptionStart : currentMonthStart;
+    // 개발용: 구독 시작일 무시하고 현재 월 전체를 범위로 사용
+    const periodStart = currentMonthStart;
 
     const diariesRaw = await this.prisma.diary.findMany({
       where: {
@@ -634,16 +615,7 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
     const t0 = Date.now();
     const aiAnalysis = diaries.length > 0
       ? await this.generateAIAnalysis(diaries, emotionStats, triggerStats)
-      : JSON.stringify({
-          summary: '이번 달 데이터가 부족하여 기본 리포트를 생성했습니다.',
-          comparison: '',
-          suggestions: [
-            '이번 달에는 감정일기를 3개 이상 작성해보세요.',
-            '하루 끝에 간단 메모라도 남겨 꾸준함을 유지해보세요.',
-            '키워드(감정/트리거)를 함께 기록하면 분석 품질이 향상됩니다.'
-          ],
-          metrics: { emotionStats: {}, triggerStats: {}, dayOfWeekStats: {}, timeOfDayStats: {}, averageCommentLength: 0, positivityRatio: 0, topKeywords: [], topEmojis: [] }
-        });
+      : `요약\n\n이번 달 데이터가 부족하여 기본 리포트를 생성했습니다.\n\n전월 대비 변화\n\n데이터 부족으로 비교가 어려워요.\n\n실천 제안\n\n- 이번 달에는 감정일기를 3개 이상 작성해보세요.\n- 하루 끝에 간단 메모라도 남겨 꾸준함을 유지해보세요.\n- 키워드(감정/트리거)를 함께 기록하면 분석 품질이 향상됩니다.`;
     this.logger.log(`[DEV] current-month aiAnalysis ms=${Date.now()-t0}`);
 
     await this.prisma.trackReport.upsert({
