@@ -403,6 +403,33 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
   }
 
   /**
+   * 리포트 + 확장 지표(다시 계산)를 함께 반환
+   */
+  async getTrackReportWithMetrics(userId: string, monthStartDate: Date) {
+    const report = await this.getTrackReportByMonth(userId, monthStartDate);
+    if (!report) return null;
+
+    // 해당 월의 일기 재조회 후 확장 지표 계산 (프론트 표시용)
+    const start = new Date(monthStartDate.getFullYear(), monthStartDate.getMonth(), 1);
+    const next = new Date(monthStartDate.getFullYear(), monthStartDate.getMonth() + 1, 1);
+    const diariesRaw = await this.prisma.diary.findMany({
+      where: {
+        userId,
+        date: { gte: start.toISOString().split('T')[0], lt: next.toISOString().split('T')[0] },
+      },
+      orderBy: { date: 'asc' },
+    });
+    const diaries = diariesRaw.filter((d) => {
+      const hasComment = !!(d.comment && String(d.comment).trim().length >= 5);
+      const hasEmotion = !!(d.emotion && (d.emotion as any)?.name);
+      const hasTrigger = Array.isArray(d.triggers) && (d.triggers as any[]).length > 0;
+      return hasComment || hasEmotion || hasTrigger;
+    });
+    const extended = this.computeExtendedStats(diaries);
+    return { ...report, extendedMetrics: extended } as any;
+  }
+
+  /**
    * 개발/테스트용 수동 트랙 리포트 생성 (7개 제한 없음)
    */
   async generateManualTrackReports() {

@@ -37,7 +37,7 @@ export class TrackReportsController {
     try {
       const { userId } = req.user as any;
       const monthStartDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-      const report = await this.trackReportsService.getTrackReportByMonth(userId, monthStartDate);
+      const report = await this.trackReportsService.getTrackReportWithMetrics(userId, monthStartDate);
       
       if (!report) {
         return res.status(HttpStatus.NOT_FOUND).json({
