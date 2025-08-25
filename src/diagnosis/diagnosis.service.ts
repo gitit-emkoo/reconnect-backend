@@ -34,32 +34,23 @@ export class DiagnosisService {
    * - Gemini 설정이 없으면 규칙 기반 텍스트를 반환합니다(폴백).
    */
   async generateDiagnosisSummary(sections: Array<{ title: string; score: number; level: string; message: string }>): Promise<string> {
-    console.log('🔍 AI 종합의견 생성 시작');
-    console.log('📊 섹션 데이터:', sections);
-    console.log('🔑 GEMINI_API_KEY 존재:', !!this.geminiApiKey);
-    console.log('🤖 GEMINI_MODEL_ID:', this.geminiModelId);
-    
     const composeFallback = () => {
-      console.log('⚠️ 폴백 함수 실행 - 규칙 기반 요약 생성');
       const risks = sections.filter(s => ['매우 위험', '위험'].includes(s.level));
       const cautions = sections.filter(s => s.level === '주의');
       const strengths = sections.filter(s => ['양호', '매우 양호'].includes(s.level));
       const riskText = risks.length ? `주의가 필요한 영역: ${risks.map(r => `${r.title}(${r.level})`).join(', ')}` : '특별한 위험 신호는 낮습니다.';
       const cautionText = cautions.length ? `관찰이 필요한 영역: ${cautions.map(c => c.title).join(', ')}` : '';
       const strengthText = strengths.length ? `강점 영역: ${strengths.map(s => s.title).join(', ')}` : '';
-      const fallbackResult = ['스스로를 돌보려는 지금의 선택만으로도 이미 큰 진전이에요.', riskText, cautionText, strengthText]
+      return ['스스로를 돌보려는 지금의 선택만으로도 이미 큰 진전이에요.', riskText, cautionText, strengthText]
         .filter(Boolean)
         .join('\n');
-      console.log('📝 폴백 결과:', fallbackResult);
-      return fallbackResult;
     };
 
     if (!this.geminiApiKey) {
-      console.log('❌ GEMINI_API_KEY 미설정 - 폴백 반환');
+      this.logger.warn('GEMINI_API_KEY 미설정 - 규칙 기반 요약 반환');
       return composeFallback();
     }
 
-    console.log('🚀 Gemini API 호출 시도...');
     const prompt = `역할: 공감적이고 실천지향적인 심리 코칭 보조자(한국어)
 
 요청: 아래 "섹션 결과"(제목, 점수, 레벨, 메시지)를 바탕으로, 사용자의 현재 정서/상황을 서술형으로 자연스럽게 통합 설명해 주세요. 각 섹션 메시지를 단순 나열하지 말고, 하나의 이야기처럼 엮어 주세요.
@@ -73,7 +64,7 @@ export class DiagnosisService {
 
 형식: 일반 텍스트. 체크리스트는 아래 예시처럼 이모지 불릿을 사용해 가독성을 높이세요.
 예시)
-실천 체크리스트\n
+[실천 체크리스트]\n
 • ✅ 아침 10분 산책으로 몸을 깨워보세요\n
 • 🕒 감정이 올라올 때 4-4-6 호흡 3분\n
 • 📝 잠들기 전 오늘 좋았던 1가지 기록\n
@@ -83,10 +74,7 @@ export class DiagnosisService {
 
 섹션 결과(JSON):\n${JSON.stringify(sections, null, 2)}`;
 
-    console.log('📝 프롬프트:', prompt);
-
     try {
-      console.log('🌐 API 요청 전송...');
       const res = await axios.post(
         `${this.geminiApiUrl}?key=${this.geminiApiKey}`,
         {
@@ -101,22 +89,11 @@ export class DiagnosisService {
         { timeout: 12000 }
       );
 
-      console.log('✅ API 응답 성공:', res.status);
-      console.log('📄 응답 데이터:', res.data);
-
       const candidates = res.data?.candidates;
       const text = candidates?.[0]?.content?.parts?.[0]?.text || '';
-      
-      if (!text) {
-        console.log('❌ 빈 AI 응답');
-        throw new Error('Empty AI response');
-      }
-      
-      console.log('🤖 AI 생성 결과:', text.trim());
+      if (!text) throw new Error('Empty AI response');
       return text.trim();
     } catch (error: any) {
-      console.log('❌ AI API 호출 실패:', error?.message);
-      console.log('🔍 에러 상세:', error?.response?.data || error);
       this.logger.error('AI 종합 의견 생성 실패', error?.response?.data || error?.message);
       // 쿼터 초과 등은 폴백
       return composeFallback();
