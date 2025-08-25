@@ -17,7 +17,6 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import type { User } from '@prisma/client';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
-import { Body } from 'express-validator';
 
 @Controller('diagnosis')
 export class DiagnosisController {
