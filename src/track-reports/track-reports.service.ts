@@ -329,8 +329,16 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
     const timeOfDayStats: Record<string, number> = { 새벽:0, 아침:0, 오후:0, 밤:0 };
     let totalLen = 0;
     let countLen = 0;
-    const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u;
     const emojiCounts: Record<string, number> = {};
+    const extractEmojis = (text: string): string[] => {
+      try {
+        const propRegex = /(?:\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?)*)/gu;
+        const m = text.match(propRegex);
+        if (m) return m;
+      } catch {}
+      const fallbackRegex = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+      return text.match(fallbackRegex) || [];
+    };
     const wordCounts: Record<string, number> = {};
     const positiveEmotions = new Set(['행복','기쁨','감사','설렘','만족']);
     const negativeEmotions = new Set(['슬픔','화남','분노','불안','두려움','우울']);
@@ -363,10 +371,9 @@ ${diaryContents.map(d => `- ${d.date}: ${d.emotion} (${d.triggers}) - ${d.commen
           .split(/\s+/)
           .filter(w => w.length >= 2 && !['그리고','그래서','하지만','나는','우리는','정말','조금','너무','많이','더','좀','등','의','이','그','저','또','또는','및'].includes(w));
         for (const t of tokens) wordCounts[t] = (wordCounts[t] || 0) + 1;
-        // 이모지 카운트 (가벼운 방식)
-        for (const ch of Array.from(comment)) {
-          if (emojiRegex.test(ch)) emojiCounts[ch] = (emojiCounts[ch] || 0) + 1;
-        }
+        // 이모지 카운트 (ZWJ/변이 선택자 포함 추출)
+        const emojis = extractEmojis(comment);
+        for (const e of emojis) emojiCounts[e] = (emojiCounts[e] || 0) + 1;
       }
     }
 

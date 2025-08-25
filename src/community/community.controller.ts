@@ -78,6 +78,12 @@ export class CommunityController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Delete('comments/:id')
+  async deleteComment(@Param('id') id: string, @GetUser() user: any) {
+    return this.communityService.deleteComment(id, user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch('posts/:id')
   async updatePost(@Param('id') id: string, @Body() updateData: any, @GetUser() user: any) {
     return this.communityService.updatePost(id, updateData, user.userId);

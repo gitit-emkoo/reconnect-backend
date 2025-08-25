@@ -1,4 +1,4 @@
-import { Controller, Post, Body, ValidationPipe, UsePipes, Get, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, ValidationPipe, UsePipes, Get, Req, Res, UseGuards, Patch, Param, BadRequestException } from '@nestjs/common';
 import { EmotionCardsService } from './emotion-cards.service';
 import { RefineTextDto } from './dto/refine-text.dto';
 import { RefinedTextResponseDto } from './dto/refined-text.response.dto';
@@ -115,6 +115,24 @@ export class EmotionCardsController {
         message: '받은 감정카드 목록을 불러오지 못했습니다.',
         error: error.message 
       });
+    }
+  }
+
+  @Patch(':id/read')
+  @UseGuards(JwtAuthGuard)
+  async markAsRead(@Param('id') id: string, @Req() req: any, @Res() res: Response) {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+    if (!id) throw new BadRequestException('id is required');
+    try {
+      const result = await this.prisma.emotionCard.updateMany({
+        where: { id, receiverId: userId, isRead: false },
+        data: { isRead: true },
+      });
+      return res.status(200).json({ success: true, updated: result.count });
+    } catch (error) {
+      console.error('[EmotionCardsController][PATCH /emotion-cards/:id/read] 에러:', error);
+      return res.status(500).json({ message: '감정카드 읽음 처리에 실패했습니다.' });
     }
   }
 } 

@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import type { User } from '@prisma/client';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
+import { Body } from 'express-validator';
 
 @Controller('diagnosis')
 export class DiagnosisController {
@@ -83,5 +84,13 @@ export class DiagnosisController {
   @UseGuards(JwtAuthGuard)
   remove(@Param('id') id: string) {
     return this.diagnosisService.remove(+id);
+  }
+
+  // AI 종합 의견 생성 (비로그인도 사용 가능)
+  @Post('ai/summary')
+  @HttpCode(HttpStatus.OK)
+  async aiSummary(@Body() body: { sections: Array<{ title: string; score: number; level: string; message: string }> }) {
+    const sections = Array.isArray(body?.sections) ? body.sections : [];
+    return { summary: await this.diagnosisService.generateDiagnosisSummary(sections) };
   }
 }

@@ -258,6 +258,28 @@ export class CommunityService {
     return reply;
   }
 
+  async deleteComment(commentId: string, userId: string) {
+    // 댓글과 작성자 확인
+    const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+    if (!comment) throw new BadRequestException('댓글을 찾을 수 없습니다.');
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new BadRequestException('사용자를 찾을 수 없습니다.');
+
+    // 본인 또는 관리자만 삭제 가능
+    if (comment.authorId !== userId && user.role !== 'ADMIN') {
+      throw new BadRequestException('본인 댓글만 삭제할 수 있습니다.');
+    }
+
+    // 대댓글까지 함께 삭제 (1단계 깊이 지원)
+    await this.prisma.$transaction(async (tx) => {
+      await tx.comment.deleteMany({ where: { parentId: commentId } });
+      await tx.comment.delete({ where: { id: commentId } });
+    });
+
+    return { success: true };
+  }
+
   async updatePost(postId: string, updateData: any, userId: string) {
     const post = await this.prisma.communityPost.findUnique({ where: { id: postId } });
     if (!post) throw new Error('게시글을 찾을 수 없습니다.');
