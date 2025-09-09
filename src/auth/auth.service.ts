@@ -174,11 +174,14 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
+  // 기존 Google 로그인 메서드 (통합 API로 대체됨 - 주석처리)
+  /*
   /**
    * Google OAuth 토큰으로 로그인을 처리합니다.
    * 사용자가 없으면 자동으로 회원가입을 진행하고, 비회원 진단 결과가 있으면 연결합니다.
    * @param googleAuthDto Google 액세스 토큰과 비회원 진단 ID를 포함하는 DTO
    */
+  /*
   async googleLogin(
     googleAuthDto: GoogleAuthDto,
   ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
@@ -234,11 +237,15 @@ export class AuthService {
       user: result,
     };
   }
+  */
 
+  // 기존 Google 회원가입 메서드 (통합 API로 대체됨 - 주석처리)
+  /*
   /**
    * Google OAuth 토큰으로 회원가입을 처리합니다.
    * @param googleAuthDto Google 액세스 토큰과 비회원 진단 ID를 포함하는 DTO
    */
+  /*
   async googleRegister(
     googleAuthDto: GoogleAuthDto,
   ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
@@ -312,6 +319,7 @@ export class AuthService {
       user: result,
     };
   }
+  */
 
   /**
    * Google Access Token으로 사용자 정보를 조회하는 헬퍼 함수
@@ -330,6 +338,8 @@ export class AuthService {
     }
   }
 
+  // 기존 Kakao 회원가입 메서드 (통합 API로 대체됨 - 주석처리)
+  /*
   async kakaoRegister(code: string): Promise<{ message: string }> {
     try {
       console.log('카카오 회원가입 처리 시작');
@@ -425,7 +435,10 @@ export class AuthService {
       throw new UnauthorizedException('카카오 회원가입에 실패했습니다.');
     }
   }
+  */
 
+  // 기존 Kakao 로그인 메서드 (통합 API로 대체됨 - 주석처리)
+  /*
   async kakaoLogin(code: string): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
     try {
       console.log('카카오 로그인 처리 시작');
@@ -512,6 +525,7 @@ export class AuthService {
       throw new UnauthorizedException('카카오 로그인에 실패했습니다.');
     }
   }
+  */
 
   async logout(): Promise<{ message: string }> {
     // 현재 구현에서는 서버 측에서 특별히 처리할 로직이 없습니다.
@@ -520,9 +534,12 @@ export class AuthService {
     return { message: '성공적으로 로그아웃되었습니다.' };
   }
 
+  // 기존 Apple 로그인 메서드 (통합 API로 대체됨 - 주석처리)
+  /*
   /**
    * Apple ID 토큰으로 로그인을 처리합니다.
    */
+  /*
   async appleLogin(
     appleAuthDto: AppleAuthDto,
   ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
@@ -596,10 +613,14 @@ export class AuthService {
       throw e;
     }
   }
+  */
 
+  // 기존 Apple 회원가입 메서드 (통합 API로 대체됨 - 주석처리)
+  /*
   /**
    * Apple ID 토큰으로 회원가입을 처리합니다.
    */
+  /*
   async appleRegister(
     appleAuthDto: AppleAuthDto,
   ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
@@ -673,6 +694,7 @@ export class AuthService {
       user: result,
     };
   }
+  */
 
   /**
    * OAuth 관련 에러를 처리하는 헬퍼 함수
@@ -683,5 +705,353 @@ export class AuthService {
     }
     console.error(`${provider} auth error:`, error.response?.data || error.message);
     throw new UnauthorizedException(`${provider} 인증에 실패했습니다.`);
+  }
+
+  /**
+   * Google 통합 로그인/가입 처리
+   * 기존 사용자면 로그인, 신규 사용자면 자동 가입 후 로그인
+   */
+  async googleSignIn(
+    googleAuthDto: GoogleAuthDto,
+  ): Promise<{ accessToken: string; user: Omit<User, 'password'>; isNewUser: boolean }> {
+    const { accessToken: googleAccessToken } = googleAuthDto;
+
+    // 1. 구글에서 사용자 정보 가져오기
+    const googleUserInfo = await this.getGoogleUserInfo(googleAccessToken);
+    const { email, name, sub: providerId } = googleUserInfo;
+
+    if (!email) {
+      throw new BadRequestException('구글 계정에서 이메일 정보를 가져올 수 없습니다. 동의 항목을 확인해주세요.');
+    }
+
+    // 2. 이메일로 기존 사용자 찾기
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+      include: { partner: true, couple: true },
+    });
+
+    let user: User & { partner?: User | null; couple?: any | null };
+    let isNewUser = false;
+
+    if (existingUser) {
+      // 3-1. 기존 사용자 - 로그인 처리
+      if (existingUser.provider !== 'GOOGLE') {
+        throw new ConflictException(
+          '이미 다른 방식으로 가입된 이메일입니다. 해당 방식으로 로그인해주세요.',
+        );
+      }
+      user = existingUser;
+    } else {
+      // 3-2. 신규 사용자 - 자동 가입 처리
+      const newUser = await this.prisma.$transaction(async (tx) => {
+        // 랜덤 아바타 URL 생성
+        const avatarUrl = generateAvatarUrl(email);
+
+        // 새로운 사용자 생성 (기본 온도 0도)
+        const randomPassword = Math.random().toString(36).slice(-10);
+        const hashedPassword = await bcrypt.hash(randomPassword, 10);
+        
+        return await tx.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            nickname: name || email.split('@')[0],
+            provider: 'GOOGLE',
+            providerId,
+            temperature: 0,
+            profileImageUrl: avatarUrl,
+          },
+        });
+      });
+
+      // 가입된 사용자 정보 조회
+      const userWithDetails = await this.prisma.user.findUnique({
+        where: { id: newUser.id },
+        include: { partner: true, couple: true },
+      });
+
+      if (!userWithDetails) {
+        throw new UnauthorizedException('사용자 정보를 찾는 데 실패했습니다.');
+      }
+
+      user = userWithDetails;
+      isNewUser = true;
+    }
+
+    // 4. JWT 토큰 생성 및 반환
+    let partnerId: string | null = null;
+    if (user.partnerId) {
+      partnerId = user.partnerId;
+    } else if (user.partner && typeof user.partner === 'object' && user.partner.id) {
+      partnerId = user.partner.id;
+    }
+
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      nickname: user.nickname,
+      role: user.role,
+      partnerId: partnerId ?? null,
+      couple: user.couple ? { id: user.couple.id } : null,
+    };
+    const accessToken = this.jwtService.sign(payload);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = user;
+
+    return {
+      accessToken,
+      user: result,
+      isNewUser,
+    };
+  }
+
+  /**
+   * Apple 통합 로그인/가입 처리
+   * 기존 사용자면 로그인, 신규 사용자면 자동 가입 후 로그인
+   */
+  async appleSignIn(
+    appleAuthDto: AppleAuthDto,
+  ): Promise<{ accessToken: string; user: Omit<User, 'password'>; isNewUser: boolean }> {
+    const { idToken, user: userString, unauthDiagnosis } = appleAuthDto;
+
+    // 1. Apple ID 토큰 검증
+    const appleUserInfo = await verifyAppleIdToken(idToken) as AppleUserInfo;
+    const { email, name, sub: providerId } = AppleAuthUtils.extractUserInfo(appleUserInfo, userString);
+
+    if (!email) {
+      throw new BadRequestException('Apple 계정에서 이메일 정보를 가져올 수 없습니다.');
+    }
+
+    // 2. 이메일로 기존 사용자 찾기
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+      include: { partner: true, couple: true },
+    });
+
+    let user: User & { partner?: User | null; couple?: any | null };
+    let isNewUser = false;
+
+    if (existingUser) {
+      // 3-1. 기존 사용자 - 로그인 처리
+      if (existingUser.provider !== 'APPLE') {
+        throw new ConflictException(
+          '이미 다른 방식으로 가입된 이메일입니다. 해당 방식으로 로그인해주세요.',
+        );
+      }
+
+      // 비회원 진단 결과가 있으면 업데이트
+      if (unauthDiagnosis) {
+        await this.diagnosisService.createOrUpdateFromUnauth(existingUser.id, {
+          ...unauthDiagnosis,
+          diagnosisType: 'BASELINE_TEMPERATURE',
+        });
+      }
+
+      user = existingUser;
+    } else {
+      // 3-2. 신규 사용자 - 자동 가입 처리
+      const newUser = await this.prisma.$transaction(async (tx) => {
+        // 랜덤 아바타 URL 생성
+        const avatarUrl = generateAvatarUrl(email);
+
+        // 새로운 사용자 생성 (기본 온도 0도)
+        const randomPassword = Math.random().toString(36).slice(-10);
+        const hashedPassword = await bcrypt.hash(randomPassword, 10);
+        
+        return await tx.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            nickname: name || email.split('@')[0],
+            provider: 'APPLE',
+            providerId,
+            temperature: 0,
+            profileImageUrl: avatarUrl,
+          },
+        });
+      });
+
+      // 가입된 사용자 정보 조회
+      const userWithDetails = await this.prisma.user.findUnique({
+        where: { id: newUser.id },
+        include: { partner: true, couple: true },
+      });
+
+      if (!userWithDetails) {
+        throw new UnauthorizedException('사용자 정보를 찾는 데 실패했습니다.');
+      }
+
+      user = userWithDetails;
+      isNewUser = true;
+
+      // 비회원 진단 결과가 있으면 업데이트
+      if (unauthDiagnosis) {
+        await this.diagnosisService.createOrUpdateFromUnauth(user.id, {
+          ...unauthDiagnosis,
+          diagnosisType: 'BASELINE_TEMPERATURE',
+        });
+      }
+    }
+
+    // 4. JWT 토큰 생성 및 반환
+    let partnerId: string | null = null;
+    if (user.partnerId) {
+      partnerId = user.partnerId;
+    } else if (user.partner && typeof user.partner === 'object' && user.partner.id) {
+      partnerId = user.partner.id;
+    }
+
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      nickname: user.nickname,
+      role: user.role,
+      partnerId: partnerId ?? null,
+      couple: user.couple ? { id: user.couple.id } : null,
+    };
+    const accessToken = this.jwtService.sign(payload);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = user;
+
+    return {
+      accessToken,
+      user: result,
+      isNewUser,
+    };
+  }
+
+  /**
+   * Kakao 통합 로그인/가입 처리
+   * 기존 사용자면 로그인, 신규 사용자면 자동 가입 후 로그인
+   */
+  async kakaoSignIn(code: string): Promise<{ accessToken: string; user: Omit<User, 'password'>; isNewUser: boolean }> {
+    try {
+      console.log('카카오 통합 로그인/가입 처리 시작');
+      
+      // 1. 카카오 토큰 받기
+      const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
+        params: {
+          grant_type: 'authorization_code',
+          client_id: process.env.KAKAO_CLIENT_ID,
+          client_secret: process.env.KAKAO_CLIENT_SECRET,
+          code,
+          redirect_uri: process.env.KAKAO_REDIRECT_URI,
+        },
+      });
+
+      const { access_token } = tokenResponse.data;
+
+      // 2. 사용자 정보 받기
+      const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
+        headers: { Authorization: `Bearer ${access_token}` },
+      });
+
+      const { id: providerId, kakao_account } = userResponse.data;
+      const { email, profile } = kakao_account;
+      const nickname = profile?.nickname || email?.split('@')[0] || `User${providerId}`;
+
+      if (!email) {
+        throw new BadRequestException('카카오 계정에서 이메일 정보를 가져올 수 없습니다.');
+      }
+
+      // 3. 이메일로 기존 사용자 찾기
+      const existingUser = await this.prisma.user.findFirst({
+        where: { 
+          OR: [
+            { email },
+            { 
+              provider: 'KAKAO',
+              providerId: String(providerId)
+            }
+          ]
+        } as Prisma.UserWhereInput,
+        include: { partner: true, couple: true },
+      });
+
+      let user: User & { partner?: User | null; couple?: any | null };
+      let isNewUser = false;
+
+      if (existingUser) {
+        // 4-1. 기존 사용자 - 로그인 처리
+        if (existingUser.provider !== 'KAKAO') {
+          throw new ConflictException(
+            '이미 다른 방식으로 가입된 이메일입니다. 해당 방식으로 로그인해주세요.',
+          );
+        }
+        user = existingUser;
+      } else {
+        // 4-2. 신규 사용자 - 자동 가입 처리
+        const newUser = await this.prisma.$transaction(async (tx) => {
+          // 랜덤 아바타 URL 생성
+          const avatarUrl = generateAvatarUrl(email);
+
+          // 새로운 사용자 생성 (기본 온도 0도)
+          const randomPassword = Math.random().toString(36).slice(-10);
+          const hashedPassword = await bcrypt.hash(randomPassword, 10);
+          
+          return await tx.user.create({
+            data: {
+              email,
+              password: hashedPassword,
+              nickname,
+              provider: 'KAKAO',
+              providerId: String(providerId),
+              temperature: 0,
+              profileImageUrl: avatarUrl,
+            },
+          });
+        });
+
+        // 가입된 사용자 정보 조회
+        const userWithDetails = await this.prisma.user.findUnique({
+          where: { id: newUser.id },
+          include: { partner: true, couple: true },
+        });
+
+        if (!userWithDetails) {
+          throw new UnauthorizedException('사용자 정보를 찾는 데 실패했습니다.');
+        }
+
+        user = userWithDetails;
+        isNewUser = true;
+      }
+
+      // 5. JWT 토큰 생성 및 반환
+      let partnerId: string | null = null;
+      if (user.partnerId) {
+        partnerId = user.partnerId;
+      } else if (user.partner && typeof user.partner === 'object' && user.partner.id) {
+        partnerId = user.partner.id;
+      }
+
+      const payload = {
+        userId: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        role: user.role,
+        partnerId: partnerId ?? null,
+        couple: user.couple ? { id: user.couple.id } : null,
+      };
+      const accessToken = this.jwtService.sign(payload);
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...result } = user;
+
+      return {
+        accessToken,
+        user: result,
+        isNewUser,
+      };
+    } catch (error) {
+      console.error('Kakao signin error:', error);
+      
+      if (error instanceof ConflictException || error instanceof BadRequestException) {
+        throw error;
+      }
+      
+      throw new UnauthorizedException('카카오 로그인에 실패했습니다.');
+    }
   }
 }

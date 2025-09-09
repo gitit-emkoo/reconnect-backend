@@ -39,6 +39,8 @@ export class AuthController {
     return this.authService.login(loginDto, res);
   }
 
+  // 기존 SNS 로그인/회원가입 엔드포인트들 (통합 API로 대체됨 - 주석처리)
+  /*
   @Post('google/login')
   @HttpCode(HttpStatus.OK)
   async googleLogin(
@@ -91,6 +93,7 @@ export class AuthController {
   ): Promise<{ accessToken: string; user: Omit<User, 'password'> }> {
     return this.authService.appleRegister(appleAuthDto);
   }
+  */
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
@@ -104,5 +107,33 @@ export class AuthController {
     const newToken = this.authService.createJwtToken(user);
     setAuthCookie(res, newToken);
     return { accessToken: newToken };
+  }
+
+  // 통합 SNS 로그인/가입 엔드포인트들
+  @Post('google/signin')
+  @HttpCode(HttpStatus.OK)
+  async googleSignIn(
+    @Body() googleAuthDto: GoogleAuthDto
+  ): Promise<{ accessToken: string; user: Omit<User, 'password'>; isNewUser: boolean }> {
+    return this.authService.googleSignIn(googleAuthDto);
+  }
+
+  @Post('apple/signin')
+  @HttpCode(HttpStatus.OK)
+  async appleSignIn(
+    @Body() appleAuthDto: AppleAuthDto
+  ): Promise<{ accessToken: string; user: Omit<User, 'password'>; isNewUser: boolean }> {
+    return this.authService.appleSignIn(appleAuthDto);
+  }
+
+  @Post('kakao/signin')
+  @HttpCode(HttpStatus.OK)
+  async kakaoSignIn(
+    @Body() socialAuthDto: SocialAuthDto
+  ): Promise<{ accessToken: string; user: Omit<User, 'password'>; isNewUser: boolean }> {
+    if (!socialAuthDto.code) {
+      throw new BadRequestException('카카오 인증 코드가 필요합니다.');
+    }
+    return this.authService.kakaoSignIn(socialAuthDto.code);
   }
 }
