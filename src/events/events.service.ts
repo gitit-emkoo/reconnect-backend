@@ -9,19 +9,21 @@ export class EventsService {
     if (!userId) {
       throw new Error('Unauthorized: missing user id');
     }
-    try {
-      const entry = await this.prisma.eventEntry.create({
-        data: { eventKey, userId },
-      });
-      return entry;
-    } catch (e) {
-      // Unique constraint (already participated) → return existing-like response
-      const exists = await this.prisma.eventEntry.findUnique({
-        where: { eventKey_userId: { eventKey, userId } },
-      });
-      if (exists) return exists;
-      throw e;
+    
+    // 먼저 기존 응모 기록이 있는지 확인
+    const existingEntry = await this.prisma.eventEntry.findFirst({
+      where: { eventKey, userId },
+    });
+    
+    if (existingEntry) {
+      return existingEntry; // 이미 응모한 경우 기존 기록 반환
     }
+    
+    // 새로운 응모 기록 생성
+    const entry = await this.prisma.eventEntry.create({
+      data: { eventKey, userId },
+    });
+    return entry;
   }
 
   async listEntries(eventKey: string) {
@@ -39,8 +41,8 @@ export class EventsService {
 
   async findMyEntry(eventKey: string, userId: string) {
     if (!userId) return null;
-    return this.prisma.eventEntry.findUnique({
-      where: { eventKey_userId: { eventKey, userId } },
+    return this.prisma.eventEntry.findFirst({
+      where: { eventKey, userId },
     });
   }
 }

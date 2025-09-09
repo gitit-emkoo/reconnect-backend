@@ -341,20 +341,65 @@ export class UsersService {
       throw new NotFoundException('사용자를 찾을 수 없습니다.');
     }
 
-    // 탈퇴 사유 저장 (WithdrawalReason 모델에 userId 필드가 없음)
-    await this.prisma.withdrawalReason.create({
-      data: {
-        reason,
-      },
+    console.log('[UsersService] 탈퇴할 사용자 정보:', {
+      id: user.id,
+      email: user.email,
+      nickname: user.nickname,
+      provider: user.provider,
+      providerId: user.providerId,
+      hasPartner: !!user.partner,
+      hasCouple: !!user.couple
     });
 
-    // 사용자 삭제 (관련 데이터도 함께 삭제됨)
-    await this.prisma.user.delete({
-      where: { id: userId },
+    // 트랜잭션으로 안전하게 처리
+    await this.prisma.$transaction(async (tx) => {
+      // 1. 탈퇴 사유 저장 (사용자 정보 포함)
+      await tx.withdrawalReason.create({
+        data: {
+          reason,
+          // 사용자 정보를 reason에 포함하여 추적 가능하게 함
+          userInfo: JSON.stringify({
+            userId: user.id,
+            email: user.email,
+            nickname: user.nickname,
+            provider: user.provider,
+            providerId: user.providerId,
+            withdrawalDate: new Date().toISOString()
+          })
+        },
+      });
+
+      // 2. 파트너가 있는 경우 파트너 관계 해제
+      if (user.partner) {
+        console.log('[UsersService] 파트너 관계 해제 중...');
+        await tx.user.update({
+          where: { id: user.partner.id },
+          data: { partnerId: null }
+        });
+      }
+
+      // 3. 커플이 있는 경우 커플 상태를 INACTIVE로 변경
+      if (user.couple) {
+        console.log('[UsersService] 커플 상태 비활성화 중...');
+        await tx.couple.update({
+          where: { id: user.couple.id },
+          data: { status: 'INACTIVE' }
+        });
+      }
+
+      // 4. 사용자 삭제 (관련 데이터도 함께 삭제됨)
+      console.log('[UsersService] 사용자 데이터 삭제 중...');
+      await tx.user.delete({
+        where: { id: userId },
+      });
     });
 
     console.log('[UsersService] withdraw 완료');
-    return { success: true, message: '회원 탈퇴가 완료되었습니다.' };
+    return { 
+      success: true, 
+      message: '회원 탈퇴가 완료되었습니다.',
+      provider: user.provider // 프론트엔드에서 소셜 계정 연동 해제 안내용
+    };
   }
 
   // 관리자용 메서드들

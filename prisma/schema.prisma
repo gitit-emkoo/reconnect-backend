@@ -519,6 +519,7 @@ model SupportInquiry {
 model WithdrawalReason {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   reason    String   // 탈퇴 사유 (예: "divorced", "relationship_better", "not_satisfied", "inconvenient")
+  userInfo  String?  // 탈퇴한 사용자 정보 (JSON 형태로 저장)
   createdAt DateTime @default(now())
 
   @@index([reason])
@@ -568,7 +569,7 @@ model EventEntry {
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
 
-  @@unique([eventKey, userId])
+  // @@unique([eventKey, userId]) // 임시로 주석처리 - 중복 데이터 정리 후 활성화 예정
   @@index([eventKey])
   @@index([userId])
 }
