@@ -5,16 +5,31 @@ import { PrismaClient } from '@prisma/client';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
-    super();
+    super({
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL,
+        },
+      },
+      // Flex 클러스터 최적화: 연결 풀 및 로깅 최적화
+      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+      // 연결 풀 크기 제한 (Flex 클러스터 최적화)
+      __internal: {
+        engine: {
+          connectTimeout: 5000,
+          pool_timeout: 5000,
+        }
+      }
+    });
   }
 
   async onModuleInit() {
-    await this.$connect(); // NestJS 앱이 시작될 때 Prisma Client를 데이터베이스에 연결
+    await this.$connect();
   }
 
   async enableShutdownHooks(app: INestApplication) {
     process.on('beforeExit', async () => {
-      await app.close(); // NestJS 앱이 종료되기 전에 데이터베이스 연결을 끊습니다.
+      await app.close();
     });
   }
 }

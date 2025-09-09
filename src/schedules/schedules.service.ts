@@ -84,7 +84,8 @@ export class SchedulesService {
    */
   @Cron('0 1 * * 1', {
     name: 'generateWeeklyReports',
-    // timeZone: 'Asia/Seoul', // 서버 기준으로 동작하므로 제거
+    // 개발 환경에서는 크론잡 비활성화
+    disabled: process.env.NODE_ENV !== 'production',
   })
   async handleWeeklyReportGeneration() {
     // 중복 실행 방지
@@ -117,6 +118,8 @@ export class SchedulesService {
    */
   @Cron('0 1 1 * *', {
     name: 'generateMonthlyTrackReports',
+    // 개발 환경에서는 크론잡 비활성화
+    disabled: process.env.NODE_ENV !== 'production',
   })
   async handleMonthlyTrackReportGeneration() {
     this.logger.log('월간 트랙 리포트 생성 작업을 시작합니다.');

@@ -453,24 +453,27 @@ export class UsersService {
             createdAt: true,
           },
         },
-        diaries: {
-          select: {
-            id: true,
-            createdAt: true,
-            emotion: true,
+        // 개발 환경에서는 불필요한 데이터 로딩 최소화
+        ...(process.env.NODE_ENV === 'production' && {
+          diaries: {
+            select: {
+              id: true,
+              createdAt: true,
+              emotion: true,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 5, // 10개에서 5개로 줄임
           },
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        },
-        sentEmotionCards: {
-          select: {
-            id: true,
-            createdAt: true,
-            message: true,
+          sentEmotionCards: {
+            select: {
+              id: true,
+              createdAt: true,
+              message: true,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 5, // 10개에서 5개로 줄임
           },
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        },
+        }),
       },
     });
 

@@ -142,6 +142,7 @@ export class CommunityService {
       ];
     }
 
+    // Flex 클러스터 최적화: 쿼리 배칭 및 필드 선택 최소화
     const [posts, total] = await Promise.all([
       this.prisma.communityPost.findMany({
         where: {
@@ -154,7 +155,7 @@ export class CommunityService {
         select: {
           id: true,
           title: true,
-          content: true,
+          content: process.env.NODE_ENV === 'production' ? true : false, // 개발 중엔 content 제외
           tags: true,
           createdAt: true,
           poll: true,
@@ -163,13 +164,18 @@ export class CommunityService {
               nickname: true,
             },
           },
-          category: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
           _count: {
             select: { comments: true },
           },
         },
         skip,
-        take: limit,
+        take: Math.min(limit, 10), // 최대 10개로 제한
       }),
       this.prisma.communityPost.count({ where: { ...where, authorId: blockedIds.length ? { notIn: blockedIds } : undefined } }),
     ]);
