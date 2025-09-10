@@ -31,8 +31,8 @@ export async function verifyAppleIdToken(idToken: string): Promise<AppleUserInfo
   // 2) 환경/토큰에 따라 허용 audience 구성
   const isProd = process.env.NODE_ENV === 'production';
   const allowedAudiences: string[] = isProd
-    ? ['com.reconnect.kwcc']
-    : ['com.reconnect.kwcc', 'host.exp.Exponent'];
+    ? ['com.reconnect.kwcc.web', 'com.reconnect.kwcc']
+    : ['com.reconnect.kwcc.web', 'com.reconnect.kwcc', 'host.exp.Exponent'];
 
   if (aud === 'host.exp.Exponent' && !allowedAudiences.includes('host.exp.Exponent')) {
     allowedAudiences.push('host.exp.Exponent');
